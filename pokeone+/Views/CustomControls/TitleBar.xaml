@@ -1,0 +1,118 @@
+﻿<UserControl x:Class="pokeone_plus.TitleBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:pokeone_plus"
+             xmlns:fa="http://schemas.fontawesome.io/icons/"
+              xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+             mc:Ignorable="d" 
+             d:DesignHeight="21" VerticalAlignment="Top" d:DesignWidth="800" Background="{x:Null}" BorderBrush="{x:Null}">
+    <DockPanel Height="21" VerticalAlignment="Top">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="30"/>
+                <ColumnDefinition Width="30" />
+                <ColumnDefinition Width="30" />
+            </Grid.ColumnDefinitions>
+            <Button Name="btnClose" Grid.Column="4" BorderBrush="{x:Null}" VerticalAlignment="Top" Width="30" Height="21">
+                <Button.Content>
+                    <iconPacks:PackIconMaterial Kind="Close" Foreground="#F1F1F1"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Center"/>
+                </Button.Content>
+                <Button.ToolTip>
+                    <ToolTip Background="#1E1E1E">
+                        <TextBlock Background="#1E1E1E" Foreground="#F1F1F1" Text="Close"/>
+                    </ToolTip>
+                </Button.ToolTip>
+                <Button.Style>
+                    <Style TargetType="{x:Type Button}">
+                        <Setter Property="Background" Value="#2D2D30"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type Button}">
+                                    <Border Background="{TemplateBinding Background}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#3F3F41"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <Button Grid.Column="3" BorderBrush="{x:Null}" VerticalAlignment="Top" Width="30" Name="btnMiniMax" Height="21">
+                <Button.Content>
+                    <!--<fa:FontAwesome Foreground="#F1F1F1" x:Name="btnMiniMaxIco" Icon="WindowMaximize" Visibility="Hidden"/>-->
+                    <iconPacks:PackIconMaterial Kind="WindowMaximize" Foreground="#F1F1F1"
+                                                            Margin="0,0,0,0" VerticalAlignment="Center"
+                                                            HorizontalAlignment="Center" />
+                </Button.Content>
+                <Button.ToolTip>
+                    <ToolTip Background="#1E1E1E">
+                        <TextBlock Background="#1E1E1E" Foreground="#F1F1F1" Name="tipTextMiniMax" Text="Maximize"/>
+                    </ToolTip>
+                </Button.ToolTip>
+                <Button.Style>
+                    <Style TargetType="{x:Type Button}">
+                        <Setter Property="Background" Value="#2D2D30"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type Button}">
+                                    <Border Background="{TemplateBinding Background}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#3F3F41"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <Button Name="btnMinimize" Grid.Column="2" BorderBrush="{x:Null}" VerticalAlignment="Top" Width="30" Height="21">
+                <Button.Content>
+                    <!--<fa:FontAwesome Foreground="#F1F1F1" Icon="WindowMinimize"  />-->
+                    <iconPacks:PackIconMaterial Kind="WindowMinimize" Foreground="#F1F1F1"
+                                                            Margin="0 8 0 0"/>
+                </Button.Content>
+                <Button.ToolTip>
+                    <ToolTip Background="#1E1E1E">
+                        <TextBlock Background="#1E1E1E" Foreground="#F1F1F1" Text="Minimize"/>
+                    </ToolTip>
+                </Button.ToolTip>
+                <Button.Style>
+                    <Style TargetType="{x:Type Button}">
+                        <Setter Property="Background" Value="#2D2D30"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type Button}">
+                                    <Border Background="{TemplateBinding Background}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#3F3F41"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <TextBlock Name="Title" Text="Title Name" Foreground="#FFE2E2E2" Grid.Column="1" TextAlignment="left" Margin="3,1,4,1"/>
+            <Image RenderOptions.BitmapScalingMode="HighQuality" x:Name="Icon" Source="/PokeOne+;component/pokeone+icon.ico" Margin="5,1,4,1"/>
+        </Grid>
+    </DockPanel>
+</UserControl>

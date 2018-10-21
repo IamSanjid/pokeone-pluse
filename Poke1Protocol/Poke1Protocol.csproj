@@ -1,0 +1,108 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{856B3D4C-9717-4828-A46C-0D9C4454C28E}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Poke1Protocol</RootNamespace>
+    <AssemblyName>Poke1Protocol</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="MAPAPI">
+      <HintPath>F:\Program\PokeOne\files\PokeOne_Data\Managed\MAPAPI.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="PSXAPI">
+      <HintPath>F:\Program\PokeOne\files\PokeOne_Data\Managed\PSXAPI.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Battle.cs" />
+    <Compile Include="ChatChannel.cs" />
+    <Compile Include="Direction.cs" />
+    <Compile Include="EffortValuesManager.cs" />
+    <Compile Include="GameClient.cs" />
+    <Compile Include="GameConnection.cs" />
+    <Compile Include="InventoryItem.cs" />
+    <Compile Include="ItemsManager.cs" />
+    <Compile Include="LootboxHandler.cs" />
+    <Compile Include="Map.cs" />
+    <Compile Include="MapClient.cs" />
+    <Compile Include="MapConnection.cs" />
+    <Compile Include="AreaLink.cs" />
+    <Compile Include="MovesManager.cs" />
+    <Compile Include="Npc.cs" />
+    <Compile Include="PlayerEffect.cs" />
+    <Compile Include="PlayerInfos.cs" />
+    <Compile Include="PlayerQuest.cs" />
+    <Compile Include="PokedexPokemon.cs" />
+    <Compile Include="Pokemon.cs" />
+    <Compile Include="PokemonAbility.cs" />
+    <Compile Include="PokemonExperience.cs" />
+    <Compile Include="PokemonManager.cs" />
+    <Compile Include="PokemonMove.cs" />
+    <Compile Include="PokemonStats.cs" />
+    <Compile Include="PokemonType.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="ProtocolTimeout.cs" />
+    <Compile Include="StatType.cs" />
+    <Compile Include="TypesManager.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OneNetwork\OneNetwork.csproj">
+      <Project>{bd428769-4f66-4d9d-ab36-2d0aa9efbfd5}</Project>
+      <Name>OneNetwork</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="Resources\items.json" />
+    <None Include="Resources\moves.json" />
+    <None Include="Resources\pokemons.json" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
