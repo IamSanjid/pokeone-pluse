@@ -9,3 +9,6 @@ https://github.com/IamSanjid/pokeone_pluse-script
 2) Make the Battle process more better. Its battle message process is suck. And it cannot handle double/triple battles.
 3) Make `onQuestUpdated` more better.
 4) Make Auto Lootbox opener more better (I guess it is failed to open Normal Lootboxes not daily free loot boxes).
+
+# Discord Link
+https://discord.gg/tkSxjWN
