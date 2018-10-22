@@ -108,6 +108,8 @@ namespace Poke1Protocol
                             int.TryParse(array[5], out personality);
                         }
 
+                        if (pokemon is null) return;
+
                         if (side == PlayerSide)
                         {
                             //player
@@ -135,9 +137,6 @@ namespace Poke1Protocol
                     }
                 }
             }
-
-            //if (data.Log is null && data.Request1 is null && data.Request2 is null && Turn == 1)
-            //    IsFinished = true;
         }
 
         public void UpdateBattle(PSXAPI.Response.Battle data, List<Pokemon> team)
@@ -202,6 +201,8 @@ namespace Poke1Protocol
                             pokeName = array[4];
                             int.TryParse(array[5], out personality);
                         }
+
+                        if (pokemon is null) return;
 
                         if (side == PlayerSide)
                         {
@@ -445,16 +446,14 @@ namespace Poke1Protocol
         private SwitchedPokemon GetSwitchedPokemon(string text, string hpstatus)
         {
             SwitchedPokemon switchPkmn = new SwitchedPokemon();
+            switchPkmn.Shiny = text.ToLowerInvariant().Contains("shiny");
+
             string[] array = text.Split(new string[]
             {
             ", "
             }, StringSplitOptions.None);
             foreach (string text2 in array)
             {
-                if (text2 == "shiny")
-                {
-                    switchPkmn.Shiny = true;
-                }
                 if (text2 == "F")
                 {
                     switchPkmn.Gender = "F";

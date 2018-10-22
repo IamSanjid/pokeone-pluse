@@ -66,7 +66,7 @@ namespace Poke1Protocol
                 int count = (int)(NormalBoxes + SmallBoxes - oldAmount);
                 if (count > (long)((ulong)oldAmount))
                 {
-                    LootBoxMessage?.Invoke("You gained Lootbox x" + count + ".");
+                    LootBoxMessage?.Invoke("You gained Loot Box x" + count + ".");
                     RecievedBox?.Invoke(this);
                 }
                 TotalLootBoxes = (int)(NormalBoxes + SmallBoxes);

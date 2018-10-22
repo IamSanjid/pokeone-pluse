@@ -391,13 +391,13 @@ namespace Poke1Protocol
 
             if (!_movementTimeout.IsActive && _movements.Count > 0)
             {
-                SendMovemnetPackets();
+                //SendMovemnetPackets();
                 Direction direction = _movements[0];
                 _movements.RemoveAt(0);
                 if (ApplyMovement(direction))
                 {
                     SendMovement(direction.ToMoveActions());
-                    _movementTimeout.Set(IsBiking ? Rand.Next(175, 200) : 375);
+                    _movementTimeout.Set(IsBiking ? 200 : 375);
                     if (Map.HasLink(PlayerX, PlayerY))
                     {
                         _teleportationTimeout.Set();
@@ -750,8 +750,8 @@ namespace Poke1Protocol
                 X = PlayerX,
                 Y = PlayerY
             };
-            _movementPackets.Add(movePacket);
-            //SendProto(movePacket);
+            //_movementPackets.Add(movePacket);
+            SendProto(movePacket);
         }
 
         public bool OpenLootBox(PSXAPI.Request.LootboxType type)
@@ -1500,6 +1500,12 @@ namespace Poke1Protocol
             }
             if (!ActiveBattle.OnlyInfo && IsInBattle && IsLoggedIn && ActiveBattle.Turn <= 1)
             {
+                var firstEncounterMessage = ActiveBattle.IsWild ? ActiveBattle.IsShiny ?
+                    $"A wild shiny {PokemonManager.Instance.Names[ActiveBattle.OpponentId]} has appeared!" 
+                    : $"A wild {PokemonManager.Instance.Names[ActiveBattle.OpponentId]} has appeared!" : ActiveBattle.IsShiny ?
+                    $"Opponent sent out shiny {PokemonManager.Instance.Names[ActiveBattle.OpponentId]}!"
+                    : $"Opponent sent out {PokemonManager.Instance.Names[ActiveBattle.OpponentId]}!";
+                BattleMessage?.Invoke(firstEncounterMessage);
                 _battleTimeout.Set(Rand.Next(4000, 6000));
                 BattleStarted?.Invoke();
                 Resync(false);
@@ -2082,6 +2088,7 @@ namespace Poke1Protocol
             Money = (int)data.Money;
             Gold = (int)data.Gold;
             UpdateItems(data.Items);
+            InventoryUpdated?.Invoke();
         }
 
         private void UpdateItems(PSXAPI.Response.InventoryItem[] items)
@@ -2116,7 +2123,6 @@ namespace Poke1Protocol
                     Items.Add(new InventoryItem(item));
                 }
             }
-            InventoryUpdated?.Invoke();
         }
 
         private void OnUpdateTime(PSXAPI.Response.Time time)

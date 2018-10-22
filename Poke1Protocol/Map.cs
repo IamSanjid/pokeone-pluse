@@ -647,7 +647,7 @@ namespace Poke1Protocol
             if (collider == 2 && !isSurfing)
                 return false;
 
-            if (HasLink(destx, desty))
+            if (HasLink(destx, desty) && !(direction == Direction.Up && collider == 22))
                 return true;
             
             switch (direction)

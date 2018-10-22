@@ -62,7 +62,7 @@ namespace pokeone_plus
                 { 8, Brushes.LightGreen },
                 { 9, Brushes.White },
                 { 10, Brushes.LightGray },
-                { 12, Brushes.LightSkyBlue},
+                //{ 12, Brushes.LightSkyBlue},
                 //{ 16, Brushes.White },
                 //{ 18, Brushes.White },
                 //{ 19, Brushes.White },

@@ -42,32 +42,32 @@ namespace Poke1Bot.Modules
         {
             if (_bot.Game != null)
             {
+                _lootBoxHandler = _bot.Game.RecievedLootBoxes;
                 _bot.Game.ConnectionClosed += Client_ConnectionClosed;
                 _bot.Game.ConnectionFailed += Client_ConnectionClosed;
-                _bot.Game.RecievedLootBox += Game_RecievedLootBox;
                 _bot.Game.LootBoxOpened += Game_LootBoxOpened;
+                _bot.Game.RecievedLootBox += Game_RecievedLootBox;
             }
+        }
+
+        private void Game_RecievedLootBox(Poke1Protocol.LootboxHandler obj)
+        {
+            _sentOpenLootBoxReq = false;
         }
 
         private void Game_LootBoxOpened(PSXAPI.Response.Payload.LootboxRoll[] arg1, PSXAPI.Response.LootboxType arg2)
         {
             _lootBoxHandler = null;
             _sentOpenLootBoxReq = false;
-        }
-
-        private void Game_RecievedLootBox(Poke1Protocol.LootboxHandler handler)
-        {
-            if (_bot.Game != null && IsEnabled)
-            {
-                _lootBoxHandler = handler;         
-            }
+            _lootBoxTimeOut.Set();
         }
 
         public void Update()
         {
             _lootBoxTimeOut.Update();
             if (_bot.Game is null || _lootBoxTimeOut.IsActive) return;
-            if (IsEnabled && _bot.Game != null && _bot.Game.RecievedLootBoxes != null && _bot.Game.IsLoggedIn && _bot.Game.IsMapLoaded)
+
+            if (IsEnabled && _bot.Game.IsLoggedIn && _bot.Game.IsMapLoaded)
             {
                 if (_lootBoxHandler is null)
                     _lootBoxHandler = _bot.Game.RecievedLootBoxes;
@@ -80,7 +80,7 @@ namespace Poke1Bot.Modules
                     {
                         _bot.Game.OpenLootBox(Poke1Protocol.ConvertLootBoxType.FromResponseType(loot.Type));
                         _sentOpenLootBoxReq = true;
-                        _lootBoxTimeOut.Set(_lootBoxHandler.Lootboxes.Count > 0 ? _bot.Rand.Next(3500, 5000) :  _bot.Rand.Next(1500, 2000));
+                        _lootBoxTimeOut.Set(_lootBoxHandler.Lootboxes.Count > 0 ? _bot.Rand.Next(2000, 3000) :  _bot.Rand.Next(1500, 2000));
                     }
                 }
             }
