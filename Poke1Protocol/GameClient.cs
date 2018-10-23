@@ -86,7 +86,7 @@ namespace Poke1Protocol
         //&& !_npcBattleTimeout.IsActive
         //&& !_moveRelearnerTimeout.IsActive
 
-        public const string Version = "0.59";
+        public const string Version = "0.60";
 
         private GameConnection _connection;
 
