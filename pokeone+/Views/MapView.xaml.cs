@@ -62,7 +62,10 @@ namespace pokeone_plus
                 { 8, Brushes.LightGreen },
                 { 9, Brushes.White },
                 { 10, Brushes.LightGray },
-                //{ 12, Brushes.LightSkyBlue},
+                { 11, Brushes.White },
+                { 12, Brushes.White},
+                { 14, Brushes.White },
+                { 15, Brushes.White },
                 //{ 16, Brushes.White },
                 //{ 18, Brushes.White },
                 //{ 19, Brushes.White },
@@ -588,7 +591,7 @@ namespace pokeone_plus
 #if DEBUG
                 _bot.LogMessage($"({ingameX},{ingameY})Collider:{_bot.Game.Map.Colliders[ingameX, ingameY]},TilesType:{_bot.Game.Map.TileTypes[ingameX, ingameY]}," +
                     $"TilesType2:{_bot.Game.Map.TileTypes2[ingameX, ingameY]},TilesHeight:{_bot.Game.Map.TileHeight[ingameX, ingameY]}," +
-                    $"TilesWater:{_bot.Game.Map.TileWater[ingameX,ingameY]},TileZones:{_bot.Game.Map.TileZones[ingameX, ingameY]} || ISAREALINK{_bot.Game.Map.IsAreaLink(ingameX, ingameY)}");
+                    $"TilesWater:{_bot.Game.Map.TileWater[ingameX, ingameY]},TileZones:{_bot.Game.Map.TileZones[ingameX, ingameY]} || ISAREALINK{_bot.Game.Map.IsAreaLink(ingameX, ingameY)}");
                 var obj = _bot.Game.Map.Objects.Find(o => o.x == ingameX && o.z == -ingameY);
                 if (obj != null)
                     _bot.LogMessage($"Object = Name:{obj.Name} ID:{obj.ID} Tag:{obj.tag}");
@@ -672,7 +675,7 @@ namespace pokeone_plus
 
         public void Client_AreaUpdated()
         {
-            
+
         }
 
         public void Client_PositionUpdated(string map, int x, int y)

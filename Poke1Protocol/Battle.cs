@@ -47,8 +47,35 @@ namespace Poke1Protocol
 
         public PSXAPI.Response.Battle Data { get; private set; }
 
+        public bool IsUpdated { get; private set; }
+
+        public PSXAPI.Response.Payload.BattleActive GetActivePokemon
+        {
+            get
+            {
+                var playerReq = PlayerSide == 1 ? Data.Request1 : Data.Request2;
+                var pok = playerReq.RequestInfo.active.FirstOrDefault(s => s.trainer.ToLowerInvariant() == _playerName.ToLowerInvariant());
+                if (pok is null)
+                    return playerReq.RequestInfo.active[0];
+                return pok;
+            }
+        }
+
+        public string AttackTargetType(int uid)
+        {
+            if (string.IsNullOrEmpty(_playerName))
+                return "normal";
+            var playerReq = PlayerSide == 1 ? Data.Request1 : Data.Request2;
+            var targetMove = playerReq.RequestInfo.active.FirstOrDefault(s => s.trainer.ToLowerInvariant() == _playerName.ToLowerInvariant()).moves[uid];
+            if (targetMove is null || string.IsNullOrEmpty(targetMove.target))
+                return "normal";
+            return targetMove.target;
+        }
+
         public Battle(string playerName, PSXAPI.Response.Battle data, List<Pokemon> team)
         {
+            IsUpdated = false;
+
             Data = data;
 
             _playerName = playerName;
@@ -141,6 +168,8 @@ namespace Poke1Protocol
 
         public void UpdateBattle(PSXAPI.Response.Battle data, List<Pokemon> team)
         {
+            IsUpdated = true;
+
             IsWild = data.CanCatch;
 
             IsFinished = data.Ended;
@@ -283,11 +312,11 @@ namespace Poke1Protocol
                 if (!IsWild && opponent.trainer != null)
                     TrainerName = opponent.trainer;
                 ResponseID = p2.RequestID;               
-                var opAbility = opponent.baseAbility.ToLowerInvariant().Replace(" ", "");
-                IsTrapped = opAbility == "arenatrap" || opAbility == "shadowtag" || opAbility == "magnetpull" || opponent.item == "smokeball";
+                var opAbility = opponent.baseAbility.ToLowerInvariant().Replace(" ", "");               
             }
 
             CurrentHealth = OpponentHealth;
+            IsTrapped = GetActivePokemon.maybeTrapped || GetActivePokemon.maybeDisabled;
         }
 
         public void ProcessLog(string[] logs, List<Pokemon> team, Action<string> BattleMessage)

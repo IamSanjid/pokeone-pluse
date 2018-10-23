@@ -656,7 +656,8 @@ namespace Poke1Protocol
                     if (isOnGround)
                     {
                         
-                        if (collider == 18 || collider == 0 || collider == 20 || collider == 19 || collider == 16 || collider == 24)
+                        if (collider == 18 || collider == 0 || collider == 20 || collider == 19 || collider == 16
+                            || collider == 24 || collider == 15 || collider == 12 || collider == 11 || collider == 14)
                         {
                             return true;
                         }
@@ -665,7 +666,7 @@ namespace Poke1Protocol
                             return true;
                         }
                     }
-                    else if (collider == 14 || collider == 7 || collider == 8 || collider == 9 || collider == 0 || collider == 12)
+                    else if (collider == 14 || collider == 15 || collider == 7 || collider == 8 || collider == 9 || collider == 0 || collider == 12 || collider == 11)
                     {
                         return true;
                     }
@@ -675,7 +676,7 @@ namespace Poke1Protocol
                     {
                         
 
-                        if (collider == 0 || collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 4)
+                        if (collider == 0 || collider == 15 || collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 4 || collider == 12 || collider == 11 || collider == 14)
                         {
                             return true;
                         }
@@ -695,7 +696,7 @@ namespace Poke1Protocol
                         var collPre = GetCollider(_client.PlayerX, _client.PlayerY);
                         if (collPre == 20 || collPre == 19 || collider == 16 || collider == 18 || GetCellSideMoveable(collPre))
                             return false;
-                        if (collider == 14 || collider == 0 || collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 4)
+                        if (collider == 14 || collider == 15 || collider == 0 || collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 4 || collider == 12 || collider == 11)
                         {
                             return true;
                         }
@@ -704,7 +705,7 @@ namespace Poke1Protocol
                             return true;
                         }
                     }
-                    else if (collider == 14 || collider == 7 || collider == 8 || collider == 9 || collider == 0 || collider == 12)
+                    else if (collider == 14 || collider == 15 || collider == 7 || collider == 8 || collider == 9 || collider == 0 || collider == 12 || collider == 11)
                     {
                         return true;
                     }
@@ -715,7 +716,7 @@ namespace Poke1Protocol
                         var collPre = GetCollider(_client.PlayerX, _client.PlayerY);
                         if (collPre == 19 || collPre == 20 || collider == 16 || collider == 18 || GetCellSideMoveable(collPre))
                             return false;
-                        if (collider == 14 || collider == 0 || collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 3)
+                        if (collider == 14 || collider == 15 || collider == 0 || collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 3 || collider == 12 || collider == 11)
                         {
                             return true;
                         }
@@ -724,7 +725,7 @@ namespace Poke1Protocol
                             return true;
                         }
                     }
-                    else if (collider == 14 || collider == 7 || collider == 8 || collider == 9 || collider == 0 || collider == 12)
+                    else if (collider == 14 || collider == 15 || collider == 7 || collider == 8 || collider == 9 || collider == 0 || collider == 12 || collider == 11)
                     {
                         return true;
                     }

@@ -56,6 +56,7 @@ namespace Poke1Protocol
         private double _lastRTime;
         private int _lastTime;
         private double _lastCheckTime;
+        private double _lastSentMovement;
         private DateTime _lastGameTime;
         private PSXAPI.Response.Time _lasTimePacket;
 
@@ -254,7 +255,7 @@ namespace Poke1Protocol
             _connection.Close(error);
         }
 
-        public void ClearPath() { _movements.Clear(); _movementPackets.Clear(); }
+        public void ClearPath() { _movements.Clear(); _movementPackets.Clear(); _lastSentMovement = RunningForSeconds; }
 
         public void Update()
         {
@@ -318,11 +319,15 @@ namespace Poke1Protocol
                     }
                 }
             }
+
+            if (RunningForSeconds > _lastSentMovement + 0.6f && _movementPackets.Count > 0)
+                SendMovemnetPackets();
         }
 
         // Don't ask me it is PokeOne's way lol...
         private void SendMovemnetPackets()
         {
+            _lastSentMovement = RunningForSeconds;
             if (_movementPackets.Count > 0)
             {
                 List<PSXAPI.Request.MoveAction> list = new List<PSXAPI.Request.MoveAction>();
@@ -353,6 +358,8 @@ namespace Poke1Protocol
                     list.Add(_movementPackets[i].Actions[0]);
                     goto IL_118;
                 }
+                if (list.Count > 2)
+                    Console.WriteLine("Yes I am working like PokeOne :D");
                 SendProto(new PSXAPI.Request.Move
                 {
                     Actions = list.ToArray(),
@@ -402,7 +409,7 @@ namespace Poke1Protocol
                 if (ApplyMovement(direction))
                 {
                     SendMovement(direction.ToMoveActions(), fromX, fromY); // PokeOne sends the (x,y) without applying the movement(but it checks the collisions) to the server.
-                    _movementTimeout.Set(IsBiking ? 200 : 375);
+                    _movementTimeout.Set(IsBiking ? 200 : 300);
                     if (Map.HasLink(PlayerX, PlayerY))
                     {
                         _teleportationTimeout.Set();
@@ -755,8 +762,8 @@ namespace Poke1Protocol
                 X = fromX,
                 Y = fromY
             };
-            //_movementPackets.Add(movePacket);
-            SendProto(movePacket);
+            _movementPackets.Add(movePacket);
+            //SendProto(movePacket);
         }
 
         public bool OpenLootBox(PSXAPI.Request.LootboxType type)
@@ -847,7 +854,7 @@ namespace Poke1Protocol
                     "|",
                     ActiveBattle.SelectedPokemonIndex.ToString(),
                     "|",
-                    id.ToString()
+                    ActiveBattle.AttackTargetType(id)
                 })
             });
 
@@ -1490,8 +1497,7 @@ namespace Poke1Protocol
 
         private void OnBattle(PSXAPI.Response.Battle battle)
         {
-            _movementPackets.Clear();
-            _movements.Clear();
+            ClearPath();
             _slidingDirection = null;
 
             IsInBattle = !battle.Ended;
@@ -1505,12 +1511,16 @@ namespace Poke1Protocol
             }
             if (!ActiveBattle.OnlyInfo && IsInBattle && IsLoggedIn && ActiveBattle.Turn <= 1)
             {
-                var firstEncounterMessage = ActiveBattle.IsWild ? ActiveBattle.IsShiny ?
-                    $"A wild shiny {PokemonManager.Instance.Names[ActiveBattle.OpponentId]} has appeared!" 
-                    : $"A wild {PokemonManager.Instance.Names[ActiveBattle.OpponentId]} has appeared!" : ActiveBattle.IsShiny ?
-                    $"Opponent sent out shiny {PokemonManager.Instance.Names[ActiveBattle.OpponentId]}!"
-                    : $"Opponent sent out {PokemonManager.Instance.Names[ActiveBattle.OpponentId]}!";
-                BattleMessage?.Invoke(firstEncounterMessage);
+                // encounter message coz the server doesn't send it.
+                if (!ActiveBattle.IsUpdated)
+                {
+                    var firstEncounterMessage = ActiveBattle.IsWild ? ActiveBattle.IsShiny ?
+                        $"A wild shiny {PokemonManager.Instance.Names[ActiveBattle.OpponentId]} has appeared!"
+                        : $"A wild {PokemonManager.Instance.Names[ActiveBattle.OpponentId]} has appeared!" : ActiveBattle.IsShiny ?
+                        $"Opponent sent out shiny {PokemonManager.Instance.Names[ActiveBattle.OpponentId]}!"
+                        : $"Opponent sent out {PokemonManager.Instance.Names[ActiveBattle.OpponentId]}!";
+                    BattleMessage?.Invoke(firstEncounterMessage);
+                }
                 _battleTimeout.Set(Rand.Next(4000, 6000));
                 BattleStarted?.Invoke();
                 Resync(false);
@@ -2295,7 +2305,7 @@ namespace Poke1Protocol
 
             _loadingTimeout.Set(Rand.Next(1500, 4000));
 
-            _movements.Clear();
+            ClearPath();
             _surfAfterMovement = false;
             _slidingDirection = null;
             _dialogResponses.Clear();
