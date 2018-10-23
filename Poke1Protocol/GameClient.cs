@@ -396,9 +396,12 @@ namespace Poke1Protocol
                 //SendMovemnetPackets();
                 Direction direction = _movements[0];
                 _movements.RemoveAt(0);
+                // before applying the movement
+                int fromX = PlayerX;
+                int fromY = PlayerY;
                 if (ApplyMovement(direction))
                 {
-                    SendMovement(direction.ToMoveActions());
+                    SendMovement(direction.ToMoveActions(), fromX, fromY); // PokeOne sends the (x,y) without applying the movement(but it checks the collisions) to the server.
                     _movementTimeout.Set(IsBiking ? 200 : 375);
                     if (Map.HasLink(PlayerX, PlayerY))
                     {
@@ -743,14 +746,14 @@ namespace Poke1Protocol
             }
         }
 
-        private void SendMovement(PSXAPI.Request.MoveAction[] actions)
+        private void SendMovement(PSXAPI.Request.MoveAction[] actions, int fromX, int fromY)
         {
             var movePacket = new PSXAPI.Request.Move
             {
                 Actions = actions,
                 Map = MapName,
-                X = PlayerX,
-                Y = PlayerY
+                X = fromX,
+                Y = fromY
             };
             //_movementPackets.Add(movePacket);
             SendProto(movePacket);
