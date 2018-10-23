@@ -366,6 +366,7 @@ namespace Poke1Protocol
 
         private void CheckEvolving()
         {
+            if (IsInBattle) return;
             var evolvingPoke = Team.FirstOrDefault(pok => pok.CanEvolveTo > PSXAPI.Response.Payload.PokemonID.missingno);
 
             if (evolvingPoke != null)
@@ -376,6 +377,7 @@ namespace Poke1Protocol
 
         private void CheckLearningMove()
         {
+            if (IsInBattle) return;
             var learningPoke = Team.FirstOrDefault(pok => pok.LearnableMoves != null && pok.LearnableMoves.Length > 0);
 
             if (learningPoke != null)

@@ -65,11 +65,11 @@ namespace Poke1Bot
 
             Console.WriteLine(pc);
 
-            var packet = @"GuildEmblem Cg5Qb2tlbW9uTGVnZW5kcw==";
+            var packet = @"Lootbox CAIQAhgB";
             var data = packet.Split(" ".ToCharArray());
 
             byte[] array = Convert.FromBase64String(data[1]);
-            var type = Type.GetType($"PSXAPI.Request.{data[0]}, PSXAPI");
+            var type = Type.GetType($"PSXAPI.Response.{data[0]}, PSXAPI");
 
             if (type != null)
             {
