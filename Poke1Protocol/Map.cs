@@ -35,6 +35,7 @@ namespace Poke1Protocol
             { 17, true },
             { 18, true }
         };
+        public Dictionary<Tuple<int, int>, Guid> DestinationsLinks { get; }
         public List<LINKData> Links { get; }
         public MAPAPI.Response.MapDump MapDump { get; }
         public int[,] Colliders { get; }
@@ -77,6 +78,7 @@ namespace Poke1Protocol
             IsSessioned = isSessioned;
             Npcs = new List<Npc>();
             OriginalNpcs = new List<Npc>();
+            DestinationsLinks = new Dictionary<Tuple<int, int>, Guid>();
             if (MapDump.NPCs != null && MapDump?.NPCs.Count > 0)
             {
                 foreach (var npc in MapDump.NPCs)
@@ -86,6 +88,7 @@ namespace Poke1Protocol
                 NpcReceieved?.Invoke(OriginalNpcs);
             }
             Links = MapDump.Links;
+            Links.ForEach(link => DestinationsLinks.Add(new Tuple<int, int>(link.x, -link.z), link.DestinationID));
 
             if (_client.IsLoggedIn)
             {

@@ -201,6 +201,7 @@ namespace Poke1Bot.Scripting
             _lua.Globals["isNoon"] = new Func<bool>(IsNoon);
             _lua.Globals["isNight"] = new Func<bool>(IsNight);
             _lua.Globals["isOutside"] = new Func<bool>(IsOutside);
+            _lua.Globals["getDestinationId"] = new Func<int, int, string>(GetDestinationId);
 
             // Quest conditions
             _lua.Globals["isMainQuestId"] = new Func<string, bool>(IsMainQuestId);
@@ -1938,6 +1939,24 @@ namespace Poke1Bot.Scripting
             var findQuest = Bot.Game.Quests.Find(q => q.Id.Equals(id, StringComparison.InvariantCultureIgnoreCase));
             if (findQuest is null) return false;
             return !findQuest.Completed ? ExecuteAction(Bot.Game.RequestPathForInCompleteQuest(findQuest)) : ExecuteAction(Bot.Game.RequestPathForCompletedQuest(findQuest));
+        }
+
+        // API: Gets destination id of a specified link
+        private string GetDestinationId(int x, int y)
+        {
+            if (!Bot.Game.Map.HasLink(x, y))
+            {
+                Fatal($"error: ‘getDestinationId’ there is no link at {x}, {y}");
+                return null;
+            }
+
+            var destination = Bot.Game.Map.DestinationsLinks.Keys.ToList().Find(dest => dest.Item1 == x && dest.Item2 == y);
+            if (destination is null)
+            {
+                Fatal($"error: ‘getDestinationId’ there is no link at {x}, {y}");
+                return null;
+            }
+            return Bot.Game.Map.DestinationsLinks[destination].ToString();
         }
     }
 }
