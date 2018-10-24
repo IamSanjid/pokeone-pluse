@@ -5,10 +5,9 @@ A free, open-source and advanced bot for PokeOne(http://poke.one/).
 https://github.com/IamSanjid/pokeone_pluse-script
 
 # TODO
-1) Make it more safe. (I even don't know if it is auto detectable or not)...
-2) Make the Battle process better. Its battle message process is suck. And it cannot handle double/triple battles.
-3) Make `onQuestUpdated` better.
-4) Make Auto Lootbox opener better (I guess it is failed to open Normal Lootboxes not daily free loot boxes).
+1) Make the Battle process better. Its battle message process is suck. And it cannot handle double/triple battles.
+2) Make `onQuestUpdated` better.
+3) Make the Map process better. It may fail to detect some collisions. 
 
 # Discord Link
 https://discord.gg/tkSxjWN
