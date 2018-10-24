@@ -151,6 +151,8 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["getAreaName"] = new Func<string>(GetAreaName);
                 _lua.Globals["getMapName"] = new Func<string>(GetMapName);
                 _lua.Globals["getTeamSize"] = new Func<int>(GetTeamSize);
+                _lua.Globals["getPokedexOwned"] = new Func<int>(GetPokedexOwned);
+                _lua.Globals["getPokedexSeen"] = new Func<int>(GetPokedexSeen);
 
                 _lua.Globals["getPokemonId"] = new Func<int, int>(GetPokemonId);
                 _lua.Globals["getPokemonName"] = new Func<int, string>(GetPokemonName);
@@ -1652,7 +1654,6 @@ namespace Poke1Bot.Scripting
         // API: Uses the specified item on the specified pokémon.
         private bool UseItemOnPokemon(string itemName, int pokemonIndex)
         {
-            itemName = itemName.ToUpperInvariant();
             InventoryItem item = Bot.Game.GetItemFromName(itemName.ToUpperInvariant());
 
             if (item != null && item.Quantity > 0)

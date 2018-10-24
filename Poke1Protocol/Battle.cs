@@ -338,6 +338,7 @@ namespace Poke1Protocol
                         OnlyInfo = false;
 
                     var ranAway = logs.Any(sf => sf.Contains("--run"));
+                    var caught = logs.Any(sf => sf.Contains("--catch"));
 
                     switch (type)
                     {
@@ -367,6 +368,9 @@ namespace Poke1Protocol
                             }
                             break;
                         case "move":
+
+                            if (caught) break;
+
                             //Attacker
                             var attacker = info[2].Split(new string[]
                                 {
@@ -427,7 +431,7 @@ namespace Poke1Protocol
                             if (isMySide)
                             {
                                 BattleMessage?.Invoke($"{info[8]} threw a " +
-                                    $" {ItemsManager.Instance.ItemClass.items.ToList().Find(itm => itm.BattleID == info[4] || itm.Name == info[4]).Name}!");
+                                    $"{ItemsManager.Instance.ItemClass.items.ToList().Find(itm => itm.BattleID == info[4] || itm.Name == info[4]).Name}!");
                             }
                             else
                             {
@@ -436,34 +440,33 @@ namespace Poke1Protocol
                                     Data.Mapping2 != null ? Data.Mapping1[0] : "Enemy"; 
 
                                 BattleMessage?.Invoke($"{info[8]} threw a " +
-                                    $" {ItemsManager.Instance.ItemClass.items.ToList().Find(itm => itm.BattleID == info[4] || itm.Name == info[4]).Name}!");
+                                    $"{ItemsManager.Instance.ItemClass.items.ToList().Find(itm => itm.BattleID == info[4] || itm.Name == info[4]).Name}!");                                
+                            }
+                            int pokeID = Convert.ToInt32(info[3]);
+                            int success = Convert.ToInt32(info[7]);
+                            int shakes = Convert.ToInt32(info[5]);
 
-                                int pokeID = Convert.ToInt32(info[3]);
-                                int success = Convert.ToInt32(info[7]);
-                                int shakes = Convert.ToInt32(info[5]);
-
-                                if (shakes < 0)
+                            if (shakes < 0)
+                            {
+                                BattleMessage?.Invoke("But it failed.");
+                            }
+                            else
+                            {
+                                if (success == 0)
                                 {
-                                    BattleMessage?.Invoke("But it failed.");
+                                    BattleMessage?.Invoke($"Gotcha! {PokemonManager.Instance.Names[OpponentId]} was caught!");
+                                }
+                                else if (shakes == 0)
+                                {
+                                    BattleMessage?.Invoke($"Oh no! The Pokémon broke free!");
+                                }
+                                else if (shakes < 2)
+                                {
+                                    BattleMessage?.Invoke("Aww! It appeared to be caught!");
                                 }
                                 else
                                 {
-                                    if (success == 0)
-                                    {
-                                        BattleMessage?.Invoke($"Gotcha! {PokemonManager.Instance.Names[OpponentId]} was caught!");
-                                    }
-                                    else if (shakes == 0)
-                                    {
-                                        BattleMessage?.Invoke($"Oh no! The Pokémon broke free!");
-                                    }
-                                    else if (shakes < 2)
-                                    {
-                                        BattleMessage?.Invoke("Aww! It appeared to be caught!");
-                                    }
-                                    else
-                                    {
-                                        BattleMessage?.Invoke("Aargh! Almost had it!");
-                                    }
+                                    BattleMessage?.Invoke("Aargh! Almost had it!");
                                 }
                             }
                             break;

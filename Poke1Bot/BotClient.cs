@@ -66,7 +66,7 @@ namespace Poke1Bot
 
             Console.WriteLine(pc);
 
-            var packet = @"Lootbox CAIQAhgB";
+            var packet = @"Battle CiR8LS1jYXRjaHxwMXwxfHBva2JhbGx8NHwxfDB8TmVyYW55eGQKBnxzcGxpdAoJfGNob2ljZXx8Cg18Y2hvaWNlfHBhc3N8ChZ8Y2hvaWNlfHxtb3ZlIHRhY2tsZSAxChp8Y2hvaWNlfHBhc3N8bW92ZSB0YWNrbGUgMQoBfAoSfGZhaW50fHAyYTogUGlkZ2V5CgF8Cgd8d2lufHAxIAFIAVABWAFgFw==";
             var data = packet.Split(" ".ToCharArray());
 
             byte[] array = Convert.FromBase64String(data[1]);
@@ -207,10 +207,9 @@ namespace Poke1Bot
 
         public async Task LoadScript(string filename)
         {
-            using (var reader = new StreamReader(filename))
+            using (var reader = new StreamReader(filename, Encoding.GetEncoding("iso-8859-1")))
             {
                 var input = await reader.ReadToEndAsync();
-
 
                 List<string> libs = new List<string>();
                 if (Directory.Exists("Libs"))

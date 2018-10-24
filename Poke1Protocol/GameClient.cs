@@ -901,9 +901,9 @@ namespace Poke1Protocol
             });
         }
 
-        private void SendUseItemInBattle(int id, int targetId, bool isPokeBall = false, int moveTarget = 0)
+        private void SendUseItemInBattle(int id, int targetId, int moveTarget = 0)
         {
-            if (!isPokeBall)
+            if (ActiveBattle.PokemonCount > 1)
             {
                 SendProto(new PSXAPI.Request.BattleBroadcast
                 {
@@ -2228,7 +2228,7 @@ namespace Poke1Protocol
                 }
                 else if (!_battleTimeout.IsActive && IsInBattle && item.CanBeUsedInBattle)
                 {
-                    SendUseItemInBattle(item.Id, ActiveBattle.SelectedOpponent, item.IsPokeball(), moveId);
+                    SendUseItemInBattle(item.Id, ActiveBattle.SelectedOpponent + 1, moveId);
                     _battleTimeout.Set(Rand.Next(1500, 2000));
                 }
             }
@@ -2499,7 +2499,7 @@ namespace Poke1Protocol
 
         public InventoryItem GetItemFromName(string itemName)
         {
-            return Items.FirstOrDefault(i => ItemsManager.Instance.ItemClass.items.Any(itm => itm.BattleID.Equals(itemName, StringComparison.InvariantCultureIgnoreCase) && i.Quantity > 0));
+            return Items.FirstOrDefault(i => ItemsManager.Instance.ItemClass.items.Any(itm => itm.Name.Equals(itemName, StringComparison.InvariantCultureIgnoreCase) && i.Quantity > 0));
         }
 
         public bool HasItemName(string itemName)
