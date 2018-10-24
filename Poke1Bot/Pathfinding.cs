@@ -61,7 +61,7 @@ namespace Poke1Bot
                 return true;
             }
 
-            foreach(var direction in _directions)
+            foreach (var direction in _directions)
             {
                 if (_client.Map.GetCellSideMoveable(_client.Map.GetCollider(destinationX, destinationY)))
                 {

@@ -891,10 +891,9 @@ namespace pokeone_plus
             }
         }
 
-        private void LoadScriptButton_Click(object sender, RoutedEventArgs e)
+        private async void LoadScriptButton_Click(object sender, RoutedEventArgs e)
         {
-            new Thread(() => { Dispatcher.InvokeAsync(async delegate { await LoadScript(); }); }).Start();
-
+            await LoadScript();
         }
 
         private void OpenLoginWindow()
@@ -979,11 +978,11 @@ namespace pokeone_plus
             }
         }
 
-        private void ReloadScript_Click(object sender, RoutedEventArgs e)
+        private async void ReloadScript_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(Bot.Settings.LastScript))
                 return;
-            new Thread(() => { Dispatcher.InvokeAsync(async delegate { await LoadScript(Bot.Settings.LastScript); }); }).Start();
+            await LoadScript(Bot.Settings.LastScript);
         }
 
         public static void AppendLineToRichTextBox(RichTextBox richTextBox, string message)
@@ -1094,16 +1093,31 @@ namespace pokeone_plus
             }
         }
 
-        private void Window_Drop(object sender, DragEventArgs e)
+        private async void Window_Drop(object sender, DragEventArgs e)
         {
             if (e.Data.GetData(DataFormats.FileDrop) != null)
             {
                 string[] file = (string[])e.Data.GetData(DataFormats.FileDrop);
                 if (file != null)
                 {
-                    new Thread(() => { Dispatcher.InvokeAsync(async delegate { await LoadScript(file[0]); }); }).Start();
+                    await LoadScript(file[0]);
                 }
             }
+        }
+
+        private void SourceCode_View_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start("http://bit.ly/2qaXE4J");
+        }
+
+        private void LuaApi_View_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start("http://bit.ly/2CAUtLa");
+        }
+
+        private void About_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show(App.Name + " version " + App.Version + ", by " + App.Author + "." + Environment.NewLine + App.Description, App.Name + " - About");
         }
     }
 }

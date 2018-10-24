@@ -94,10 +94,10 @@ namespace Poke1Protocol
                     {
                         if (_client.PlayerX >= area.StartX && _client.PlayerX <= area.EndX && _client.PlayerY >= area.StartY && _client.PlayerY <= area.EndY)
                         {
-                                CurrentArea = area;
-                                DimensionX = area.EndX;
-                                DimensionY = area.EndY;
-                                break;
+                            CurrentArea = area;
+                            DimensionX = area.EndX;
+                            DimensionY = area.EndY;
+                            break;
                         }
                     }
                 if (CurrentArea is null)
@@ -126,7 +126,7 @@ namespace Poke1Protocol
                         StartY = 0
                     };
                 }
-            }            
+            }
         }
 
         public void UpdateArea()
@@ -174,7 +174,7 @@ namespace Poke1Protocol
                         StartY = 0
                     };
                     AreaUpdated?.Invoke();
-                }                
+                }
             }
         }
 
@@ -198,7 +198,7 @@ namespace Poke1Protocol
                         else if ((currentArea.EndX == area.StartX && (x == area.StartX))
                             || (currentArea.EndY == area.StartY && (y == area.StartY)))
                             return true;
-                        else if ((currentArea.StartX == area.EndX && (x - 1 == area.EndX || x + 1 == area.EndX)) 
+                        else if ((currentArea.StartX == area.EndX && (x - 1 == area.EndX || x + 1 == area.EndX))
                             || (currentArea.StartY == area.EndY && (y - 1 == area.EndY || y + 1 == area.EndY)))
                             return true;
                         else if ((currentArea.EndX == area.StartX && (x - 1 == area.StartX || x + 1 == area.StartX))
@@ -279,7 +279,7 @@ namespace Poke1Protocol
             if (Width > DimensionX)
             {
                 var eq = Width - DimensionX;
-                
+
                 if (MapDump.Areas.Count > 1)
                 {
                     var LastMap = MapDump.Areas.LastOrDefault();
@@ -301,7 +301,7 @@ namespace Poke1Protocol
                 else
                 {
                     return DimensionX + eq;
-                }             
+                }
             }
             return DimensionX;
         }
@@ -443,7 +443,7 @@ namespace Poke1Protocol
                     && OriginalNpcs.Any(n => n.PositionX == x && n.PositionY == y && n.NpcName.ToLowerInvariant().StartsWith("new"));
         }
 
-        public bool IsNormalGround (int x, int y)
+        public bool IsNormalGround(int x, int y)
         {
             if (!IsInCurrentArea(x, y)) return false;
             return TileZones[x, y] == 0
@@ -488,7 +488,7 @@ namespace Poke1Protocol
             if (IsUnmoveableCellSide(direction, destinationX, destinationY))
                 return MoveResult.Fail;
 
-            
+
             int collider = GetCollider(destinationX, destinationY);
 
             if (!IsMovementValid(direction, collider, isOnGround, isSurfing, canUseCut, canUseSmashRock, destinationX, destinationY))
@@ -649,13 +649,13 @@ namespace Poke1Protocol
 
             if (HasLink(destx, desty) && !(direction == Direction.Up && collider == 22))
                 return true;
-            
+
             switch (direction)
             {
                 case Direction.Up:
                     if (isOnGround)
                     {
-                        
+
                         if (collider == 18 || collider == 0 || collider == 20 || collider == 19 || collider == 16
                             || collider == 24 || collider == 15 || collider == 12 || collider == 11 || collider == 14)
                         {
@@ -674,7 +674,7 @@ namespace Poke1Protocol
                 case Direction.Down:
                     if (isOnGround)
                     {
-                        
+
 
                         if (collider == 0 || collider == 15 || collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 4 || collider == 12 || collider == 11 || collider == 14)
                         {

@@ -99,7 +99,7 @@ namespace Poke1Protocol
 
             byte[] array = Convert.FromBase64String(data[1]);
             var type = Type.GetType($"MAPAPI.Response.{data[0]}, MAPAPI");
-            
+
             if (type is null)
             {
                 Console.WriteLine("Received Unknown Response: " + data[0]);
@@ -147,7 +147,7 @@ namespace Poke1Protocol
             {
                 _cache.Add(name.ToLowerInvariant(), map);
             }
-            
+
 #if DEBUG
             Console.WriteLine("[Map] Received: " + RemoveExtension(name));
 #endif

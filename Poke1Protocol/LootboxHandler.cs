@@ -56,7 +56,7 @@ namespace Poke1Protocol
                         {
                             Rewards = boxes[i].Rolls;
                             BoxOpened?.Invoke(Rewards, boxes[i].Type);
-                        }                      
+                        }
                     }
                 }
             }
@@ -82,7 +82,7 @@ namespace Poke1Protocol
 
         public void HandleDaily(PSXAPI.Response.DailyLootbox lootPacket, TimeSpan? time = null)
         {
-            
+
             if (lootPacket != null)
             {
                 DailyBox = lootPacket;
@@ -207,7 +207,7 @@ namespace Poke1Protocol
                     if (t.TotalSeconds > 0.0)
                     {
                         //if (text.Contains("1 minute") && !text.Contains("minutes"))
-                            //LootBoxMessage?.Invoke("Next Free Lootbox in " + text);
+                        //LootBoxMessage?.Invoke("Next Free Lootbox in " + text);
                     }
                 }
             }

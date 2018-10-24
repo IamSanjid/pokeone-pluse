@@ -34,7 +34,7 @@ namespace Poke1Protocol
             PositionY = -data.z;
             Id = data.ID;
             _path = data.Settings.Path;
-            IsBattler = LosLength > 0 && (data.Settings.SightAction == "Move To Player" 
+            IsBattler = LosLength > 0 && (data.Settings.SightAction == "Move To Player"
                 || data.Settings.SightAction == "Player To NPC");
             CanBlockPlayer = en;
             IsVisible = true;

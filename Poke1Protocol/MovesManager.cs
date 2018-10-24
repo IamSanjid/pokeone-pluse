@@ -139,7 +139,7 @@ namespace Poke1Protocol
             Moves = Datas.Moves;
             var i = 0;
             //MoveNames[0] = string.Empty;
-            foreach(var move in Moves)
+            foreach (var move in Moves)
             {
                 if (i <= MovesCount)
                 {

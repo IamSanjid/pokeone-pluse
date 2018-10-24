@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media;
 
@@ -236,7 +237,7 @@ namespace Poke1Bot
             try
             {
                 Script.ScriptMessage += Script_ScriptMessage;
-                Script.Initialize();
+                await Script.Initialize();
             }
             catch (Exception)
             {
@@ -287,7 +288,7 @@ namespace Poke1Bot
             {
                 for (int y = 0; y < Game.Map.Height; ++y)
                 {
-                    for (int x = 0; x< Game.Map.Width; ++x)
+                    for (int x = 0; x < Game.Map.Width; ++x)
                     {
                         if (IsInArea(findArea, x, y) && IsAreaLink(x, y) && MoveToCell(x, y)) return true;
                     }
