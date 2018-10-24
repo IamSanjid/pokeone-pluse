@@ -277,7 +277,7 @@ namespace pokeone_plus
                             rect.Fill = Brushes.Black;
                         }
 
-                        if (collider == 4 || collider == 22)
+                        if ((collider == 4 || collider == 22) && !_bot.Game.Map.HasLink(x, y))
                         {
                             rect.Height = _cellWidth / 4;
                             rect.VerticalAlignment = VerticalAlignment.Top;

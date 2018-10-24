@@ -66,7 +66,7 @@ namespace Poke1Protocol
             if (string.IsNullOrEmpty(_playerName))
                 return "normal";
             var playerReq = PlayerSide == 1 ? Data.Request1 : Data.Request2;
-            var targetMove = playerReq.RequestInfo.active.FirstOrDefault(s => s.trainer.ToLowerInvariant() == _playerName.ToLowerInvariant()).moves[uid];
+            var targetMove = playerReq.RequestInfo.active.FirstOrDefault(s => s.trainer.ToLowerInvariant() == _playerName.ToLowerInvariant()).moves[uid - 1];
             if (targetMove is null || string.IsNullOrEmpty(targetMove.target))
                 return "normal";
             return targetMove.target;
