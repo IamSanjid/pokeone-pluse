@@ -247,13 +247,16 @@ namespace pokeone_plus
 
             App.InitializeVersion();
 
-            if (!string.IsNullOrEmpty(Bot.Settings.LastScript))
+            if (!string.IsNullOrEmpty(Bot.Settings.LastScript) && File.Exists(Bot.Settings.LastScript))
             {
                 ReloadScriptMenuItem.Header = "Reload " + System.IO.Path.GetFileName(Bot.Settings.LastScript) + "\tCtrl+R";
                 ReloadScriptMenuItem.IsEnabled = true;
             }
             else
+            {
                 ReloadScriptMenuItem.IsEnabled = false;
+                Bot.Settings.LastScript = null;
+            }
 
             Team = new TeamView(Bot);
             Inventory = new InventoryView(Bot);
