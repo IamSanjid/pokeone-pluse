@@ -13,5 +13,5 @@ https://github.com/IamSanjid/pokeone_pluse-script
 # Discord Link
 https://discord.gg/tkSxjWN
 
-# LUA - API(s)
+# LUA - API(s) - Thanks to Crazy3001
 https://docs.google.com/spreadsheets/d/e/2PACX-1vSD3wLvobQM-8FBIvCnMHWs3YsvHakoHECGZerOzUS60O50Ax-1WV4sex7cpObSaMyeOx6u2Fl6vHZL/pubhtml
