@@ -1,5 +1,5 @@
 # pokeone-pluse
-A simple and advanced bot for PokeOne(http://poke.one/).
+A free, open-source and advanced bot for PokeOne(http://poke.one/).
 
 # Default Scripts
 https://github.com/IamSanjid/pokeone_pluse-script
