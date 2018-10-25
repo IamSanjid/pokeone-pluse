@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections;
+using System.Text;
 
 namespace Poke1Protocol
 {
@@ -2502,7 +2503,11 @@ namespace Poke1Protocol
 
         public InventoryItem GetItemFromName(string itemName)
         {
-            return Items.FirstOrDefault(i => ItemsManager.Instance.ItemClass.items.Any(itm => itm.Name.Equals(itemName, StringComparison.InvariantCultureIgnoreCase) && i.Quantity > 0));
+            return Items.FirstOrDefault(i => (
+                (ItemsManager.Instance.ItemClass.items.Any(itm => 
+                    itm.Name.Equals(itemName, StringComparison.InvariantCultureIgnoreCase) 
+                    || itm.BattleID.Equals(itemName.RemoveAllUnknownSymbols().Replace(" ", ""), StringComparison.InvariantCultureIgnoreCase)))
+                    && i.Quantity > 0));
         }
 
         public bool HasItemName(string itemName)
@@ -2516,5 +2521,21 @@ namespace Poke1Protocol
         }
 
         public bool HasEffectName(string effectName) => GetEffectFromName(effectName) != null;
+    }
+
+    public static class StringExtention
+    {
+        public static string RemoveAllUnknownSymbols(this string s)
+        {
+            StringBuilder result = new StringBuilder();
+            for (int i = 0; i < s.Length; i++)
+            {
+                char c = s[i];
+                byte b = (byte)c;
+                if (b > 32) //In general, all characters below 32 are non-printable.
+                    result.Append(c);
+            }
+            return result.ToString();
+        }
     }
 }

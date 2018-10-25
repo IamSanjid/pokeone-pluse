@@ -213,7 +213,7 @@ namespace Poke1Bot
 
         public async Task LoadScript(string filename)
         {
-            using (var reader = new StreamReader(filename, Encoding.GetEncoding("iso-8859-1")))
+            using (var reader = new StreamReader(filename))
             {
                 var input = await reader.ReadToEndAsync();
 
