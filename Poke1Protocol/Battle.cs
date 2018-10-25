@@ -54,19 +54,19 @@ namespace Poke1Protocol
             get
             {
                 var playerReq = PlayerSide == 1 ? Data.Request1 : Data.Request2;
-                var pok = playerReq.RequestInfo.active.FirstOrDefault(s => s.trainer.ToLowerInvariant() == _playerName.ToLowerInvariant());
+                if (playerReq.RequestInfo.active is null) return null;
+                var pok = playerReq.RequestInfo.active?.FirstOrDefault(s => s?.trainer?.ToLowerInvariant() == _playerName.ToLowerInvariant());
                 if (pok is null)
-                    return playerReq.RequestInfo.active[0];
+                    return playerReq.RequestInfo.active[0] ?? null;
                 return pok;
             }
         }
 
         public string AttackTargetType(int uid)
         {
-            if (string.IsNullOrEmpty(_playerName))
+            if (string.IsNullOrEmpty(_playerName) || GetActivePokemon is null)
                 return "normal";
-            var playerReq = PlayerSide == 1 ? Data.Request1 : Data.Request2;
-            var targetMove = playerReq.RequestInfo.active.FirstOrDefault(s => s.trainer.ToLowerInvariant() == _playerName.ToLowerInvariant()).moves[uid - 1];
+            var targetMove = GetActivePokemon.moves[uid - 1];
             if (targetMove is null || string.IsNullOrEmpty(targetMove.target))
                 return "normal";
             return targetMove.target;
@@ -152,7 +152,7 @@ namespace Poke1Protocol
                             var index = req.RequestInfo.side.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
                             SelectedOpponent = index < 0 ? SelectedOpponent : index;
                             CurrentHealth = pokemon.Health;
-                            OpponentHealth = CurrentHealth;
+                            OpponentHealth = pokemon.MaxHealth;
                             OpponentGender = pokemon.Gender;
                             OpponentId = pokemon.ID;
                             OpponentLevel = pokemon.Level;
@@ -248,7 +248,7 @@ namespace Poke1Protocol
                             var index = req.RequestInfo.side.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
                             SelectedOpponent = index < 0 ? SelectedOpponent : index;
                             CurrentHealth = pokemon.Health;
-                            OpponentHealth = CurrentHealth;
+                            OpponentHealth = pokemon.MaxHealth;
                             OpponentGender = pokemon.Gender;
                             OpponentId = pokemon.ID;
                             OpponentLevel = pokemon.Level;
@@ -309,14 +309,14 @@ namespace Poke1Protocol
                 IsShiny = Poke.Shiny;
                 OpponentLevel = Poke.Level;
                 OpponentStatus = Poke.Status;
+                OpponentHealth = Poke.MaxHealth;
+                CurrentHealth = Poke.Health;
                 if (!IsWild && opponent.trainer != null)
                     TrainerName = opponent.trainer;
                 ResponseID = p2.RequestID;               
                 var opAbility = opponent.baseAbility.ToLowerInvariant().Replace(" ", "");               
             }
-
-            CurrentHealth = OpponentHealth;
-            IsTrapped = GetActivePokemon.maybeTrapped || GetActivePokemon.maybeDisabled;
+            IsTrapped = GetActivePokemon?.maybeTrapped == true || GetActivePokemon?.maybeDisabled == true;
         }
 
         public void ProcessLog(string[] logs, List<Pokemon> team, Action<string> BattleMessage)
@@ -389,7 +389,14 @@ namespace Poke1Protocol
                                 if (findMove.CurrentPoints > 0)
                                     findMove.CurrentPoints -= 1;
                             }
+
                             BattleMessage?.Invoke($"{attacker[1]} used {move}!");
+                            if (info.Length > 5)
+                            {
+                                var happened = info[5];
+                                if (happened == "[miss]")
+                                    BattleMessage?.Invoke($"Foe {attacker[1]}'s attack missed!");
+                            }
                             break;
                         case "faint":
                             var died = info[2].Split(new string[]

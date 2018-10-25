@@ -59,7 +59,7 @@ namespace Poke1Protocol
         private double _lastSentMovement;
         private DateTime _lastGameTime;
         private PSXAPI.Response.Time _lasTimePacket;
-
+        private bool _needToSendSync = false;
 
         private bool _isLoggedIn = false;
 
@@ -298,6 +298,13 @@ namespace Poke1Protocol
         private void UpdateRegularPacket()
         {
 
+            if (_needToSendSync && IsInBattle && !_battleTimeout.IsActive)
+            {
+                Resync(false);
+                _needToSendSync = false;
+                _battleTimeout.Set(1500);
+            }
+
             if (RunningForSeconds > _lastCheckPing + 2)
             {
                 _lastCheckPing = RunningForSeconds;
@@ -358,7 +365,7 @@ namespace Poke1Protocol
                     list.Add(_movementPackets[i].Actions[0]);
                     goto IL_118;
                 }
-                if (list.Count > 2)
+                if (list.Count == 2)
                     Console.WriteLine("Yes I am working like PokeOne :D");
                 SendProto(new PSXAPI.Request.Move
                 {
@@ -409,7 +416,7 @@ namespace Poke1Protocol
                 if (ApplyMovement(direction))
                 {
                     SendMovement(direction.ToMoveActions(), fromX, fromY); // PokeOne sends the (x,y) without applying the movement(but it checks the collisions) to the server.
-                    _movementTimeout.Set(IsBiking ? 200 : 300);
+                    _movementTimeout.Set(IsBiking ? 200 : 350);
                     if (Map.HasLink(PlayerX, PlayerY))
                     {
                         _teleportationTimeout.Set();
@@ -495,8 +502,6 @@ namespace Poke1Protocol
                         }
                         break;
                 }
-
-
             }
         }
 
@@ -1104,7 +1109,7 @@ namespace Poke1Protocol
                             InventoryUpdated?.Invoke();
                             break;
                         case PSXAPI.Response.Move move:
-                            OnPlayerPosition(move);
+                            OnPlayerPosition(move, true);
                             break;
                         case PSXAPI.Response.Mount mtP:
                             OnMountUpdate(mtP);
@@ -1442,7 +1447,7 @@ namespace Poke1Protocol
 
                 if (isNewPlayer || player.Actions.Any(ac => ac.Action == PSXAPI.Response.Payload.MapUserAction.Enter))
                 {
-                    if (!string.IsNullOrEmpty(user.Data?.GuildName))
+                    if (!string.IsNullOrEmpty(player?.GuildName))
                         SendRequestGuildLogo(player.GuildName);
                     PlayerAdded?.Invoke(player);
                 }
@@ -1509,21 +1514,19 @@ namespace Poke1Protocol
             {
                 ActiveBattle = new Battle(PlayerName, battle, Team);
             }
-            if (!ActiveBattle.OnlyInfo && IsInBattle && IsLoggedIn && ActiveBattle.Turn <= 1)
+
+            if (!ActiveBattle.OnlyInfo && IsInBattle && IsLoggedIn && ActiveBattle.Turn <= 1 && !ActiveBattle.IsUpdated)
             {
                 // encounter message coz the server doesn't send it.
-                if (!ActiveBattle.IsUpdated)
-                {
-                    var firstEncounterMessage = ActiveBattle.IsWild ? ActiveBattle.IsShiny ?
+                _needToSendSync = true;
+                var firstEncounterMessage = ActiveBattle.IsWild ? ActiveBattle.IsShiny ?
                         $"A wild shiny {PokemonManager.Instance.Names[ActiveBattle.OpponentId]} has appeared!"
                         : $"A wild {PokemonManager.Instance.Names[ActiveBattle.OpponentId]} has appeared!" : ActiveBattle.IsShiny ?
                         $"Opponent sent out shiny {PokemonManager.Instance.Names[ActiveBattle.OpponentId]}!"
                         : $"Opponent sent out {PokemonManager.Instance.Names[ActiveBattle.OpponentId]}!";
-                    BattleMessage?.Invoke(firstEncounterMessage);
-                }
+                BattleMessage?.Invoke(firstEncounterMessage);
                 _battleTimeout.Set(Rand.Next(4000, 6000));
-                BattleStarted?.Invoke();
-                Resync(false);
+                BattleStarted?.Invoke();                
             }
 
             if (ActiveBattle != null)
@@ -1768,13 +1771,16 @@ namespace Poke1Protocol
                     mapChatChannel = "map:" + movement.Map;
                     if (mapChatChannel != prev && MapName != movement.Map)
                     {
+                        if (Channels.ContainsKey("Map") && !string.IsNullOrEmpty(Channels["Map"].ChannelName))
+                            CloseChannel(Channels["Map"].ChannelName);
+
                         SendJoinChannel(mapChatChannel);
                     }
 
                     LoadMap(movement.Map);
                 }
                 if (sync)
-                    Resync(MapName != movement.Map);
+                    Resync(MapName == movement.Map);
             }
             else if (proto is PSXAPI.Response.Sync syncP)
             {
@@ -1791,13 +1797,15 @@ namespace Poke1Protocol
                     mapChatChannel = "map:" + syncP.Map;
                     if (mapChatChannel != prev && MapName != syncP.Map)
                     {
+                        if (Channels.ContainsKey("Map") && !string.IsNullOrEmpty(Channels["Map"].ChannelName))
+                            CloseChannel(Channels["Map"].ChannelName);
                         SendJoinChannel(mapChatChannel);
                     }
 
                     LoadMap(syncP.Map);
                 }
                 if (sync)
-                    Resync(MapName != syncP.Map);
+                    Resync(MapName == syncP.Map);
 
             }
 
@@ -1890,10 +1898,7 @@ namespace Poke1Protocol
             OnTeamUpdated(login.Inventory.ActivePokemon);
             OnInventoryUpdate(login.Inventory);
             OnMountUpdate(login.Mount);
-            if (ActiveBattle != null)
-                OnPlayerPosition(login.Position, true);
-            else
-                OnPlayerPosition(login.Position, false);
+            OnPlayerPosition(login.Position, false);
 
             if (login.Pokedex != null)
             {
@@ -1976,9 +1981,7 @@ namespace Poke1Protocol
                     if (Channels.ContainsKey(join.Channel))
                     {
                         if (Channels[join.Channel].ChannelName != rchannelName)
-                        {
-                            if (!string.IsNullOrEmpty(Channels[join.Channel].ChannelName))
-                                CloseChannel(Channels[join.Channel].ChannelName);
+                        {                            
                             Channels[join.Channel] = new ChatChannel("default", join.Channel, rchannelName);
                         }
                     }

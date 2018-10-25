@@ -35,6 +35,7 @@ namespace Poke1Protocol
             { 17, true },
             { 18, true }
         };
+        public Dictionary<string, List<Tuple<int, int>>> AreaLinks { get; } 
         public List<LINKData> Links { get; }
         public MAPAPI.Response.MapDump MapDump { get; }
         public int[,] Colliders { get; }
@@ -77,6 +78,7 @@ namespace Poke1Protocol
             IsSessioned = isSessioned;
             Npcs = new List<Npc>();
             OriginalNpcs = new List<Npc>();
+            AreaLinks = new Dictionary<string, List<Tuple<int, int>>>();
             if (MapDump.NPCs != null && MapDump?.NPCs.Count > 0)
             {
                 foreach (var npc in MapDump.NPCs)
@@ -86,6 +88,12 @@ namespace Poke1Protocol
                 NpcReceieved?.Invoke(OriginalNpcs);
             }
             Links = MapDump.Links;
+
+            ProcessAreas();
+        }
+
+        private void ProcessAreas()
+        {
 
             if (_client.IsLoggedIn)
             {
@@ -127,6 +135,39 @@ namespace Poke1Protocol
                     };
                 }
             }
+
+            foreach(var ar in MapDump.Areas)
+            {
+                var destination = ar.AreaName.ToUpperInvariant();
+                if (!AreaLinks.ContainsKey(destination))
+                {
+                    AreaLinks.Add(destination, new List<Tuple<int, int>>());
+                }
+                for (int x = ar.StartX; x <= ar.EndX; ++x)
+                {
+                    if (GetCollider(x, ar.StartY) != 1) {
+                        if (IsInArea(ar, x, ar.StartY))
+                            AreaLinks[destination].Add(new Tuple<int, int>(x, ar.StartY));
+                        else if (IsInArea(ar, x, ar.StartY - 1))
+                            AreaLinks[destination].Add(new Tuple<int, int>(x, ar.StartY - 1));
+                        else if (IsInArea(ar, x, ar.StartY + 1))
+                            AreaLinks[destination].Add(new Tuple<int, int>(x, ar.StartY + 1));
+                    }
+                }
+                for (int x = ar.StartX; x <= ar.EndX; ++x)
+                {
+                    if (GetCollider(x, ar.EndY) != 1)
+                    {
+                        if (IsInArea(ar, x, ar.EndY))
+                            AreaLinks[destination].Add(new Tuple<int, int>(x, ar.EndY));
+                        else if (IsInArea(ar, x, ar.EndY - 1))
+                            AreaLinks[destination].Add(new Tuple<int, int>(x, ar.EndY - 1));
+                        else if (IsInArea(ar, x, ar.EndY + 1))
+                            AreaLinks[destination].Add(new Tuple<int, int>(x, ar.EndY + 1));
+                    }
+                }
+            }
+
         }
 
         public void UpdateArea()
@@ -176,6 +217,54 @@ namespace Poke1Protocol
                     AreaUpdated?.Invoke();
                 }
             }
+        }
+
+        public IEnumerable<Tuple<int, int>> GetNearestLinks(string linkName, int x, int y)
+        {
+            if (AreaLinks.ContainsKey(linkName))
+            {
+                return AreaLinks[linkName].OrderBy(link => GameClient.DistanceBetween(x, y, link.Item1, link.Item2));
+            }
+            return null;
+        }
+
+        private bool IsInArea(MAPAPI.Response.Area area, int x, int y)
+        {
+            if (x >= area.StartX && x <= area.EndX && y >= area.StartY && y <= area.EndY)
+            {
+                if (MapDump.Areas.Count > 1)
+                {
+                    var lastMap = MapDump.Areas.LastOrDefault();
+                    var firstMap = MapDump.Areas.FirstOrDefault();
+
+                    if (lastMap.AreaName.ToLowerInvariant() == area.AreaName.ToLowerInvariant())
+                    {
+                        var index = MapDump.Areas.IndexOf(area) - 1;
+                        if (y == MapDump.Areas[index].StartY || x == MapDump.Areas[index].StartX)
+                            return false;
+                    }
+                    else if (firstMap.AreaName.ToLowerInvariant() == area.AreaName.ToLowerInvariant())
+                    {
+                        var index = MapDump.Areas.IndexOf(area) + 1;
+                        if (y == MapDump.Areas[index].EndY || x == MapDump.Areas[index].EndX)
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        var previousIndex = MapDump.Areas.IndexOf(area) - 1;
+                        var afterIndex = MapDump.Areas.IndexOf(area) + 1;
+
+                        if (y == MapDump.Areas[previousIndex].StartY || x == MapDump.Areas[previousIndex].StartX
+                            || y == MapDump.Areas[afterIndex].EndY || x == MapDump.Areas[afterIndex].EndX)
+                            return false;
+
+                    }
+                }
+                return true;
+            }
+            return false;
         }
 
         public bool IsAreaLink(int x, int y)

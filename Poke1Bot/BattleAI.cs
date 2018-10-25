@@ -199,7 +199,7 @@ namespace Poke1Bot
                     continue;
                 }
 
-                if (!IsMoveOffensive(move, moveData) || _client.ActiveBattle.GetActivePokemon.moves[i].disabled)
+                if (!IsMoveOffensive(move, moveData) || _client.ActiveBattle.GetActivePokemon?.moves[i]?.disabled == true)
                     continue;
 
                 PokemonType attackType = PokemonTypeExtensions.FromName(moveData.Type);

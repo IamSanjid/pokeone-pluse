@@ -66,7 +66,7 @@ namespace Poke1Bot
 
             Console.WriteLine(pc);
 
-            var packet = @"Battle CiR8LS1jYXRjaHxwMXwxfHBva2JhbGx8NHwxfDB8TmVyYW55eGQKBnxzcGxpdAoJfGNob2ljZXx8Cg18Y2hvaWNlfHBhc3N8ChZ8Y2hvaWNlfHxtb3ZlIHRhY2tsZSAxChp8Y2hvaWNlfHBhc3N8bW92ZSB0YWNrbGUgMQoBfAoSfGZhaW50fHAyYTogUGlkZ2V5CgF8Cgd8d2lufHAxIAFIAVABWAFgFw==";
+            var packet = @"Battle CgZ8c3BsaXQKCXxjaG9pY2V8fAoWfGNob2ljZXxtb3ZlIHdhdGVyZ3VufAoYfGNob2ljZXx8bW92ZSBoeXBub3NpcyAxCiV8Y2hvaWNlfG1vdmUgd2F0ZXJndW58bW92ZSBoeXBub3NpcyAxCgF8Cit8bW92ZXxwMWE6IFNxdWlydGxlfFdhdGVyIEd1bnxwMmE6IEhvb3Rob290CgZ8c3BsaXQKG3wtZGFtYWdlfHAyYTogSG9vdGhvb3R8Mi80OAobfC1kYW1hZ2V8cDJhOiBIb290aG9vdHwyLzQ4Cht8LWRhbWFnZXxwMmE6IEhvb3Rob290fDEvMTkKG3wtZGFtYWdlfHAyYTogSG9vdGhvb3R8MS8xOQoxfG1vdmV8cDJhOiBIb290aG9vdHxIeXBub3Npc3xwMWE6IFNxdWlydGxlfFttaXNzXQoifC1taXNzfHAyYTogSG9vdGhvb3R8cDFhOiBTcXVpcnRsZQoBfAoHfHVwa2VlcAoHfHR1cm58NBLDAwoCcDEQBBq6AwgEEAEymwEKHAoGVGFja2xlEgZ0YWNrbGUYIyAjKgZub3JtYWwKKgoJVGFpbCBXaGlwEgh0YWlsd2hpcBgeIB4qD2FsbEFkamFjZW50Rm9lcwohCglXYXRlciBHdW4SCHdhdGVyZ3VuGBIgGSoGbm9ybWFsCh4KCFdpdGhkcmF3Egh3aXRoZHJhdxgoICgqBHNlbGY6BkFzc2hseUCQ2crtBjqVAgoCcDESAnAxGooCCgxwMTogU3F1aXJ0bGUSD1NxdWlydGxlLCBMNiwgTRoFMjIvMjIgASoKCAkQDhgLIA4oDDIGdGFja2xlMgh0YWlsd2hpcDIId2F0ZXJndW4yCHdpdGhkcmF3Ogd0b3JyZW50QgBKCHBva2ViYWxsUgZBc3NobHlYkNnK7QZiHAoGVGFja2xlEgZ0YWNrbGUYIyAjKgZub3JtYWxiKgoJVGFpbCBXaGlwEgh0YWlsd2hpcBgeIB4qD2FsbEFkamFjZW50Rm9lc2IhCglXYXRlciBHdW4SCHdhdGVyZ3VuGBIgGSoGbm9ybWFsYh4KCFdpdGhkcmF3Egh3aXRoZHJhdxgoICgqBHNlbGYaqAMKAnAyEAQanwMIBBABMo8BCiIKCUZvcmVzaWdodBIJZm9yZXNpZ2h0GCcgKCoGbm9ybWFsCiMKBUdyb3dsEgVncm93bBgoICgqD2FsbEFkamFjZW50Rm9lcwocCgZUYWNrbGUSBnRhY2tsZRgjICMqBm5vcm1hbAogCghIeXBub3NpcxIIaHlwbm9zaXMYEiAUKgZub3JtYWxA6J7L/wI6hgIKAnAyEgJwMhr7AQoMcDI6IEhvb3Rob290Eg9Ib290aG9vdCwgTDQsIE0aBDEvMTkgASoKCAgQBxgIIAkoCTIJZm9yZXNpZ2h0MgVncm93bDIGdGFja2xlMghoeXBub3NpczoHa2VlbmV5ZUIASghwb2tlYmFsbFjonsv/AmIiCglGb3Jlc2lnaHQSCWZvcmVzaWdodBgnICgqBm5vcm1hbGIjCgVHcm93bBIFZ3Jvd2wYKCAoKg9hbGxBZGphY2VudEZvZXNiHAoGVGFja2xlEgZ0YWNrbGUYIyAjKgZub3JtYWxiIAoISHlwbm9zaXMSCGh5cG5vc2lzGBIgFCoGbm9ybWFsKgZBc3NobHlIAVABWAFgLA==";
             var data = packet.Split(" ".ToCharArray());
 
             byte[] array = Convert.FromBase64String(data[1]);
@@ -81,10 +81,16 @@ namespace Poke1Bot
                 {
                     array
                 }) as PSXAPI.IProto;
+                Console.WriteLine(ToJsonString(proto));
                 //Console.WriteLine($"MapLoad: {(proto as PSXAPI.Request.BattleBroadcast).RequestID}, ID: {(proto as PSXAPI.Request.BattleBroadcast)._Name.ToString()}");
             }
 #endif
         }
+        private static string ToJsonString(PSXAPI.IProto p) => Newtonsoft.Json.JsonConvert.SerializeObject(p, new Newtonsoft.Json.JsonSerializerSettings
+        {
+            Converters = { new Newtonsoft.Json.Converters.StringEnumConverter() },
+            Formatting = Newtonsoft.Json.Formatting.Indented
+        });
 
         public void LogMessage(string message)
         {
@@ -279,18 +285,15 @@ namespace Poke1Bot
             return result;
         }
 
-        public bool MoveToAreaLink(string destinationArea)
+        public bool MoveToAreaLink(string destinationMap)
         {
-            var findArea = Game.Map.MapDump.Areas.Find(ar => ar.AreaName.ToUpperInvariant() == destinationArea.ToUpperInvariant());
-
-            if (findArea != null)
+            IEnumerable<Tuple<int, int>> nearest = Game.Map.GetNearestLinks(destinationMap, Game.PlayerX, Game.PlayerY);
+            if (nearest != null)
             {
-                for (int y = 0; y < Game.Map.Height; ++y)
+                foreach (Tuple<int, int> link in nearest)
                 {
-                    for (int x = 0; x < Game.Map.Width; ++x)
-                    {
-                        if (IsInArea(findArea, x, y) && IsAreaLink(x, y) && MoveToCell(x, y)) return true;
-                    }
+                    if (MoveToCell(link.Item1, link.Item2))
+                        return true;
                 }
             }
             return false;
