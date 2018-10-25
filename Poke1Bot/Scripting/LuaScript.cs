@@ -273,6 +273,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["useItem"] = new Func<string, bool>(UseItem);
                 _lua.Globals["useItemOnPokemon"] = new Func<string, int, bool>(UseItemOnPokemon);
                 _lua.Globals["useItemOnMove"] = new Func<string, string, int, bool>(UseItemOnMove);
+                _lua.Globals["useEquippedMount"] = new Func<bool>(UseEquippedMount);
 
                 // File editing actions
                 _lua.Globals["logToFile"] = new Action<string, DynValue, bool>(LogToFile);
@@ -1961,6 +1962,13 @@ namespace Poke1Bot.Scripting
                 return null;
             }
             return destination.DestinationID.ToString();
+        }
+
+        // API: Uses an equipped mount.
+        private bool UseEquippedMount()
+        {
+            if (!ValidateAction("useEquippedMount", false)) return false;
+            return ExecuteAction(Bot.Game.UseMount());
         }
     }
 }

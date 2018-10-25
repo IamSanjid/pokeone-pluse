@@ -994,6 +994,21 @@ namespace Poke1Protocol
             });
         }
 
+        private void SendUseMount()
+        {
+            SendProto(new PSXAPI.Request.Mount());
+        }
+
+        public bool UseMount()
+        {
+            if (IsMapLoaded && Map.IsOutside)
+            {
+                SendUseMount();
+                return true;
+            }
+            return false;
+        }
+
         public TimeSpan PingUpdateTime
         {
             get => pingUpdateTime;
@@ -1603,7 +1618,7 @@ namespace Poke1Protocol
 
             _currentScriptType = type;
             _currentScript = data;
-            if (IsLoggedIn && _cachedScripts.Count > 0) // processing _cachedScripts, these scripts are received before getting fully logged int!
+            if (IsLoggedIn && _cachedScripts.Count > 0 && IsMapLoaded) // processing _cachedScripts, these scripts are received before getting fully logged int!
             {
                 switch (type)
                 {
