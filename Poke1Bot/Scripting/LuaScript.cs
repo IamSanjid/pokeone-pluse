@@ -208,6 +208,13 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["isNight"] = new Func<bool>(IsNight);
                 _lua.Globals["isOutside"] = new Func<bool>(IsOutside);
                 _lua.Globals["getDestinationId"] = new Func<int, int, string>(GetDestinationId);
+                _lua.Globals["isTrainerInfoReceived"] = new Func<bool>(IsTrainerInfoReceived);
+                _lua.Globals["askForTrainerInfo"] = new Func<bool>(AskForTrainerInfo);
+                _lua.Globals["getTrainerKantoLevel"] = new Func<int>(GetTrainerKantoLevel);
+                _lua.Globals["getTrainerJohtoLevel"] = new Func<int>(GetTrainerJohtoLevel);
+                _lua.Globals["hasBadge"] = new Func<string, bool>(HasBadge);
+                _lua.Globals["hasBadgeId"] = new Func<int, bool>(HasBadgeId);
+                _lua.Globals["countBadges"] = new Func<int>(CountBadges);
 
                 // Quest conditions
                 _lua.Globals["isMainQuestId"] = new Func<string, bool>(IsMainQuestId);
@@ -304,7 +311,7 @@ namespace Poke1Bot.Scripting
             }
             CallContent(_content);
             IsLoaded = true;
-        }
+        }        
 
         private void CallFunctionSafe(string functionName, params object[] args)
         {
@@ -2175,6 +2182,75 @@ namespace Poke1Bot.Scripting
         {
             if (!ValidateAction("useEquippedMount", false)) return false;
             return ExecuteAction(Bot.Game.UseMount());
+        }
+
+        // API: Counts received badges.
+
+        private int CountBadges()
+        {
+            if(Bot.Game.PlayerStats is null)
+            {
+                Fatal("error: 'countBadges' haven't received player stats yet.");
+                return -1;
+            }
+            return Bot.Game.Badges.Count;
+        }
+
+        // API: Retruns true if player contains specified badge id.
+        private bool HasBadgeId(int id)
+        {
+            if (Bot.Game.PlayerStats is null)
+            {
+                Fatal("error: 'hasBadgeId' haven't received player stats yet.");
+                return false;
+            }
+            return Bot.Game.Badges.ContainsKey(id);
+        }
+
+        // API: Retruns true if player contains specified badge.
+        private bool HasBadge(string name)
+        {
+            if (Bot.Game.PlayerStats is null)
+            {
+                Fatal("error: 'hasBadge' haven't received player stats yet.");
+                return false;
+            }
+            return Bot.Game.Badges.Values.Any(badge => badge.ToUpperInvariant() == name.ToUpperInvariant());
+        }
+
+        // API: Retruns player's kanto level.
+        private int GetTrainerKantoLevel()
+        {
+            if (Bot.Game.PlayerStats is null)
+            {
+                Fatal("error: 'getTrainerKantoLevel' haven't received player stats yet.");
+                return -1;
+            }
+            return Bot.Game.PlayerStats.KantoLevel;
+        }
+
+        // API: Returns player's johto level.
+        private int GetTrainerJohtoLevel()
+        {
+            if (Bot.Game.PlayerStats is null)
+            {
+                Fatal("error: 'getTrainerJohtoLevel' haven't received player stats yet.");
+                return -1;
+            }
+            return Bot.Game.PlayerStats.JohtoLevel;
+        }
+
+        // API: Asks for trainer info.
+        private bool AskForTrainerInfo()
+        {
+            if (!ValidateAction("askForTrainerInfo", false)) return false;
+            return ExecuteAction(Bot.Game.AskForPlayerStats());
+        }
+
+        // API: Returns true if have received trainer info.
+        private bool IsTrainerInfoReceived()
+        {
+            return Bot.Game.PlayerStats != null;
         }
     }
 }

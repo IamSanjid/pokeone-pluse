@@ -69,6 +69,7 @@
     <Compile Include="PlayerEffect.cs" />
     <Compile Include="PlayerInfos.cs" />
     <Compile Include="PlayerQuest.cs" />
+    <Compile Include="PlayerStats.cs" />
     <Compile Include="PokedexPokemon.cs" />
     <Compile Include="Pokemon.cs" />
     <Compile Include="PokemonAbility.cs" />

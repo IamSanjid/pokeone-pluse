@@ -157,7 +157,6 @@ namespace Poke1Bot
 
             if (PokemonEvolver.Update()) return;
             if (MoveTeacher.Update()) return;
-            if (QuestManager.IsWorking) return;
 
             if (Game.IsMapLoaded && Game.AreNpcReceived && Game.IsInactive)
             {
