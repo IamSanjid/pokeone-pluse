@@ -213,8 +213,13 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["isMainQuest"] = new Func<string, bool>(IsMainQuest);
                 _lua.Globals["isQuestIdCompleted"] = new Func<string, bool>(IsQuestIdCompleted);
                 _lua.Globals["isQuestCompleted"] = new Func<string, bool>(IsQuestCompleted);
+                _lua.Globals["isQuestPathRequested"] = new Func<string, bool>(IsQuestPathRequested);
+                _lua.Globals["isQuestIdPathRequested"] = new Func<string, bool>(IsQuestIdPathRequested);
+                _lua.Globals["getQuestId"] = new Func<string, string>(GetQuestId);
                 _lua.Globals["getQuestIdType"] = new Func<string, string>(GetQuestIdType);
                 _lua.Globals["getQuestType"] = new Func<string, string>(GetQuestType);
+                _lua.Globals["getMainQuestName"] = new Func<string>(GetMainQuestName);
+                _lua.Globals["getMainQuestId"] = new Func<string>(GetMainQuestId);
 
                 // Quest actions
                 _lua.Globals["requestPathForQuestId"] = new Func<string, bool>(RequestPathForQuestId);
@@ -1951,6 +1956,28 @@ namespace Poke1Bot.Scripting
                 && q.Completed) != null;
         }
 
+        // API: Retruns true if path request was sent of the specified quest name.
+        private bool IsQuestPathRequested(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return false;
+            if (Bot.QuestManager.SelectedQuest != null && Bot.QuestManager.SelectedQuest.Name == name)
+                return Bot.QuestManager.SelectedQuest.IsRequestedForPath;
+
+            return Bot.Game.Quests.Count > 0 && Bot.Game.Quests.Find(q => q.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase)
+                && q.IsRequestedForPath) != null;
+        }
+
+        // API: Retruns true if path request was sent of the specified quest name.
+        private bool IsQuestIdPathRequested(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return false;
+            if (Bot.QuestManager.SelectedQuest != null && Bot.QuestManager.SelectedQuest.Id == id)
+                return Bot.QuestManager.SelectedQuest.IsRequestedForPath;
+
+            return Bot.Game.Quests.Count > 0 && Bot.Game.Quests.Find(q => q.Id.Equals(id, StringComparison.InvariantCultureIgnoreCase)
+                && q.IsRequestedForPath) != null;
+        }
+
         // Returns quest type from id as string.
         private string GetQuestIdType(string id)
         {
@@ -1967,13 +1994,42 @@ namespace Poke1Bot.Scripting
             return findQuest != null ? findQuest.Type.ToString() : null;
         }
 
+        // API: Retruns id of a spcefied quest in string format.
+        private string GetQuestId(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return null;
+            var findQuest = Bot.Game.Quests.Find(q => q.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+            return findQuest != null ? findQuest.Id : null;
+        }
+
+        // API: Returns the main quest's name.
+        private string GetMainQuestName()
+        {
+            var findQuest = Bot.Game.Quests.Find(q => q.Type == PSXAPI.Response.QuestType.Main);
+            return findQuest != null ? findQuest.Name : null;
+        }
+
+        // API: Returns the main quest's Id.
+        private string GetMainQuestId()
+        {
+            var findQuest = Bot.Game.Quests.Find(q => q.Type == PSXAPI.Response.QuestType.Main);
+            return findQuest != null ? findQuest.Id : null;
+        }
+        
+
         // API: Requests path for spceified quest.
         private bool RequestPathForQuest(string name)
         {
             if (string.IsNullOrEmpty(name) || !ValidateAction("requestPathForQuest", false)) return false;
             var findQuest = Bot.Game.Quests.Find(q => q.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
             if (findQuest is null) return false;
-            return !findQuest.Completed ? ExecuteAction(Bot.Game.RequestPathForInCompleteQuest(findQuest)) : ExecuteAction(Bot.Game.RequestPathForCompletedQuest(findQuest));
+            Bot.QuestManager.SelectedQuest = findQuest;
+            if (findQuest.IsRequestedForPath)
+            {
+                return ExecuteAction(true);
+            }
+            return !findQuest.Completed ? ExecuteAction(Bot.Game.RequestPathForInCompleteQuest(findQuest)) : 
+                ExecuteAction(Bot.Game.RequestPathForCompletedQuest(findQuest));
         }
 
         // API: Requests path for spceified quest.
@@ -1982,7 +2038,13 @@ namespace Poke1Bot.Scripting
             if (string.IsNullOrEmpty(id) || !ValidateAction("requestPathForQuestId", false)) return false;
             var findQuest = Bot.Game.Quests.Find(q => q.Id.Equals(id, StringComparison.InvariantCultureIgnoreCase));
             if (findQuest is null) return false;
-            return !findQuest.Completed ? ExecuteAction(Bot.Game.RequestPathForInCompleteQuest(findQuest)) : ExecuteAction(Bot.Game.RequestPathForCompletedQuest(findQuest));
+            Bot.QuestManager.SelectedQuest = findQuest;
+            if (findQuest.IsRequestedForPath)
+            {
+                return ExecuteAction(true);
+            }
+            return !findQuest.Completed ? ExecuteAction(Bot.Game.RequestPathForInCompleteQuest(findQuest)) : 
+                ExecuteAction(Bot.Game.RequestPathForCompletedQuest(findQuest));
         }
 
         // API: Gets destination id of a specified link.

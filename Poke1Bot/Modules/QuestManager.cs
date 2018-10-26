@@ -45,6 +45,8 @@ namespace Poke1Bot.Modules
                 var getLink = _bot.Game.Map.Links.Find(l => l.ID == link);
                 if (getLink != null)
                 {
+                    if (SelectedQuest is null is false)
+                        SelectedQuest.UpdateRequests(false);
                     _haveToMoveLink = getLink;
                     break;
                 }

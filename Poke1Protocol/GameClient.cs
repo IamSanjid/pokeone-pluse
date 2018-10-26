@@ -1079,7 +1079,8 @@ namespace Poke1Protocol
 
         public bool RequestPathForInCompleteQuest(PlayerQuest quest)
         {
-            if (quest.Target == Guid.Empty || quest.Completed) return false;
+            if (quest.Target == Guid.Empty || quest.Completed || quest.IsRequestedForPath) return false;
+            quest.UpdateRequests(true);
             SendProto(new PSXAPI.Request.Path
             {
                 Request = quest.Target
@@ -1089,7 +1090,8 @@ namespace Poke1Protocol
 
         public bool RequestPathForCompletedQuest(PlayerQuest quest)
         {
-            if (quest.QuestData.TargetCompleted == Guid.Empty || !quest.Completed) return false;
+            if (quest.QuestData.TargetCompleted == Guid.Empty || !quest.Completed || quest.IsRequestedForPath) return false;
+            quest.UpdateRequests(true);
             SendProto(new PSXAPI.Request.Path
             {
                 Request = quest.QuestData.TargetCompleted
@@ -2288,7 +2290,7 @@ namespace Poke1Protocol
                     SendUseItem(item.Id);
                     _itemUseTimeout.Set();
                 }
-                else if (!_battleTimeout.IsActive && IsInBattle && item.CanBeUsedInBattle)
+                else if (!_battleTimeout.IsActive && IsInBattle && item.CanBeUsedInBattle && !item.CanBeUsedOnPokemonInBattle)
                 {
                     SendUseItemInBattle(item.Id, ActiveBattle.SelectedOpponent + 1, moveId);
                     _battleTimeout.Set(Rand.Next(1500, 2000));
@@ -2563,9 +2565,10 @@ namespace Poke1Protocol
         public InventoryItem GetItemFromName(string itemName)
         {
             return Items.FirstOrDefault(i => (
-                (ItemsManager.Instance.ItemClass.items.Any(itm => 
-                    itm.Name.Equals(itemName, StringComparison.InvariantCultureIgnoreCase) 
-                    || itm.BattleID.Equals(itemName.RemoveAllUnknownSymbols().Replace(" ", ""), StringComparison.InvariantCultureIgnoreCase)))
+                (i.Name.Equals(itemName, StringComparison.InvariantCultureIgnoreCase)
+                    || (ItemsManager.Instance.ItemClass.items.Any(itm => 
+                    itm.BattleID.Equals(itemName.RemoveAllUnknownSymbols().Replace(" ", ""), StringComparison.InvariantCultureIgnoreCase)
+                    && itm.ID == i.Id)))
                     && i.Quantity > 0));
         }
 
