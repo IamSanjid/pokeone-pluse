@@ -204,6 +204,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["getTime"] = new GetTimeDelegate(GetTime);
                 _lua.Globals["isMorning"] = new Func<bool>(IsMorning);
                 _lua.Globals["isNoon"] = new Func<bool>(IsNoon);
+                _lua.Globals["isEvening"] = new Func<bool>(IsEvening);
                 _lua.Globals["isNight"] = new Func<bool>(IsNight);
                 _lua.Globals["isOutside"] = new Func<bool>(IsOutside);
                 _lua.Globals["getDestinationId"] = new Func<int, int, string>(GetDestinationId);
@@ -218,6 +219,14 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["getQuestId"] = new Func<string, string>(GetQuestId);
                 _lua.Globals["getQuestIdType"] = new Func<string, string>(GetQuestIdType);
                 _lua.Globals["getQuestType"] = new Func<string, string>(GetQuestType);
+                _lua.Globals["getQuestTargetArea"] = new Func<string, string>(GetQuestTargetArea);
+                _lua.Globals["getQuestIdTargetArea"] = new Func<string, string>(GetQuestIdTargetArea);
+                _lua.Globals["getQuestTargetCompletedArea"] = new Func<string, string>(GetQuestTargetCompletedArea);
+                _lua.Globals["getQuestIdTargetCompletedArea"] = new Func<string, string>(GetQuestIdTargetCompletedArea);
+                _lua.Globals["getQuestSourceNpc"] = new Func<string, string>(GetQuestSourceNpc);
+                _lua.Globals["getQuestIdSourceNpc"] = new Func<string, string>(GetQuestIdSourceNpc);
+                _lua.Globals["getQuestSourceArea"] = new Func<string, string>(GetQuestSourceArea);
+                _lua.Globals["getQuestIdSourceArea"] = new Func<string, string>(GetQuestIdSourceArea);
                 _lua.Globals["getMainQuestName"] = new Func<string>(GetMainQuestName);
                 _lua.Globals["getMainQuestId"] = new Func<string>(GetMainQuestId);
 
@@ -1073,7 +1082,7 @@ namespace Poke1Bot.Scripting
         // API: Return the current in game hour and minute.
         private int GetTime(out int minute)
         {
-            DateTime dt = Convert.ToDateTime(Bot.Game.GameTime);
+            DateTime dt = Convert.ToDateTime(Bot.Game.PokeTime);
             minute = dt.Minute;
             return dt.Hour;
         }
@@ -1081,8 +1090,8 @@ namespace Poke1Bot.Scripting
         // API: Return true if morning time.
         private bool IsMorning()
         {
-            DateTime dt = Convert.ToDateTime(Bot.Game.GameTime);
-            if (dt.Hour >= 4 && dt.Hour < 10)
+            if (Bot.Game.LastTimePacket != null
+                && Bot.Game.LastTimePacket.GameDayTime == PSXAPI.Response.GameDayTime.Morning)
             {
                 return true;
             }
@@ -1092,8 +1101,19 @@ namespace Poke1Bot.Scripting
         // API: Return true if noon time.
         private bool IsNoon()
         {
-            DateTime dt = Convert.ToDateTime(Bot.Game.GameTime);
-            if (dt.Hour >= 10 && dt.Hour < 20)
+            if (Bot.Game.LastTimePacket != null
+                 && Bot.Game.LastTimePacket.GameDayTime == PSXAPI.Response.GameDayTime.Day)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        // API: Return true if evening time.
+        private bool IsEvening()
+        {
+            if (Bot.Game.LastTimePacket != null
+                && Bot.Game.LastTimePacket.GameDayTime == PSXAPI.Response.GameDayTime.Evening)
             {
                 return true;
             }
@@ -1103,8 +1123,8 @@ namespace Poke1Bot.Scripting
         // API: Return true if night time.
         private bool IsNight()
         {
-            DateTime dt = Convert.ToDateTime(Bot.Game.GameTime);
-            if (dt.Hour >= 20 || dt.Hour < 4)
+            if (Bot.Game.LastTimePacket != null 
+                && Bot.Game.LastTimePacket.GameDayTime == PSXAPI.Response.GameDayTime.Night)
             {
                 return true;
             }
@@ -1333,7 +1353,7 @@ namespace Poke1Bot.Scripting
                 Fatal($"error: 'moveToLink' there is no link id which matches this {id} id.");
                 return false;
             }
-            return ExecuteAction(Bot.MoveToCell(findLink.x, -findLink.y));
+            return ExecuteAction(Bot.MoveToCell(findLink.x, -findLink.z));
         }
 
         // API: Moves to a random accessible cell of the specified rectangle.
@@ -2035,7 +2055,72 @@ namespace Poke1Bot.Scripting
             var findQuest = Bot.Game.Quests.Find(q => q.Type == PSXAPI.Response.QuestType.Main);
             return findQuest != null ? findQuest.Id : null;
         }
-        
+
+        // API: Returns target area of a spcefied quest name.
+        private string GetQuestTargetArea(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return null;
+            var findQuest = Bot.Game.Quests.Find(q => q.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+            return findQuest != null ? findQuest.TargetArea : null;
+        }
+
+        // API: Returns target area of a spcefied quest id.
+        private string GetQuestIdTargetArea(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return null;
+            var findQuest = Bot.Game.Quests.Find(q => q.Id.Equals(id, StringComparison.InvariantCultureIgnoreCase));
+            return findQuest != null ? findQuest.TargetArea : null;
+        }
+
+        // API: Returns target completed area of a spcefied quest name.
+        private string GetQuestTargetCompletedArea(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return null;
+            var findQuest = Bot.Game.Quests.Find(q => q.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+            return findQuest != null ? findQuest.TargetCompletedArea : null;
+        }
+
+        // API: Returns target completed area of a spcefied quest id.
+        private string GetQuestIdTargetCompletedArea(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return null;
+            var findQuest = Bot.Game.Quests.Find(q => q.Id.Equals(id, StringComparison.InvariantCultureIgnoreCase));
+            return findQuest != null ? findQuest.TargetCompletedArea : null;
+        }
+
+        // API: Returns source npc name of a spcefied quest name.
+        private string GetQuestSourceNpc(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return null;
+            var findQuest = Bot.Game.Quests.Find(q => q.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+            return findQuest != null ? findQuest.SourceNPC : null;
+        }
+
+        // API: Returns source npc name of a spcefied quest id.
+        private string GetQuestIdSourceNpc(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return null;
+            var findQuest = Bot.Game.Quests.Find(q => q.Id.Equals(id, StringComparison.InvariantCultureIgnoreCase));
+            return findQuest != null ? findQuest.SourceNPC : null;
+        }
+
+        // API: Returns source area of a spcefied quest name.
+        private string GetQuestSourceArea(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return null;
+            var findQuest = Bot.Game.Quests.Find(q => q.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+            return findQuest != null ? findQuest.SourceArea : null;
+        }
+
+        // API: Returns source area of a spcefied quest id.
+        private string GetQuestIdSourceArea(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return null;
+            var findQuest = Bot.Game.Quests.Find(q => q.Id.Equals(id, StringComparison.InvariantCultureIgnoreCase));
+            return findQuest != null ? findQuest.SourceArea : null;
+        }
+
+
 
         // API: Requests path for spceified quest.
         private bool RequestPathForQuest(string name)

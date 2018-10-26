@@ -59,7 +59,6 @@ namespace Poke1Protocol
         private double _lastCheckTime;
         private double _lastSentMovement;
         private DateTime _lastGameTime;
-        private PSXAPI.Response.Time _lasTimePacket;
         private bool _needToSendSync = false;
 
         private bool _isLoggedIn = false;
@@ -136,6 +135,8 @@ namespace Poke1Protocol
         public string[] DialogContent { get; private set; }
         private Queue<object> _dialogResponses = new Queue<object>();
         public bool IsScriptActive { get; private set; }
+        public PSXAPI.Response.Time LastTimePacket { get; private set; }
+        public string PokeTime { get; private set; }
         public string GameTime { get; private set; }
         public string Weather { get; private set; }
         public int PlayerX { get; private set; }
@@ -286,13 +287,14 @@ namespace Poke1Protocol
 
         private void UpdateTime()
         {
-            if (_lasTimePacket != null)
+            if (LastTimePacket != null)
             {
                 if (_lastCheckTime + 3 < RunningForSeconds)
                 {
                     _lastCheckTime = RunningForSeconds;
-                    GameTime = _lasTimePacket.GameDayTime.ToString() + " " + GetGameTime(_lasTimePacket.GameTime, _lasTimePacket.TimeFactor, _lastGameTime);
-                    Weather = _lasTimePacket.Weather.ToString();
+                    GameTime = LastTimePacket.GameDayTime.ToString() + " " + GetGameTime(LastTimePacket.GameTime, LastTimePacket.TimeFactor, _lastGameTime);
+                    PokeTime = GetGameTime(LastTimePacket.GameTime, LastTimePacket.TimeFactor, _lastGameTime).Replace(" PM", "").Replace(" AM", "");
+                    Weather = LastTimePacket.Weather.ToString();
                     GameTimeUpdated?.Invoke(GameTime, Weather);
                 }
             }
@@ -2206,9 +2208,10 @@ namespace Poke1Protocol
 
         private void OnUpdateTime(PSXAPI.Response.Time time)
         {
-            _lasTimePacket = time;
+            LastTimePacket = time;
             _lastGameTime = DateTime.UtcNow;
             GameTime = time.GameDayTime.ToString() + " " + GetGameTime(time.GameTime, time.TimeFactor, _lastGameTime);
+            PokeTime = GetGameTime(LastTimePacket.GameTime, LastTimePacket.TimeFactor, _lastGameTime).Replace(" PM", "").Replace(" AM", "");
             Weather = time.Weather.ToString();
             GameTimeUpdated?.Invoke(GameTime, Weather);
         }
