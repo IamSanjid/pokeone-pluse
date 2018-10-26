@@ -445,6 +445,7 @@ namespace pokeone_plus
                     Bot.Game.PlayerRemoved += Client_PlayerRemoved;
                     Bot.Game.PlayerAdded += Client_PlayerAdded;
                     Bot.Game.PlayerUpdated += Client_PlayerUpdated;
+                    Bot.Game.ShopOpened += Client_ShopOpened;
                     //Battle
                     Bot.Game.BattleStarted += Client_BattleStarted;
                     Bot.Game.BattleMessage += Client_BattleMessage;
@@ -676,6 +677,24 @@ namespace pokeone_plus
                     }
                 });
             }
+        }
+
+        private void Client_ShopOpened(Shop shop)
+        {
+            Dispatcher.InvokeAsync(delegate
+            {
+                StringBuilder content = new StringBuilder();
+                content.Append("Shop opened:");
+                foreach (ShopItem item in shop.Items)
+                {
+                    content.AppendLine();
+                    content.Append(item.Name);
+                    content.Append(" ($" + item.Cost + ")");
+                    if (item.TokenCost > 0)
+                        content.Append(" - ([PG]" + item.TokenCost + ")");
+                }
+                LogMessage(content.ToString());
+            });
         }
 
         private void Bot_StateChanged(BotClient.State state)

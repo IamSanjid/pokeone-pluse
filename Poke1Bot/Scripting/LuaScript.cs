@@ -197,6 +197,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["isTeamRangeSortedByLevelDescending"] = new Func<int, int, bool>(IsTeamRangeSortedByLevelDescending);
                 _lua.Globals["isNpcVisible"] = new Func<string, bool>(IsNpcVisible);
                 _lua.Globals["isNpcOnCell"] = new Func<int, int, bool>(IsNpcOnCell);
+                _lua.Globals["isShopOpen"] = new Func<bool>(IsShopOpen);
                 _lua.Globals["getMoney"] = new Func<int>(GetMoney);
                 _lua.Globals["isMounted"] = new Func<bool>(IsMounted);
                 _lua.Globals["isSurfing"] = new Func<bool>(IsSurfing);
@@ -251,6 +252,8 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["sortTeamByLevelDescending"] = new Func<bool>(SortTeamByLevelDescending);
                 _lua.Globals["sortTeamRangeByLevelAscending"] = new Func<int, int, bool>(SortTeamRangeByLevelAscending);
                 _lua.Globals["sortTeamRangeByLevelDescending"] = new Func<int, int, bool>(SortTeamRangeByLevelDescending);
+                _lua.Globals["buyItem"] = new Func<string, int, bool>(BuyItem);
+                _lua.Globals["closeShop"] = new Func<bool>(CloseShop);
 
                 // Battle actions
                 _lua.Globals["attack"] = new Func<bool>(Attack);
@@ -1035,6 +1038,12 @@ namespace Poke1Bot.Scripting
             return Bot.Game.Map.OriginalNpcs.Any(npc => npc.PositionX == cellX && npc.PositionY == cellY && npc.IsVisible);
         }
 
+        // API: Returns true if there is a shop opened.
+        private bool IsShopOpen()
+        {
+            return Bot.Game.OpenedShop != null;
+        }
+
         // API: Returns the amount of money in the inventory.
         private int GetMoney()
         {
@@ -1703,6 +1712,36 @@ namespace Poke1Bot.Scripting
                 }
             }
             return false;
+        }
+
+        // API: Buys the specified item from the opened shop.
+        private bool BuyItem(string itemName, int quantity)
+        {
+            if (!ValidateAction("buyItem", false)) return false;
+
+            if (Bot.Game.OpenedShop == null)
+            {
+                Fatal("error: buyItem can only be used when a shop is open.");
+                return false;
+            }
+
+            ShopItem item = Bot.Game.OpenedShop.Items.FirstOrDefault(i => i.Name.Equals(itemName, StringComparison.InvariantCultureIgnoreCase));
+
+            if (item == null)
+            {
+                Fatal("error: buyItem: the item '" + itemName + "' does not exist in the opened shop.");
+                return false;
+            }
+
+            return ExecuteAction(Bot.Game.BuyItem(item.Id, quantity));
+        }
+
+        // API: Closes the opened shop.
+        private bool CloseShop()
+        {
+            if (!ValidateAction("closeShop", false)) return false;
+
+            return (ExecuteAction(Bot.Game.CloseShop()));
         }
 
         // API: Uses the most effective offensive move available.

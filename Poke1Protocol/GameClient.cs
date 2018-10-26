@@ -92,7 +92,9 @@ namespace Poke1Protocol
 
         private GameConnection _connection;
 
-        public LootboxHandler RecievedLootBoxes;
+        public LootboxHandler RecievedLootBoxes { get; private set; }
+
+        public Shop OpenedShop { get; private set; }
 
         public event Action ConnectionOpened;
         public event Action AreaUpdated;
@@ -129,6 +131,7 @@ namespace Poke1Protocol
         public event Action<List<PlayerQuest>> QuestsUpdated;
         public event Action<PSXAPI.Response.Path> ReceivedPath;
         public event Action NpcReceieved;
+        public event Action<Shop> ShopOpened;
 
         public string[] DialogContent { get; private set; }
         private Queue<object> _dialogResponses = new Queue<object>();
@@ -502,6 +505,16 @@ namespace Poke1Protocol
                             _dialogResponses.Clear();
                         }
                         break;
+                    case ScriptRequestType.Shop:
+                        OpenedShop = new Shop(script.Data, script.ScriptID);
+                        ShopOpened?.Invoke(OpenedShop);
+                        break;
+                    default:
+#if DEBUG
+                        Console.WriteLine($"UNKNOWN TYPE SCRIPT: {script.Type}");
+#endif
+                        break;
+
                 }
             }
         }
@@ -761,6 +774,8 @@ namespace Poke1Protocol
 
         private void SendMovement(PSXAPI.Request.MoveAction[] actions, int fromX, int fromY)
         {
+            OpenedShop = null;
+
             var movePacket = new PSXAPI.Request.Move
             {
                 Actions = actions,
@@ -1004,6 +1019,34 @@ namespace Poke1Protocol
             if (IsMapLoaded && Map.IsOutside)
             {
                 SendUseMount();
+                return true;
+            }
+            return false;
+        }
+
+        private void SendShopPokemart(Guid scriptId, int itemId, int quantity)
+        {
+            var response = itemId + "," + quantity + "," + "0";
+            SendScriptResponse(scriptId, response);
+        }
+
+        public bool BuyItem(int itemId, int quantity)
+        {
+            if (OpenedShop != null && OpenedShop.Items.Any(item => item.Id == itemId))
+            {
+                _itemUseTimeout.Set();
+                SendShopPokemart(OpenedShop.ScriptId, itemId, quantity);
+                return true;
+            }
+            return false;
+        }
+
+        public bool CloseShop()
+        {
+            if (OpenedShop != null)
+            {
+                SendScriptResponse(OpenedShop.ScriptId, "");
+                OpenedShop = null;
                 return true;
             }
             return false;
@@ -1686,7 +1729,7 @@ namespace Poke1Protocol
                 foreach (var scriptText in data.Text)
                 {
                     if (!scriptText.Text.EndsWith(")") && scriptText.Text.IndexOf("(") == -1)
-                        DialogOpened?.Invoke(scriptText.Text);
+                        DialogOpened?.Invoke(Regex.Replace(scriptText.Text, @"\[(\/|.\w+)\]", ""));
                     else
                         ProcessScriptMessage(scriptText.Text);
                 }
@@ -2325,6 +2368,7 @@ namespace Poke1Protocol
             _loadingTimeout.Set(Rand.Next(1500, 4000));
 
             ClearPath();
+            OpenedShop = null;
             _surfAfterMovement = false;
             _slidingDirection = null;
             _dialogResponses.Clear();
