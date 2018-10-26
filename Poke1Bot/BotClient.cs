@@ -285,6 +285,12 @@ namespace Poke1Bot
             return result;
         }
 
+        public bool CanMoveTo(int x, int y)
+        {
+            Pathfinding path = new Pathfinding(Game);
+            return path.CanMoveTo(x, y);
+        }
+
         public bool MoveToAreaLink(string destinationMap)
         {
             IEnumerable<Tuple<int, int>> nearest = Game.Map.GetNearestLinks(destinationMap, Game.PlayerX, Game.PlayerY);

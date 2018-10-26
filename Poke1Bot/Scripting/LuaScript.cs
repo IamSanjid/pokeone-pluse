@@ -244,6 +244,7 @@ namespace Poke1Bot.Scripting
                 // Path actions
                 _lua.Globals["moveToCell"] = new Func<int, int, bool>(MoveToCell);
                 _lua.Globals["moveToArea"] = new Func<string, bool>(MoveToArea);
+                _lua.Globals["moveToLink"] = new Func<string, bool>(MoveToLink);
                 _lua.Globals["moveToRectangle"] = new Func<DynValue[], bool>(MoveToRectangle);
                 _lua.Globals["moveLinearX"] = new Func<DynValue[], bool>(MoveLinearX);
                 _lua.Globals["moveLinearY"] = new Func<DynValue[], bool>(MoveLinearY);
@@ -1314,6 +1315,25 @@ namespace Poke1Bot.Scripting
             if (!ValidateAction("moveToArea", false)) return false;
 
             return ExecuteAction(Bot.MoveToAreaLink(areaName.ToUpperInvariant()));
+        }
+
+        // API: Moves to spcefied link with Id.
+        private bool MoveToLink(string id)
+        {
+            if (!ValidateAction("moveToLink", false) || string.IsNullOrEmpty(id)) return false;
+            var valid = Guid.TryParse(id, out var linkId);
+            if (!valid)
+            {
+                Fatal("error: 'moveToLink' given link id was invalid.");
+                return false;
+            }
+            var findLink = Bot.Game.Map.Links.Find(l => l.DestinationID == linkId);
+            if (findLink is null)
+            {
+                Fatal($"error: 'moveToLink' there is no link id which matches this {id} id.");
+                return false;
+            }
+            return ExecuteAction(Bot.MoveToCell(findLink.x, -findLink.y));
         }
 
         // API: Moves to a random accessible cell of the specified rectangle.
