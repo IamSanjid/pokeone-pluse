@@ -67,6 +67,9 @@ namespace Poke1Bot.Modules
         {
             _questTimeout.Update();
 
+            if (_bot.Game != null && _bot.Game.IsInBattle)
+                _haveToMoveLink = null;
+
             if (_haveToMoveLink != null && !_bot.Game.IsInBattle && _bot.Game != null)
             {
                 if (_bot.Game.PlayerX != _haveToMoveLink.x || _bot.Game.PlayerY != -_haveToMoveLink.z)
