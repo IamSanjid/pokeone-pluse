@@ -74,6 +74,7 @@ namespace Poke1Bot.Modules
                     _questTimeout.Set();
                     _bot.Game?.ClearPath();
                     _bot.MoveToCell(_haveToMoveLink.x, -_haveToMoveLink.z);
+                    _haveToMoveLink = null;
                     return;
                 }
                 else
