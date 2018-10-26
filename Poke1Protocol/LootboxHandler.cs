@@ -25,7 +25,7 @@ namespace Poke1Protocol
 
         private uint SmallBoxes = 0u;
 
-        private uint oldAmount = 999999999u;
+        private uint oldAmount = 0u;
 
         public PSXAPI.Response.Payload.LootboxRoll[] Rewards;
 
@@ -56,21 +56,19 @@ namespace Poke1Protocol
                         {
                             Rewards = boxes[i].Rolls;
                             BoxOpened?.Invoke(Rewards, boxes[i].Type);
-                        }                      
+                        }
                     }
                 }
             }
             // PokeOne's way....
-            if (oldAmount != 999999999u)
+            int count = (int)(NormalBoxes + SmallBoxes - oldAmount);
+            if (count > (long)((ulong)oldAmount))
             {
-                int count = (int)(NormalBoxes + SmallBoxes - oldAmount);
-                if (count > (long)((ulong)oldAmount))
-                {
-                    LootBoxMessage?.Invoke("You gained Loot Box x" + count + ".");
-                    RecievedBox?.Invoke(this);
-                }
-                TotalLootBoxes = (int)(NormalBoxes + SmallBoxes);
+                LootBoxMessage?.Invoke("You gained Loot Box x" + count + ".");
+                RecievedBox?.Invoke(this);
             }
+            TotalLootBoxes = (int)(NormalBoxes + SmallBoxes);
+
             oldAmount = NormalBoxes + SmallBoxes;
             UpdateFreeLootBox();
         }
@@ -84,7 +82,7 @@ namespace Poke1Protocol
 
         public void HandleDaily(PSXAPI.Response.DailyLootbox lootPacket, TimeSpan? time = null)
         {
-            
+
             if (lootPacket != null)
             {
                 DailyBox = lootPacket;
@@ -209,7 +207,7 @@ namespace Poke1Protocol
                     if (t.TotalSeconds > 0.0)
                     {
                         //if (text.Contains("1 minute") && !text.Contains("minutes"))
-                            //LootBoxMessage?.Invoke("Next Free Lootbox in " + text);
+                        //LootBoxMessage?.Invoke("Next Free Lootbox in " + text);
                     }
                 }
             }

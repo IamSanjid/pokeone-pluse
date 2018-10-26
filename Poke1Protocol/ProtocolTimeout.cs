@@ -6,6 +6,7 @@ namespace Poke1Protocol
     {
         public bool IsActive { get; private set; }
         private DateTime _expirationTime;
+        public int Interval { get; private set; }
 
         public bool Update()
         {
@@ -20,6 +21,7 @@ namespace Poke1Protocol
         {
             IsActive = true;
             _expirationTime = DateTime.UtcNow.AddMilliseconds(milliseconds);
+            Interval = milliseconds;
         }
 
         public void Cancel()

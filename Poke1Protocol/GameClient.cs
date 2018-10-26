@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections;
+using System.Text;
 
 namespace Poke1Protocol
 {
@@ -56,9 +57,10 @@ namespace Poke1Protocol
         private double _lastRTime;
         private int _lastTime;
         private double _lastCheckTime;
+        private double _lastSentMovement;
         private DateTime _lastGameTime;
         private PSXAPI.Response.Time _lasTimePacket;
-
+        private bool _needToSendSync = false;
 
         private bool _isLoggedIn = false;
 
@@ -86,11 +88,13 @@ namespace Poke1Protocol
         //&& !_npcBattleTimeout.IsActive
         //&& !_moveRelearnerTimeout.IsActive
 
-        public const string Version = "0.59";
+        public const string Version = "0.60";
 
         private GameConnection _connection;
 
-        public LootboxHandler RecievedLootBoxes;
+        public LootboxHandler RecievedLootBoxes { get; private set; }
+
+        public Shop OpenedShop { get; private set; }
 
         public event Action ConnectionOpened;
         public event Action AreaUpdated;
@@ -127,6 +131,7 @@ namespace Poke1Protocol
         public event Action<List<PlayerQuest>> QuestsUpdated;
         public event Action<PSXAPI.Response.Path> ReceivedPath;
         public event Action NpcReceieved;
+        public event Action<Shop> ShopOpened;
 
         public string[] DialogContent { get; private set; }
         private Queue<object> _dialogResponses = new Queue<object>();
@@ -254,7 +259,7 @@ namespace Poke1Protocol
             _connection.Close(error);
         }
 
-        public void ClearPath() { _movements.Clear(); _movementPackets.Clear(); }
+        public void ClearPath() { _movements.Clear(); _movementPackets.Clear(); _lastSentMovement = RunningForSeconds; }
 
         public void Update()
         {
@@ -297,6 +302,13 @@ namespace Poke1Protocol
         private void UpdateRegularPacket()
         {
 
+            if (_needToSendSync && IsInBattle && !_battleTimeout.IsActive)
+            {
+                Resync(false);
+                _needToSendSync = false;
+                _battleTimeout.Set(1500);
+            }
+
             if (RunningForSeconds > _lastCheckPing + 2)
             {
                 _lastCheckPing = RunningForSeconds;
@@ -318,11 +330,15 @@ namespace Poke1Protocol
                     }
                 }
             }
+
+            if (RunningForSeconds > _lastSentMovement + 0.6f && _movementPackets.Count > 0)
+                SendMovemnetPackets();
         }
 
         // Don't ask me it is PokeOne's way lol...
         private void SendMovemnetPackets()
         {
+            _lastSentMovement = RunningForSeconds;
             if (_movementPackets.Count > 0)
             {
                 List<PSXAPI.Request.MoveAction> list = new List<PSXAPI.Request.MoveAction>();
@@ -353,6 +369,8 @@ namespace Poke1Protocol
                     list.Add(_movementPackets[i].Actions[0]);
                     goto IL_118;
                 }
+                if (list.Count == 2)
+                    Console.WriteLine("Yes I am working like PokeOne :D");
                 SendProto(new PSXAPI.Request.Move
                 {
                     Actions = list.ToArray(),
@@ -366,6 +384,7 @@ namespace Poke1Protocol
 
         private void CheckEvolving()
         {
+            if (IsInBattle) return;
             var evolvingPoke = Team.FirstOrDefault(pok => pok.CanEvolveTo > PSXAPI.Response.Payload.PokemonID.missingno);
 
             if (evolvingPoke != null)
@@ -376,6 +395,7 @@ namespace Poke1Protocol
 
         private void CheckLearningMove()
         {
+            if (IsInBattle) return;
             var learningPoke = Team.FirstOrDefault(pok => pok.LearnableMoves != null && pok.LearnableMoves.Length > 0);
 
             if (learningPoke != null)
@@ -387,17 +407,20 @@ namespace Poke1Protocol
         private void UpdateMovement()
         {
             if (!IsMapLoaded) return;
-            
+
 
             if (!_movementTimeout.IsActive && _movements.Count > 0)
             {
                 //SendMovemnetPackets();
                 Direction direction = _movements[0];
                 _movements.RemoveAt(0);
+                // before applying the movement
+                int fromX = PlayerX;
+                int fromY = PlayerY;
                 if (ApplyMovement(direction))
                 {
-                    SendMovement(direction.ToMoveActions());
-                    _movementTimeout.Set(IsBiking ? 200 : 375);
+                    SendMovement(direction.ToMoveActions(), fromX, fromY); // PokeOne sends the (x,y) without applying the movement(but it checks the collisions) to the server.
+                    _movementTimeout.Set(IsBiking ? 200 : 350);
                     if (Map.HasLink(PlayerX, PlayerY))
                     {
                         _teleportationTimeout.Set();
@@ -407,7 +430,7 @@ namespace Poke1Protocol
                 if (_movements.Count == 0 && _surfAfterMovement)
                 {
                     _movementTimeout.Set(Rand.Next(750, 2000));
-                }               
+                }
             }
 
             if (!_movementTimeout.IsActive && _movements.Count == 0 && _surfAfterMovement)
@@ -482,9 +505,17 @@ namespace Poke1Protocol
                             _dialogResponses.Clear();
                         }
                         break;
+                    case ScriptRequestType.Shop:
+                        OpenedShop = new Shop(script.Data, script.ScriptID);
+                        ShopOpened?.Invoke(OpenedShop);
+                        break;
+                    default:
+#if DEBUG
+                        Console.WriteLine($"UNKNOWN TYPE SCRIPT: {script.Type}");
+#endif
+                        break;
+
                 }
-
-
             }
         }
 
@@ -741,17 +772,19 @@ namespace Poke1Protocol
             }
         }
 
-        private void SendMovement(PSXAPI.Request.MoveAction[] actions)
+        private void SendMovement(PSXAPI.Request.MoveAction[] actions, int fromX, int fromY)
         {
+            OpenedShop = null;
+
             var movePacket = new PSXAPI.Request.Move
             {
                 Actions = actions,
                 Map = MapName,
-                X = PlayerX,
-                Y = PlayerY
+                X = fromX,
+                Y = fromY
             };
-            //_movementPackets.Add(movePacket);
-            SendProto(movePacket);
+            _movementPackets.Add(movePacket);
+            //SendProto(movePacket);
         }
 
         public bool OpenLootBox(PSXAPI.Request.LootboxType type)
@@ -842,7 +875,7 @@ namespace Poke1Protocol
                     "|",
                     ActiveBattle.SelectedPokemonIndex.ToString(),
                     "|",
-                    id.ToString()
+                    ActiveBattle.AttackTargetType(id)
                 })
             });
 
@@ -889,9 +922,9 @@ namespace Poke1Protocol
             });
         }
 
-        private void SendUseItemInBattle(int id, int targetId, bool isPokeBall = false, int moveTarget = 0)
+        private void SendUseItemInBattle(int id, int targetId, int moveTarget = 0)
         {
-            if (!isPokeBall)
+            if (ActiveBattle.PokemonCount > 1)
             {
                 SendProto(new PSXAPI.Request.BattleBroadcast
                 {
@@ -974,6 +1007,49 @@ namespace Poke1Protocol
                 Move = moveId,
                 Pokemon = foundPoke != null ? foundPoke.UniqueID : default(Guid)
             });
+        }
+
+        private void SendUseMount()
+        {
+            SendProto(new PSXAPI.Request.Mount());
+        }
+
+        public bool UseMount()
+        {
+            if (IsMapLoaded && Map.IsOutside)
+            {
+                SendUseMount();
+                return true;
+            }
+            return false;
+        }
+
+        private void SendShopPokemart(Guid scriptId, int itemId, int quantity)
+        {
+            var response = itemId + "," + quantity + "," + "0";
+            SendScriptResponse(scriptId, response);
+        }
+
+        public bool BuyItem(int itemId, int quantity)
+        {
+            if (OpenedShop != null && OpenedShop.Items.Any(item => item.Id == itemId))
+            {
+                _itemUseTimeout.Set();
+                SendShopPokemart(OpenedShop.ScriptId, itemId, quantity);
+                return true;
+            }
+            return false;
+        }
+
+        public bool CloseShop()
+        {
+            if (OpenedShop != null)
+            {
+                SendScriptResponse(OpenedShop.ScriptId, "");
+                OpenedShop = null;
+                return true;
+            }
+            return false;
         }
 
         public TimeSpan PingUpdateTime
@@ -1078,7 +1154,7 @@ namespace Poke1Protocol
                             OnRequests(req);
                             break;
                         case PSXAPI.Response.GuildEmblem em:
-                            
+
                             break;
                         case PSXAPI.Response.Level lvl:
                             OnLevel(lvl);
@@ -1092,7 +1168,7 @@ namespace Poke1Protocol
                             InventoryUpdated?.Invoke();
                             break;
                         case PSXAPI.Response.Move move:
-                            OnPlayerPosition(move);
+                            OnPlayerPosition(move, true);
                             break;
                         case PSXAPI.Response.Mount mtP:
                             OnMountUpdate(mtP);
@@ -1173,7 +1249,7 @@ namespace Poke1Protocol
                                 SendJoinChannel(_partyChannel);
                             }
                             break;
-                        case PSXAPI.Response.Guild guild:                            
+                        case PSXAPI.Response.Guild guild:
                             OnGuild(guild);
                             break;
                         case PSXAPI.Response.Logout lg:
@@ -1275,7 +1351,7 @@ namespace Poke1Protocol
                 case UseItemResult.InvalidPokemon:
 
                     break;
-                
+
             }
         }
 
@@ -1336,7 +1412,7 @@ namespace Poke1Protocol
                 SystemMessage?.Invoke($"{PokemonManager.Instance.GetNameFromEnum(evolve.Previous)} did not evolve!");
 
             if (evolve.Pokemon != null)
-                OnTeamUpdated(new [] { evolve.Pokemon });
+                OnTeamUpdated(new[] { evolve.Pokemon });
         }
 
         private void OnPrivateMessage(Message pm)
@@ -1430,7 +1506,7 @@ namespace Poke1Protocol
 
                 if (isNewPlayer || player.Actions.Any(ac => ac.Action == PSXAPI.Response.Payload.MapUserAction.Enter))
                 {
-                    if (!string.IsNullOrEmpty(user.Data?.GuildName))
+                    if (!string.IsNullOrEmpty(player?.GuildName))
                         SendRequestGuildLogo(player.GuildName);
                     PlayerAdded?.Invoke(player);
                 }
@@ -1485,8 +1561,7 @@ namespace Poke1Protocol
 
         private void OnBattle(PSXAPI.Response.Battle battle)
         {
-            _movementPackets.Clear();
-            _movements.Clear();
+            ClearPath();
             _slidingDirection = null;
 
             IsInBattle = !battle.Ended;
@@ -1498,17 +1573,19 @@ namespace Poke1Protocol
             {
                 ActiveBattle = new Battle(PlayerName, battle, Team);
             }
-            if (!ActiveBattle.OnlyInfo && IsInBattle && IsLoggedIn && ActiveBattle.Turn <= 1)
+
+            if (!ActiveBattle.OnlyInfo && IsInBattle && IsLoggedIn && ActiveBattle.Turn <= 1 && !ActiveBattle.IsUpdated)
             {
+                // encounter message coz the server doesn't send it.
+                _needToSendSync = true;
                 var firstEncounterMessage = ActiveBattle.IsWild ? ActiveBattle.IsShiny ?
-                    $"A wild shiny {PokemonManager.Instance.Names[ActiveBattle.OpponentId]} has appeared!" 
-                    : $"A wild {PokemonManager.Instance.Names[ActiveBattle.OpponentId]} has appeared!" : ActiveBattle.IsShiny ?
-                    $"Opponent sent out shiny {PokemonManager.Instance.Names[ActiveBattle.OpponentId]}!"
-                    : $"Opponent sent out {PokemonManager.Instance.Names[ActiveBattle.OpponentId]}!";
+                        $"A wild shiny {PokemonManager.Instance.Names[ActiveBattle.OpponentId]} has appeared!"
+                        : $"A wild {PokemonManager.Instance.Names[ActiveBattle.OpponentId]} has appeared!" : ActiveBattle.IsShiny ?
+                        $"Opponent sent out shiny {PokemonManager.Instance.Names[ActiveBattle.OpponentId]}!"
+                        : $"Opponent sent out {PokemonManager.Instance.Names[ActiveBattle.OpponentId]}!";
                 BattleMessage?.Invoke(firstEncounterMessage);
                 _battleTimeout.Set(Rand.Next(4000, 6000));
-                BattleStarted?.Invoke();
-                Resync(false);
+                BattleStarted?.Invoke();                
             }
 
             if (ActiveBattle != null)
@@ -1517,7 +1594,7 @@ namespace Poke1Protocol
             OnBattleMessage(battle.Log);
         }
 
-        private void ActiveBattleMessage(string txt) 
+        private void ActiveBattleMessage(string txt)
             => BattleMessage?.Invoke(txt);
 
         private void OnBattleMessage(string[] logs)
@@ -1584,7 +1661,7 @@ namespace Poke1Protocol
 
             _currentScriptType = type;
             _currentScript = data;
-            if (IsLoggedIn && _cachedScripts.Count > 0) // processing _cachedScripts, these scripts are received before getting fully logged int!
+            if (IsLoggedIn && _cachedScripts.Count > 0 && IsMapLoaded) // processing _cachedScripts, these scripts are received before getting fully logged int!
             {
                 switch (type)
                 {
@@ -1652,7 +1729,7 @@ namespace Poke1Protocol
                 foreach (var scriptText in data.Text)
                 {
                     if (!scriptText.Text.EndsWith(")") && scriptText.Text.IndexOf("(") == -1)
-                        DialogOpened?.Invoke(scriptText.Text);
+                        DialogOpened?.Invoke(Regex.Replace(scriptText.Text, @"\[(\/|.\w+)\]", ""));
                     else
                         ProcessScriptMessage(scriptText.Text);
                 }
@@ -1736,16 +1813,16 @@ namespace Poke1Protocol
             }
         }
 
-        private void OnPlayerPosition(IProto proto , bool sync = true)
+        private void OnPlayerPosition(IProto proto, bool sync = true)
         {
             if (proto is PSXAPI.Response.Move movement)
             {
                 if (MapName != movement.Map || PlayerX != movement.X || PlayerY != movement.Y)
                 {
-                    TeleportationOccuring?.Invoke(movement.Map, movement.X, movement.Y);                    
+                    TeleportationOccuring?.Invoke(movement.Map, movement.X, movement.Y);
 
                     PlayerX = movement.X;
-                    PlayerY = movement.Y;                    
+                    PlayerY = movement.Y;
 
                     _teleportationTimeout.Cancel();
 
@@ -1753,13 +1830,16 @@ namespace Poke1Protocol
                     mapChatChannel = "map:" + movement.Map;
                     if (mapChatChannel != prev && MapName != movement.Map)
                     {
+                        if (Channels.ContainsKey("Map") && !string.IsNullOrEmpty(Channels["Map"].ChannelName))
+                            CloseChannel(Channels["Map"].ChannelName);
+
                         SendJoinChannel(mapChatChannel);
                     }
 
                     LoadMap(movement.Map);
                 }
                 if (sync)
-                    Resync(MapName != movement.Map);
+                    Resync(MapName == movement.Map);
             }
             else if (proto is PSXAPI.Response.Sync syncP)
             {
@@ -1768,7 +1848,7 @@ namespace Poke1Protocol
                     TeleportationOccuring?.Invoke(syncP.Map, syncP.PosX, syncP.PosY);
 
                     PlayerX = syncP.PosX;
-                    PlayerY = syncP.PosY;                    
+                    PlayerY = syncP.PosY;
 
                     _teleportationTimeout.Cancel();
 
@@ -1776,17 +1856,19 @@ namespace Poke1Protocol
                     mapChatChannel = "map:" + syncP.Map;
                     if (mapChatChannel != prev && MapName != syncP.Map)
                     {
+                        if (Channels.ContainsKey("Map") && !string.IsNullOrEmpty(Channels["Map"].ChannelName))
+                            CloseChannel(Channels["Map"].ChannelName);
                         SendJoinChannel(mapChatChannel);
                     }
 
                     LoadMap(syncP.Map);
                 }
                 if (sync)
-                    Resync(MapName != syncP.Map);
-                
+                    Resync(MapName == syncP.Map);
+
             }
 
-            CheckArea();      
+            CheckArea();
         }
 
         private void OnPokedexData(PSXAPI.Response.Pokedex data)
@@ -1875,10 +1957,7 @@ namespace Poke1Protocol
             OnTeamUpdated(login.Inventory.ActivePokemon);
             OnInventoryUpdate(login.Inventory);
             OnMountUpdate(login.Mount);
-            if (ActiveBattle != null)
-                OnPlayerPosition(login.Position, true);
-            else
-                OnPlayerPosition(login.Position, false);
+            OnPlayerPosition(login.Position, false);
 
             if (login.Pokedex != null)
             {
@@ -1935,7 +2014,7 @@ namespace Poke1Protocol
                 var foundQuest = Quests.Find(q => q.Id == quest.ID);
                 if (foundQuest != null)
                     Quests.Remove(foundQuest);
-                
+
                 Quests.Add(new PlayerQuest(quest));
             }
             QuestsUpdated?.Invoke(Quests);
@@ -1961,12 +2040,10 @@ namespace Poke1Protocol
                     if (Channels.ContainsKey(join.Channel))
                     {
                         if (Channels[join.Channel].ChannelName != rchannelName)
-                        {
-                            if (!string.IsNullOrEmpty(Channels[join.Channel].ChannelName))
-                                CloseChannel(Channels[join.Channel].ChannelName);
+                        {                            
                             Channels[join.Channel] = new ChatChannel("default", join.Channel, rchannelName);
                         }
-                    }                    
+                    }
                 }
                 if (join.Channel.ToLower() == _partyChannel.ToLower())
                 {
@@ -2036,7 +2113,7 @@ namespace Poke1Protocol
             {
                 Team.Clear();
                 foreach (var poke in pokemons)
-                {                   
+                {
                     Team.Add(new Pokemon(poke));
                 }
             }
@@ -2213,7 +2290,7 @@ namespace Poke1Protocol
                 }
                 else if (!_battleTimeout.IsActive && IsInBattle && item.CanBeUsedInBattle)
                 {
-                    SendUseItemInBattle(item.Id, ActiveBattle.SelectedOpponent, item.IsPokeball(), moveId);
+                    SendUseItemInBattle(item.Id, ActiveBattle.SelectedOpponent + 1, moveId);
                     _battleTimeout.Set(Rand.Next(1500, 2000));
                 }
             }
@@ -2253,7 +2330,7 @@ namespace Poke1Protocol
         public void ChangePokemon(int number)
         {
             SendChangePokemon(ActiveBattle.SelectedPokemonIndex + 1, number);
-            
+
             ActiveBattle?.UpdateSelectedPokemon(number);
 
             _battleTimeout.Set();
@@ -2290,7 +2367,8 @@ namespace Poke1Protocol
 
             _loadingTimeout.Set(Rand.Next(1500, 4000));
 
-            _movements.Clear();
+            ClearPath();
+            OpenedShop = null;
             _surfAfterMovement = false;
             _slidingDirection = null;
             _dialogResponses.Clear();
@@ -2335,7 +2413,7 @@ namespace Poke1Protocol
                 CheckArea();
                 MapLoaded?.Invoke(AreaName);
             }
-            
+
             if (_cachedNerbyUsers != null && _cachedNerbyUsers.Users != null)
             {
                 OnUpdatePlayer(_cachedNerbyUsers);
@@ -2414,7 +2492,7 @@ namespace Poke1Protocol
                     AreaName = Map.MapDump.Settings.MapName;
                     RequestArea(MapName, AreaName);
                 }
-                    
+
 
                 PositionUpdated?.Invoke(AreaName, PlayerX, PlayerY);
             }
@@ -2484,7 +2562,11 @@ namespace Poke1Protocol
 
         public InventoryItem GetItemFromName(string itemName)
         {
-            return Items.FirstOrDefault(i => ItemsManager.Instance.ItemClass.items.Any(itm => itm.BattleID.Equals(itemName, StringComparison.InvariantCultureIgnoreCase) && i.Quantity > 0));
+            return Items.FirstOrDefault(i => (
+                (ItemsManager.Instance.ItemClass.items.Any(itm => 
+                    itm.Name.Equals(itemName, StringComparison.InvariantCultureIgnoreCase) 
+                    || itm.BattleID.Equals(itemName.RemoveAllUnknownSymbols().Replace(" ", ""), StringComparison.InvariantCultureIgnoreCase)))
+                    && i.Quantity > 0));
         }
 
         public bool HasItemName(string itemName)
@@ -2498,5 +2580,21 @@ namespace Poke1Protocol
         }
 
         public bool HasEffectName(string effectName) => GetEffectFromName(effectName) != null;
+    }
+
+    public static class StringExtention
+    {
+        public static string RemoveAllUnknownSymbols(this string s)
+        {
+            StringBuilder result = new StringBuilder();
+            for (int i = 0; i < s.Length; i++)
+            {
+                char c = s[i];
+                byte b = (byte)c;
+                if (b > 32) //In general, all characters below 32 are non-printable.
+                    result.Append(c);
+            }
+            return result.ToString();
+        }
     }
 }

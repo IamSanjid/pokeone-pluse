@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media;
 
@@ -65,11 +66,11 @@ namespace Poke1Bot
 
             Console.WriteLine(pc);
 
-            var packet = @"GuildEmblem Cg5Qb2tlbW9uTGVnZW5kcw==";
+            var packet = @"Script ChIJ58BJyJ4+RkkRmbR+rHtRwegQESINMTcsMzAwLC0xLDEwMCIMNCwyMDAsLTEsMzAwIg0xOCwxMDAsLTEsMTAwIg0yMiwyMDAsLTEsMTAw";
             var data = packet.Split(" ".ToCharArray());
 
             byte[] array = Convert.FromBase64String(data[1]);
-            var type = Type.GetType($"PSXAPI.Request.{data[0]}, PSXAPI");
+            var type = Type.GetType($"PSXAPI.Response.{data[0]}, PSXAPI");
 
             if (type != null)
             {
@@ -80,10 +81,16 @@ namespace Poke1Bot
                 {
                     array
                 }) as PSXAPI.IProto;
+                Console.WriteLine(ToJsonString(proto));
                 //Console.WriteLine($"MapLoad: {(proto as PSXAPI.Request.BattleBroadcast).RequestID}, ID: {(proto as PSXAPI.Request.BattleBroadcast)._Name.ToString()}");
             }
 #endif
         }
+        private static string ToJsonString(PSXAPI.IProto p) => Newtonsoft.Json.JsonConvert.SerializeObject(p, new Newtonsoft.Json.JsonSerializerSettings
+        {
+            Converters = { new Newtonsoft.Json.Converters.StringEnumConverter() },
+            Formatting = Newtonsoft.Json.Formatting.Indented
+        });
 
         public void LogMessage(string message)
         {
@@ -210,7 +217,6 @@ namespace Poke1Bot
             {
                 var input = await reader.ReadToEndAsync();
 
-
                 List<string> libs = new List<string>();
                 if (Directory.Exists("Libs"))
                 {
@@ -236,7 +242,7 @@ namespace Poke1Bot
             try
             {
                 Script.ScriptMessage += Script_ScriptMessage;
-                Script.Initialize();
+                await Script.Initialize();
             }
             catch (Exception)
             {
@@ -279,18 +285,15 @@ namespace Poke1Bot
             return result;
         }
 
-        public bool MoveToAreaLink(string destinationArea)
+        public bool MoveToAreaLink(string destinationMap)
         {
-            var findArea = Game.Map.MapDump.Areas.Find(ar => ar.AreaName.ToUpperInvariant() == destinationArea.ToUpperInvariant());
-
-            if (findArea != null)
+            IEnumerable<Tuple<int, int>> nearest = Game.Map.GetNearestLinks(destinationMap, Game.PlayerX, Game.PlayerY);
+            if (nearest != null)
             {
-                for (int y = 0; y < Game.Map.Height; ++y)
+                foreach (Tuple<int, int> link in nearest)
                 {
-                    for (int x = 0; x< Game.Map.Width; ++x)
-                    {
-                        if (IsInArea(findArea, x, y) && IsAreaLink(x, y) && MoveToCell(x, y)) return true;
-                    }
+                    if (MoveToCell(link.Item1, link.Item2))
+                        return true;
                 }
             }
             return false;

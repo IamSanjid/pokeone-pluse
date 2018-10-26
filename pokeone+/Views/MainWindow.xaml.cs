@@ -247,13 +247,16 @@ namespace pokeone_plus
 
             App.InitializeVersion();
 
-            if (!string.IsNullOrEmpty(Bot.Settings.LastScript))
+            if (!string.IsNullOrEmpty(Bot.Settings.LastScript) && File.Exists(Bot.Settings.LastScript))
             {
                 ReloadScriptMenuItem.Header = "Reload " + System.IO.Path.GetFileName(Bot.Settings.LastScript) + "\tCtrl+R";
                 ReloadScriptMenuItem.IsEnabled = true;
             }
             else
+            {
                 ReloadScriptMenuItem.IsEnabled = false;
+                Bot.Settings.LastScript = null;
+            }
 
             Team = new TeamView(Bot);
             Inventory = new InventoryView(Bot);
@@ -442,6 +445,7 @@ namespace pokeone_plus
                     Bot.Game.PlayerRemoved += Client_PlayerRemoved;
                     Bot.Game.PlayerAdded += Client_PlayerAdded;
                     Bot.Game.PlayerUpdated += Client_PlayerUpdated;
+                    Bot.Game.ShopOpened += Client_ShopOpened;
                     //Battle
                     Bot.Game.BattleStarted += Client_BattleStarted;
                     Bot.Game.BattleMessage += Client_BattleMessage;
@@ -675,6 +679,24 @@ namespace pokeone_plus
             }
         }
 
+        private void Client_ShopOpened(Shop shop)
+        {
+            Dispatcher.InvokeAsync(delegate
+            {
+                StringBuilder content = new StringBuilder();
+                content.Append("Shop opened:");
+                foreach (ShopItem item in shop.Items)
+                {
+                    content.AppendLine();
+                    content.Append(item.Name);
+                    content.Append(" ($" + item.Cost + ")");
+                    if (item.TokenCost > 0)
+                        content.Append(" - ([PG]" + item.TokenCost + ")");
+                }
+                LogMessage(content.ToString());
+            });
+        }
+
         private void Bot_StateChanged(BotClient.State state)
         {
             Dispatcher.InvokeAsync(delegate
@@ -891,10 +913,9 @@ namespace pokeone_plus
             }
         }
 
-        private void LoadScriptButton_Click(object sender, RoutedEventArgs e)
+        private async void LoadScriptButton_Click(object sender, RoutedEventArgs e)
         {
-            new Thread(() => { Dispatcher.InvokeAsync(async delegate { await LoadScript(); }); }).Start();
-
+            await LoadScript();
         }
 
         private void OpenLoginWindow()
@@ -979,11 +1000,11 @@ namespace pokeone_plus
             }
         }
 
-        private void ReloadScript_Click(object sender, RoutedEventArgs e)
+        private async void ReloadScript_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(Bot.Settings.LastScript))
                 return;
-            new Thread(() => { Dispatcher.InvokeAsync(async delegate { await LoadScript(Bot.Settings.LastScript); }); }).Start();
+            await LoadScript(Bot.Settings.LastScript);
         }
 
         public static void AppendLineToRichTextBox(RichTextBox richTextBox, string message)
@@ -1094,16 +1115,31 @@ namespace pokeone_plus
             }
         }
 
-        private void Window_Drop(object sender, DragEventArgs e)
+        private async void Window_Drop(object sender, DragEventArgs e)
         {
             if (e.Data.GetData(DataFormats.FileDrop) != null)
             {
                 string[] file = (string[])e.Data.GetData(DataFormats.FileDrop);
                 if (file != null)
                 {
-                    new Thread(() => { Dispatcher.InvokeAsync(async delegate { await LoadScript(file[0]); }); }).Start();
+                    await LoadScript(file[0]);
                 }
             }
+        }
+
+        private void SourceCode_View_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start("http://bit.ly/2qaXE4J");
+        }
+
+        private void LuaApi_View_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start("http://bit.ly/2CAUtLa");
+        }
+
+        private void About_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show(App.Name + " version " + App.Version + ", by " + App.Author + "." + Environment.NewLine + App.Description, App.Name + " - About");
         }
     }
 }

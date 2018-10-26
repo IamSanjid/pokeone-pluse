@@ -12,48 +12,48 @@ using System.Threading.Tasks;
 
 namespace Poke1Bot.Scripting
 {
-	public class LuaScript : BaseScript
-	{
-		public BotClient Bot { get; private set; }
+    public class LuaScript : BaseScript
+    {
+        public BotClient Bot { get; private set; }
 
 #if DEBUG
-		public int TimeoutDelay = 60000;
+        public int TimeoutDelay = 60000;
 #else
 		public int TimeoutDelay = 3000;
 #endif
-		private Script _lua;
-		private string _path;
-		private string _content;
-		private IList<string> _libsContent;
-		private IDictionary<string, IList<DynValue>> _hookedFunctions;
+        private Script _lua;
+        private string _path;
+        private string _content;
+        private IList<string> _libsContent;
+        private IDictionary<string, IList<DynValue>> _hookedFunctions;
 
-		private bool _actionExecuted;
+        private bool _actionExecuted;
 
-		public LuaScript(BotClient bot, string path, string content, IList<string> libsContent)
-		{
-			Bot = bot;
-			_path = Path.GetDirectoryName(path);
-			_content = content;
-			_libsContent = libsContent;
-		}
+        public LuaScript(BotClient bot, string path, string content, IList<string> libsContent)
+        {
+            Bot = bot;
+            _path = Path.GetDirectoryName(path);
+            _content = content;
+            _libsContent = libsContent;
+        }
 
-		public override void Initialize()
-		{
-			CreateLuaInstance();
-			Name = _lua.Globals.Get("name").CastToString();
-			Author = _lua.Globals.Get("author").CastToString();
-			Description = _lua.Globals.Get("description").CastToString();
-		}
+        public override async Task Initialize()
+        {
+            await CreateLuaInstance();
+            Name = _lua.Globals.Get("name").CastToString();
+            Author = _lua.Globals.Get("author").CastToString();
+            Description = _lua.Globals.Get("description").CastToString();
+        }
 
-		public override void Start()
-		{
-			CallFunctionSafe("onStart");
-		}
+        public override void Start()
+        {
+            CallFunctionSafe("onStart");
+        }
 
-		public override void Stop()
-		{
-			CallFunctionSafe("onStop");
-		}
+        public override void Stop()
+        {
+            CallFunctionSafe("onStop");
+        }
 
         public override void Update()
         {
@@ -62,24 +62,24 @@ namespace Poke1Bot.Scripting
         }
 
         public override void Pause()
-		{
-			CallFunctionSafe("onPause");
-		}
+        {
+            CallFunctionSafe("onPause");
+        }
 
-		public override void Resume()
-		{
-			CallFunctionSafe("onResume");
-		}
+        public override void Resume()
+        {
+            CallFunctionSafe("onResume");
+        }
 
-		public override void OnBattleMessage(string message)
-		{
-			CallFunctionSafe("onBattleMessage", message);
-		}
+        public override void OnBattleMessage(string message)
+        {
+            CallFunctionSafe("onBattleMessage", message);
+        }
 
-		public override void OnSystemMessage(string message)
-		{
-			CallFunctionSafe("onSystemMessage", message);
-		}
+        public override void OnSystemMessage(string message)
+        {
+            CallFunctionSafe("onSystemMessage", message);
+        }
 
         public override void OnDialogMessage(string message)
         {
@@ -107,297 +107,307 @@ namespace Poke1Bot.Scripting
         }
 
         public override bool ExecuteNextAction()
-		{
-			string functionName = Bot.Game.IsInBattle ? "onBattleAction" : "onPathAction";
+        {
+            string functionName = Bot.Game.IsInBattle ? "onBattleAction" : "onPathAction";
 
-			_actionExecuted = false;
-			try
-			{
-				CallFunction(functionName, true);
-			}
-			catch (ScriptRuntimeException ex)
-			{
-				throw new Exception(ex.DecoratedMessage, ex);
-			}
-			return _actionExecuted;
-		}
+            _actionExecuted = false;
+            try
+            {
+                CallFunction(functionName, true);
+            }
+            catch (ScriptRuntimeException ex)
+            {
+                throw new Exception(ex.DecoratedMessage, ex);
+            }
+            return _actionExecuted;
+        }
 
-		private void CreateLuaInstance()
-		{
-			_hookedFunctions = new Dictionary<string, IList<DynValue>>();
+        private async Task CreateLuaInstance()
+        {
+            _hookedFunctions = new Dictionary<string, IList<DynValue>>();
 
-			_lua = new Script(CoreModules.Preset_SoftSandbox | CoreModules.LoadMethods)
-			{
-				Options =
-				{
-					ScriptLoader = new CustomScriptLoader(_path) {ModulePaths = new[] {"?.lua"}},
-					CheckThreadAccess = false
-				}
-			};
+            _lua = new Script(CoreModules.Preset_SoftSandbox | CoreModules.LoadMethods)
+            {
+                Options =
+                {
+                    ScriptLoader = new CustomScriptLoader(_path) {ModulePaths = new[] {"?.lua"}},
+                    CheckThreadAccess = false
+                }
+            };
 
-			_lua.Globals["log"] = new Action<string>(Log);
-			_lua.Globals["fatal"] = new Action<string>(Fatal);
-			_lua.Globals["logout"] = new Action<string>(Logout);
-			_lua.Globals["stringContains"] = new Func<string, string, bool>(StringContains);
-            _lua.Globals["playSound"] = new Action<string>(PlaySound);
-            _lua.Globals["registerHook"] = new Action<string, DynValue>(RegisterHook);
+            await Task.Run(() =>
+            {
+                _lua.Globals["log"] = new Action<string>(Log);
+                _lua.Globals["fatal"] = new Action<string>(Fatal);
+                _lua.Globals["logout"] = new Action<string>(Logout);
+                _lua.Globals["stringContains"] = new Func<string, string, bool>(StringContains);
+                _lua.Globals["playSound"] = new Action<string>(PlaySound);
+                _lua.Globals["registerHook"] = new Action<string, DynValue>(RegisterHook);
 
-            // general condition
-            _lua.Globals["getPlayerX"] = new Func<int>(GetPlayerX);
-            _lua.Globals["getPlayerY"] = new Func<int>(GetPlayerY);
-            _lua.Globals["getAccountName"] = new Func<string>(GetAccountName);
-            _lua.Globals["getAreaName"] = new Func<string>(GetAreaName);
-            _lua.Globals["getMapName"] = new Func<string>(GetMapName);
-            _lua.Globals["getTeamSize"] = new Func<int>(GetTeamSize);
+                // general condition
+                _lua.Globals["getPlayerX"] = new Func<int>(GetPlayerX);
+                _lua.Globals["getPlayerY"] = new Func<int>(GetPlayerY);
+                _lua.Globals["getAccountName"] = new Func<string>(GetAccountName);
+                _lua.Globals["getAreaName"] = new Func<string>(GetAreaName);
+                _lua.Globals["getMapName"] = new Func<string>(GetMapName);
+                _lua.Globals["getTeamSize"] = new Func<int>(GetTeamSize);
+                _lua.Globals["getPokedexOwned"] = new Func<int>(GetPokedexOwned);
+                _lua.Globals["getPokedexSeen"] = new Func<int>(GetPokedexSeen);
 
-            _lua.Globals["getPokemonId"] = new Func<int, int>(GetPokemonId);
-            _lua.Globals["getPokemonName"] = new Func<int, string>(GetPokemonName);
-            _lua.Globals["getPokemonHealth"] = new Func<int, int>(GetPokemonHealth);
-            _lua.Globals["getPokemonHealthPercent"] = new Func<int, int>(GetPokemonHealthPercent);
-            _lua.Globals["getPokemonMaxHealth"] = new Func<int, int>(GetPokemonMaxHealth);
-            _lua.Globals["getPokemonLevel"] = new Func<int, int>(GetPokemonLevel);
-            _lua.Globals["getPokemonStatus"] = new Func<int, string>(GetPokemonStatus);
-            _lua.Globals["getPokemonHeldItem"] = new Func<int, string>(GetPokemonHeldItem);
-            _lua.Globals["getRemainingPowerPoints"] = new Func<int, string, int>(GetRemainingPowerPoints);
-            _lua.Globals["getPokemonMaxPowerPoints"] = new Func<int, int, int>(GetPokemonMaxPowerPoints);
-            _lua.Globals["isPokemonShiny"] = new Func<int, bool>(IsPokemonShiny);
-            _lua.Globals["getPokemonMoveName"] = new Func<int, int, string>(GetPokemonMoveName);
-            _lua.Globals["getPokemonMoveAccuracy"] = new Func<int, int, int>(GetPokemonMoveAccuracy);
-            _lua.Globals["getPokemonMovePower"] = new Func<int, int, int>(GetPokemonMovePower);
-            _lua.Globals["getPokemonMoveType"] = new Func<int, int, string>(GetPokemonMoveType);
-            _lua.Globals["getPokemonMoveDamageType"] = new Func<int, int, string>(GetPokemonMoveDamageType);
-            _lua.Globals["getPokemonMoveStatus"] = new Func<int, int, bool>(GetPokemonMoveStatus);
-            _lua.Globals["getPokemonNature"] = new Func<int, string>(GetPokemonNature);
-            _lua.Globals["getPokemonAbility"] = new Func<int, string>(GetPokemonAbility);
-            _lua.Globals["getPokemonStat"] = new Func<int, string, int>(GetPokemonStat);
-            _lua.Globals["getPokemonEffortValue"] = new Func<int, string, int>(GetPokemonEffortValue);
-            _lua.Globals["getPokemonIndividualValue"] = new Func<int, string, int>(GetPokemonIndividualValue);
-            _lua.Globals["getPokemonHappiness"] = new Func<int, int>(GetPokemonHappiness);
-            _lua.Globals["getPokemonOriginalTrainer"] = new Func<int, string>(GetPokemonOriginalTrainer);
-            _lua.Globals["getPokemonGender"] = new Func<int, string>(GetPokemonGender);
-            _lua.Globals["getPokemonType"] = new Func<int, string[]>(GetPokemonType);
-            _lua.Globals["getDamageMultiplier"] = new Func<string, DynValue[], double>(GetDamageMultiplier);
-            _lua.Globals["isPokemonUsable"] = new Func<int, bool>(IsPokemonUsable);
-            _lua.Globals["getUsablePokemonCount"] = new Func<int>(GetUsablePokemonCount);
-            _lua.Globals["hasMove"] = new Func<int, string, bool>(HasMove);
+                _lua.Globals["getPokemonId"] = new Func<int, int>(GetPokemonId);
+                _lua.Globals["getPokemonName"] = new Func<int, string>(GetPokemonName);
+                _lua.Globals["getPokemonHealth"] = new Func<int, int>(GetPokemonHealth);
+                _lua.Globals["getPokemonHealthPercent"] = new Func<int, int>(GetPokemonHealthPercent);
+                _lua.Globals["getPokemonMaxHealth"] = new Func<int, int>(GetPokemonMaxHealth);
+                _lua.Globals["getPokemonLevel"] = new Func<int, int>(GetPokemonLevel);
+                _lua.Globals["getPokemonStatus"] = new Func<int, string>(GetPokemonStatus);
+                _lua.Globals["getPokemonHeldItem"] = new Func<int, string>(GetPokemonHeldItem);
+                _lua.Globals["getRemainingPowerPoints"] = new Func<int, string, int>(GetRemainingPowerPoints);
+                _lua.Globals["getPokemonMaxPowerPoints"] = new Func<int, int, int>(GetPokemonMaxPowerPoints);
+                _lua.Globals["isPokemonShiny"] = new Func<int, bool>(IsPokemonShiny);
+                _lua.Globals["getPokemonMoveName"] = new Func<int, int, string>(GetPokemonMoveName);
+                _lua.Globals["getPokemonMoveAccuracy"] = new Func<int, int, int>(GetPokemonMoveAccuracy);
+                _lua.Globals["getPokemonMovePower"] = new Func<int, int, int>(GetPokemonMovePower);
+                _lua.Globals["getPokemonMoveType"] = new Func<int, int, string>(GetPokemonMoveType);
+                _lua.Globals["getPokemonMoveDamageType"] = new Func<int, int, string>(GetPokemonMoveDamageType);
+                _lua.Globals["getPokemonMoveStatus"] = new Func<int, int, bool>(GetPokemonMoveStatus);
+                _lua.Globals["getPokemonNature"] = new Func<int, string>(GetPokemonNature);
+                _lua.Globals["getPokemonAbility"] = new Func<int, string>(GetPokemonAbility);
+                _lua.Globals["getPokemonStat"] = new Func<int, string, int>(GetPokemonStat);
+                _lua.Globals["getPokemonEffortValue"] = new Func<int, string, int>(GetPokemonEffortValue);
+                _lua.Globals["getPokemonIndividualValue"] = new Func<int, string, int>(GetPokemonIndividualValue);
+                _lua.Globals["getPokemonHappiness"] = new Func<int, int>(GetPokemonHappiness);
+                _lua.Globals["getPokemonOriginalTrainer"] = new Func<int, string>(GetPokemonOriginalTrainer);
+                _lua.Globals["getPokemonGender"] = new Func<int, string>(GetPokemonGender);
+                _lua.Globals["getPokemonType"] = new Func<int, string[]>(GetPokemonType);
+                _lua.Globals["getDamageMultiplier"] = new Func<string, DynValue[], double>(GetDamageMultiplier);
+                _lua.Globals["isPokemonUsable"] = new Func<int, bool>(IsPokemonUsable);
+                _lua.Globals["getUsablePokemonCount"] = new Func<int>(GetUsablePokemonCount);
+                _lua.Globals["hasMove"] = new Func<int, string, bool>(HasMove);
 
-            _lua.Globals["hasItem"] = new Func<string, bool>(HasItem);
-            _lua.Globals["getItemQuantity"] = new Func<string, int>(GetItemQuantity);
-            _lua.Globals["hasItemId"] = new Func<int, bool>(HasItemId);
-            _lua.Globals["getItemQuantityId"] = new Func<int, int>(GetItemQuantityID);
+                _lua.Globals["hasItem"] = new Func<string, bool>(HasItem);
+                _lua.Globals["getItemQuantity"] = new Func<string, int>(GetItemQuantity);
+                _lua.Globals["hasItemId"] = new Func<int, bool>(HasItemId);
+                _lua.Globals["getItemQuantityId"] = new Func<int, int>(GetItemQuantityID);
 
-            _lua.Globals["hasPokemonInTeam"] = new Func<string, bool>(HasPokemonInTeam);
-            _lua.Globals["isTeamSortedByLevelAscending"] = new Func<bool>(IsTeamSortedByLevelAscending);
-            _lua.Globals["isTeamSortedByLevelDescending"] = new Func<bool>(IsTeamSortedByLevelDescending);
-            _lua.Globals["isTeamRangeSortedByLevelAscending"] = new Func<int, int, bool>(IsTeamRangeSortedByLevelAscending);
-            _lua.Globals["isTeamRangeSortedByLevelDescending"] = new Func<int, int, bool>(IsTeamRangeSortedByLevelDescending);
-            _lua.Globals["isNpcVisible"] = new Func<string, bool>(IsNpcVisible);
-            _lua.Globals["isNpcOnCell"] = new Func<int, int, bool>(IsNpcOnCell);
-            _lua.Globals["getMoney"] = new Func<int>(GetMoney);
-            _lua.Globals["isMounted"] = new Func<bool>(IsMounted);
-            _lua.Globals["isSurfing"] = new Func<bool>(IsSurfing);
-            _lua.Globals["getTime"] = new GetTimeDelegate(GetTime);
-            _lua.Globals["isMorning"] = new Func<bool>(IsMorning);
-            _lua.Globals["isNoon"] = new Func<bool>(IsNoon);
-            _lua.Globals["isNight"] = new Func<bool>(IsNight);
-            _lua.Globals["isOutside"] = new Func<bool>(IsOutside);
+                _lua.Globals["hasPokemonInTeam"] = new Func<string, bool>(HasPokemonInTeam);
+                _lua.Globals["isTeamSortedByLevelAscending"] = new Func<bool>(IsTeamSortedByLevelAscending);
+                _lua.Globals["isTeamSortedByLevelDescending"] = new Func<bool>(IsTeamSortedByLevelDescending);
+                _lua.Globals["isTeamRangeSortedByLevelAscending"] = new Func<int, int, bool>(IsTeamRangeSortedByLevelAscending);
+                _lua.Globals["isTeamRangeSortedByLevelDescending"] = new Func<int, int, bool>(IsTeamRangeSortedByLevelDescending);
+                _lua.Globals["isNpcVisible"] = new Func<string, bool>(IsNpcVisible);
+                _lua.Globals["isNpcOnCell"] = new Func<int, int, bool>(IsNpcOnCell);
+                _lua.Globals["isShopOpen"] = new Func<bool>(IsShopOpen);
+                _lua.Globals["getMoney"] = new Func<int>(GetMoney);
+                _lua.Globals["isMounted"] = new Func<bool>(IsMounted);
+                _lua.Globals["isSurfing"] = new Func<bool>(IsSurfing);
+                _lua.Globals["getTime"] = new GetTimeDelegate(GetTime);
+                _lua.Globals["isMorning"] = new Func<bool>(IsMorning);
+                _lua.Globals["isNoon"] = new Func<bool>(IsNoon);
+                _lua.Globals["isNight"] = new Func<bool>(IsNight);
+                _lua.Globals["isOutside"] = new Func<bool>(IsOutside);
+                _lua.Globals["getDestinationId"] = new Func<int, int, string>(GetDestinationId);
 
-            // Quest conditions
-            _lua.Globals["isMainQuestId"] = new Func<string, bool>(IsMainQuestId);
-            _lua.Globals["isMainQuest"] = new Func<string, bool>(IsMainQuest);
-            _lua.Globals["isQuestIdCompleted"] = new Func<string, bool>(IsQuestIdCompleted);
-            _lua.Globals["isQuestCompleted"] = new Func<string, bool>(IsQuestCompleted);
-            _lua.Globals["getQuestIdType"] = new Func<string, string>(GetQuestIdType);
-            _lua.Globals["getQuestType"] = new Func<string, string>(GetQuestType);
+                // Quest conditions
+                _lua.Globals["isMainQuestId"] = new Func<string, bool>(IsMainQuestId);
+                _lua.Globals["isMainQuest"] = new Func<string, bool>(IsMainQuest);
+                _lua.Globals["isQuestIdCompleted"] = new Func<string, bool>(IsQuestIdCompleted);
+                _lua.Globals["isQuestCompleted"] = new Func<string, bool>(IsQuestCompleted);
+                _lua.Globals["getQuestIdType"] = new Func<string, string>(GetQuestIdType);
+                _lua.Globals["getQuestType"] = new Func<string, string>(GetQuestType);
 
-            // Quest actions
-            _lua.Globals["requestPathForQuestId"] = new Func<string, bool>(RequestPathForQuestId);
-            _lua.Globals["requestPathForQuest"] = new Func<string, bool>(RequestPathForQuest);
+                // Quest actions
+                _lua.Globals["requestPathForQuestId"] = new Func<string, bool>(RequestPathForQuestId);
+                _lua.Globals["requestPathForQuest"] = new Func<string, bool>(RequestPathForQuest);
 
-            // Battle conditions
-            _lua.Globals["isOpponentShiny"] = new Func<bool>(IsOpponentShiny);
-            _lua.Globals["isAlreadyCaught"] = new Func<bool>(IsAlreadyCaught);
-            _lua.Globals["isWildBattle"] = new Func<bool>(IsWildBattle);
-            _lua.Globals["getActivePokemonNumber"] = new Func<int>(GetActivePokemonNumber);
-            _lua.Globals["getOpponentId"] = new Func<int>(GetOpponentId);
-            _lua.Globals["getOpponentName"] = new Func<string>(GetOpponentName);
-            _lua.Globals["getOpponentHealth"] = new Func<int>(GetOpponentHealth);
-            _lua.Globals["getOpponentMaxHealth"] = new Func<int>(GetOpponentMaxHealth);
-            _lua.Globals["getOpponentHealthPercent"] = new Func<int>(GetOpponentHealthPercent);
-            _lua.Globals["getOpponentLevel"] = new Func<int>(GetOpponentLevel);
-            _lua.Globals["getOpponentStatus"] = new Func<string>(GetOpponentStatus);
-            _lua.Globals["isOpponentEffortValue"] = new Func<string, bool>(IsOpponentEffortValue);
-            _lua.Globals["getOpponentEffortValue"] = new Func<string, int>(GetOpponentEffortValue);
-            _lua.Globals["getOpponentType"] = new Func<string[]>(GetOpponentType);
+                // Battle conditions
+                _lua.Globals["isOpponentShiny"] = new Func<bool>(IsOpponentShiny);
+                _lua.Globals["isAlreadyCaught"] = new Func<bool>(IsAlreadyCaught);
+                _lua.Globals["isWildBattle"] = new Func<bool>(IsWildBattle);
+                _lua.Globals["getActivePokemonNumber"] = new Func<int>(GetActivePokemonNumber);
+                _lua.Globals["getOpponentId"] = new Func<int>(GetOpponentId);
+                _lua.Globals["getOpponentName"] = new Func<string>(GetOpponentName);
+                _lua.Globals["getOpponentHealth"] = new Func<int>(GetOpponentHealth);
+                _lua.Globals["getOpponentMaxHealth"] = new Func<int>(GetOpponentMaxHealth);
+                _lua.Globals["getOpponentHealthPercent"] = new Func<int>(GetOpponentHealthPercent);
+                _lua.Globals["getOpponentLevel"] = new Func<int>(GetOpponentLevel);
+                _lua.Globals["getOpponentStatus"] = new Func<string>(GetOpponentStatus);
+                _lua.Globals["isOpponentEffortValue"] = new Func<string, bool>(IsOpponentEffortValue);
+                _lua.Globals["getOpponentEffortValue"] = new Func<string, int>(GetOpponentEffortValue);
+                _lua.Globals["getOpponentType"] = new Func<string[]>(GetOpponentType);
 
-            // Path actions
-            _lua.Globals["moveToCell"] = new Func<int, int, bool>(MoveToCell);
-            _lua.Globals["moveToArea"] = new Func<string, bool>(MoveToArea);
-            _lua.Globals["moveToRectangle"] = new Func<DynValue[], bool>(MoveToRectangle);
-            _lua.Globals["moveLinearX"] = new Func<DynValue[], bool>(MoveLinearX);
-            _lua.Globals["moveLinearY"] = new Func<DynValue[], bool>(MoveLinearY);
-            _lua.Globals["moveToGrass"] = new Func<bool>(MoveToGrass);
-            _lua.Globals["moveToWater"] = new Func<bool>(MoveToWater);
-            _lua.Globals["talkToNpc"] = new Func<string, bool>(TalkToNpc);
-            _lua.Globals["talkToNpcOnCell"] = new Func<int, int, bool>(TalkToNpcOnCell);
-            _lua.Globals["usePokecenter"] = new Func<bool>(UsePokecenter);
-            _lua.Globals["swapPokemon"] = new Func<int, int, bool>(SwapPokemon);
-            _lua.Globals["sortTeamByLevelAscending"] = new Func<bool>(SortTeamByLevelAscending);
-            _lua.Globals["sortTeamByLevelDescending"] = new Func<bool>(SortTeamByLevelDescending);
-            _lua.Globals["sortTeamRangeByLevelAscending"] = new Func<int, int, bool>(SortTeamRangeByLevelAscending);
-            _lua.Globals["sortTeamRangeByLevelDescending"] = new Func<int, int, bool>(SortTeamRangeByLevelDescending);
+                // Path actions
+                _lua.Globals["moveToCell"] = new Func<int, int, bool>(MoveToCell);
+                _lua.Globals["moveToArea"] = new Func<string, bool>(MoveToArea);
+                _lua.Globals["moveToRectangle"] = new Func<DynValue[], bool>(MoveToRectangle);
+                _lua.Globals["moveLinearX"] = new Func<DynValue[], bool>(MoveLinearX);
+                _lua.Globals["moveLinearY"] = new Func<DynValue[], bool>(MoveLinearY);
+                _lua.Globals["moveToGrass"] = new Func<bool>(MoveToGrass);
+                _lua.Globals["moveToWater"] = new Func<bool>(MoveToWater);
+                _lua.Globals["talkToNpc"] = new Func<string, bool>(TalkToNpc);
+                _lua.Globals["talkToNpcOnCell"] = new Func<int, int, bool>(TalkToNpcOnCell);
+                _lua.Globals["usePokecenter"] = new Func<bool>(UsePokecenter);
+                _lua.Globals["swapPokemon"] = new Func<int, int, bool>(SwapPokemon);
+                _lua.Globals["sortTeamByLevelAscending"] = new Func<bool>(SortTeamByLevelAscending);
+                _lua.Globals["sortTeamByLevelDescending"] = new Func<bool>(SortTeamByLevelDescending);
+                _lua.Globals["sortTeamRangeByLevelAscending"] = new Func<int, int, bool>(SortTeamRangeByLevelAscending);
+                _lua.Globals["sortTeamRangeByLevelDescending"] = new Func<int, int, bool>(SortTeamRangeByLevelDescending);
+                _lua.Globals["buyItem"] = new Func<string, int, bool>(BuyItem);
+                _lua.Globals["closeShop"] = new Func<bool>(CloseShop);
 
-            // Battle actions
-            _lua.Globals["attack"] = new Func<bool>(Attack);
-            _lua.Globals["weakAttack"] = new Func<bool>(WeakAttack);
-            _lua.Globals["run"] = new Func<bool>(Run);
-            _lua.Globals["sendUsablePokemon"] = new Func<bool>(SendUsablePokemon);
-            _lua.Globals["sendAnyPokemon"] = new Func<bool>(SendAnyPokemon);
-            _lua.Globals["sendPokemon"] = new Func<int, bool>(SendPokemon);
-            _lua.Globals["useMove"] = new Func<string, bool>(UseMove);
-            _lua.Globals["useAnyMove"] = new Func<bool>(UseAnyMove);
+                // Battle actions
+                _lua.Globals["attack"] = new Func<bool>(Attack);
+                _lua.Globals["weakAttack"] = new Func<bool>(WeakAttack);
+                _lua.Globals["run"] = new Func<bool>(Run);
+                _lua.Globals["sendUsablePokemon"] = new Func<bool>(SendUsablePokemon);
+                _lua.Globals["sendAnyPokemon"] = new Func<bool>(SendAnyPokemon);
+                _lua.Globals["sendPokemon"] = new Func<int, bool>(SendPokemon);
+                _lua.Globals["useMove"] = new Func<string, bool>(UseMove);
+                _lua.Globals["useAnyMove"] = new Func<bool>(UseAnyMove);
 
-            // Move learning actions
-            _lua.Globals["forgetMove"] = new Func<string, bool>(ForgetMove);
-            _lua.Globals["forgetAnyMoveExcept"] = new Func<DynValue[], bool>(ForgetAnyMoveExcept);
+                // Move learning actions
+                _lua.Globals["forgetMove"] = new Func<string, bool>(ForgetMove);
+                _lua.Globals["forgetAnyMoveExcept"] = new Func<DynValue[], bool>(ForgetAnyMoveExcept);
 
-            // Path functions
-            _lua.Globals["pushDialogAnswer"] = new Action<DynValue>(PushDialogAnswer);
+                // Path functions
+                _lua.Globals["pushDialogAnswer"] = new Action<DynValue>(PushDialogAnswer);
 
-            // General actions
-            _lua.Globals["useItem"] = new Func<string, bool>(UseItem);
-            _lua.Globals["useItemOnPokemon"] = new Func<string, int, bool>(UseItemOnPokemon);
-            _lua.Globals["useItemOnMove"] = new Func<string, string, int, bool>(UseItemOnMove);
+                // General actions
+                _lua.Globals["useItem"] = new Func<string, bool>(UseItem);
+                _lua.Globals["useItemOnPokemon"] = new Func<string, int, bool>(UseItemOnPokemon);
+                _lua.Globals["useItemOnMove"] = new Func<string, string, int, bool>(UseItemOnMove);
+                _lua.Globals["useEquippedMount"] = new Func<bool>(UseEquippedMount);
 
-            // File editing actions
-            _lua.Globals["logToFile"] = new Action<string, DynValue, bool>(LogToFile);
-            _lua.Globals["readLinesFromFile"] = new Func<string, string[]>(ReadLinesFromFile);
+                // File editing actions
+                _lua.Globals["logToFile"] = new Action<string, DynValue, bool>(LogToFile);
+                _lua.Globals["readLinesFromFile"] = new Func<string, string[]>(ReadLinesFromFile);
+            });
 
             foreach (string content in _libsContent)
-			{
-				CallContent(content);
-			}
-			CallContent(_content);
+            {
+                CallContent(content);
+            }
+            CallContent(_content);
             IsLoaded = true;
         }
 
         private void CallFunctionSafe(string functionName, params object[] args)
-		{
-			try
-			{
-				try
-				{
-					CallFunction(functionName, false, args);
-				}
-				catch (ScriptRuntimeException ex)
-				{
-					throw new Exception(ex.DecoratedMessage, ex);
-				}
-			}
-			catch (Exception ex)
-			{
+        {
+            try
+            {
+                try
+                {
+                    CallFunction(functionName, false, args);
+                }
+                catch (ScriptRuntimeException ex)
+                {
+                    throw new Exception(ex.DecoratedMessage, ex);
+                }
+            }
+            catch (Exception ex)
+            {
 #if DEBUG
-				Fatal("Error during the execution of '" + functionName + "': " + ex);
+                Fatal("Error during the execution of '" + functionName + "': " + ex);
 #else
 				Fatal("Error during the execution of '" + functionName + "': " + ex.Message);
 #endif
-			}
-		}
+            }
+        }
 
-		private void CallContent(string content)
-		{
-			try
-			{
-				TaskUtils.CallActionWithTimeout(() => _lua.DoString(content), delegate
-				{
-					throw new Exception("The execution of the script timed out.");
-				}, TimeoutDelay);
-			}
-			catch (SyntaxErrorException ex)
-			{
-				throw new Exception(ex.DecoratedMessage, ex);
-			}
-		}
+        private void CallContent(string content)
+        {
+            try
+            {
+                TaskUtils.CallActionWithTimeout(() => _lua.DoString(content), delegate
+                {
+                    throw new Exception("The execution of the script timed out.");
+                }, TimeoutDelay);
+            }
+            catch (SyntaxErrorException ex)
+            {
+                throw new Exception(ex.DecoratedMessage, ex);
+            }
+        }
 
-		private void CallFunction(string functionName, bool isPathAction, params object[] args)
-		{
-			if (_hookedFunctions.ContainsKey(functionName))
-			{
-				foreach (DynValue function in _hookedFunctions[functionName])
-				{
-					CallDynValueFunction(function, "hook:" + functionName, args);
-					if (isPathAction && _actionExecuted) return;
-				}
-			}
-			CallDynValueFunction(_lua.Globals.Get(functionName), functionName, args);
-		}
+        private void CallFunction(string functionName, bool isPathAction, params object[] args)
+        {
+            if (_hookedFunctions.ContainsKey(functionName))
+            {
+                foreach (DynValue function in _hookedFunctions[functionName])
+                {
+                    CallDynValueFunction(function, "hook:" + functionName, args);
+                    if (isPathAction && _actionExecuted) return;
+                }
+            }
+            CallDynValueFunction(_lua.Globals.Get(functionName), functionName, args);
+        }
 
-		private void CallDynValueFunction(DynValue function, string functionName, params object[] args)
-		{
-			if (function.Type != DataType.Function) return;
-			TaskUtils.CallActionWithTimeout(() => _lua.Call(function, args), delegate
-			{
-				Fatal("The execution of the script timed out (" + functionName + ").");
-			}, TimeoutDelay);
-		}
+        private void CallDynValueFunction(DynValue function, string functionName, params object[] args)
+        {
+            if (function.Type != DataType.Function) return;
+            TaskUtils.CallActionWithTimeout(() => _lua.Call(function, args), delegate
+            {
+                Fatal("The execution of the script timed out (" + functionName + ").");
+            }, TimeoutDelay);
+        }
 
-		private bool ValidateAction(string source, bool inBattle)
-		{
-			if (_actionExecuted)
-			{
-				Fatal("error: " + source + ": the script can only execute one action per frame.");
-				return false;
-			}
-			if (Bot.Game.IsInBattle != inBattle)
-			{
-				if (inBattle)
-				{
-					Fatal("error: " + source + " you cannot execute a battle action while not in a battle.");
-				}
-				else
-				{
-					Fatal("error: " + source + " you cannot execute a path action while in a battle.");
-				}
-				return false;
-			}
-			return true;
-		}
+        private bool ValidateAction(string source, bool inBattle)
+        {
+            if (_actionExecuted)
+            {
+                Fatal("error: " + source + ": the script can only execute one action per frame.");
+                return false;
+            }
+            if (Bot.Game.IsInBattle != inBattle)
+            {
+                if (inBattle)
+                {
+                    Fatal("error: " + source + " you cannot execute a battle action while not in a battle.");
+                }
+                else
+                {
+                    Fatal("error: " + source + " you cannot execute a path action while in a battle.");
+                }
+                return false;
+            }
+            return true;
+        }
 
-		private bool ExecuteAction(bool result)
-		{
-			if (result)
-			{
-				_actionExecuted = true;
-			}
-			return result;
-		}
+        private bool ExecuteAction(bool result)
+        {
+            if (result)
+            {
+                _actionExecuted = true;
+            }
+            return result;
+        }
 
-		// API: Displays the specified message to the message log.
-		private void Log(string message)
-		{
-			LogMessage(message);
-		}
+        // API: Displays the specified message to the message log.
+        private void Log(string message)
+        {
+            LogMessage(message);
+        }
 
-		// API: Displays the specified message to the message log and stop the bot.
-		private void Fatal(string message)
-		{
-			LogMessage(message);
-			Bot.Stop();
-		}
+        // API: Displays the specified message to the message log and stop the bot.
+        private void Fatal(string message)
+        {
+            LogMessage(message);
+            Bot.Stop();
+        }
 
-		// API: Displays the specified message to the message log and logs out.
-		private void Logout(string message)
-		{
-			LogMessage(message);
-			Bot.Stop();
-			Bot.Logout(false);
-		}
+        // API: Displays the specified message to the message log and logs out.
+        private void Logout(string message)
+        {
+            LogMessage(message);
+            Bot.Stop();
+            Bot.Logout(false);
+        }
 
-		// API: Returns true if the string contains the specified part, ignoring the case.
-		private bool StringContains(string haystack, string needle)
-		{
-			return haystack.ToUpperInvariant().Contains(needle.ToUpperInvariant());
-		}
+        // API: Returns true if the string contains the specified part, ignoring the case.
+        private bool StringContains(string haystack, string needle)
+        {
+            return haystack.ToUpperInvariant().Contains(needle.ToUpperInvariant());
+        }
 
         // API: Returns playing a custom sound.
         private void PlaySound(string file)
@@ -1028,6 +1038,12 @@ namespace Poke1Bot.Scripting
             return Bot.Game.Map.OriginalNpcs.Any(npc => npc.PositionX == cellX && npc.PositionY == cellY && npc.IsVisible);
         }
 
+        // API: Returns true if there is a shop opened.
+        private bool IsShopOpen()
+        {
+            return Bot.Game.OpenedShop != null;
+        }
+
         // API: Returns the amount of money in the inventory.
         private int GetMoney()
         {
@@ -1648,7 +1664,6 @@ namespace Poke1Bot.Scripting
         // API: Uses the specified item on the specified pokémon.
         private bool UseItemOnPokemon(string itemName, int pokemonIndex)
         {
-            itemName = itemName.ToUpperInvariant();
             InventoryItem item = Bot.Game.GetItemFromName(itemName.ToUpperInvariant());
 
             if (item != null && item.Quantity > 0)
@@ -1697,6 +1712,36 @@ namespace Poke1Bot.Scripting
                 }
             }
             return false;
+        }
+
+        // API: Buys the specified item from the opened shop.
+        private bool BuyItem(string itemName, int quantity)
+        {
+            if (!ValidateAction("buyItem", false)) return false;
+
+            if (Bot.Game.OpenedShop == null)
+            {
+                Fatal("error: buyItem can only be used when a shop is open.");
+                return false;
+            }
+
+            ShopItem item = Bot.Game.OpenedShop.Items.FirstOrDefault(i => i.Name.Equals(itemName, StringComparison.InvariantCultureIgnoreCase));
+
+            if (item == null)
+            {
+                Fatal("error: buyItem: the item '" + itemName + "' does not exist in the opened shop.");
+                return false;
+            }
+
+            return ExecuteAction(Bot.Game.BuyItem(item.Id, quantity));
+        }
+
+        // API: Closes the opened shop.
+        private bool CloseShop()
+        {
+            if (!ValidateAction("closeShop", false)) return false;
+
+            return (ExecuteAction(Bot.Game.CloseShop()));
         }
 
         // API: Uses the most effective offensive move available.
@@ -1878,7 +1923,7 @@ namespace Poke1Bot.Scripting
         private bool IsMainQuestId(string id)
         {
             if (string.IsNullOrEmpty(id)) return false;
-            return Bot.Game.Quests.Count > 0 && Bot.Game.Quests.Find(q => q.Id.Equals(id, StringComparison.InvariantCultureIgnoreCase) 
+            return Bot.Game.Quests.Count > 0 && Bot.Game.Quests.Find(q => q.Id.Equals(id, StringComparison.InvariantCultureIgnoreCase)
                 && q.Type == PSXAPI.Response.QuestType.Main) != null;
         }
 
@@ -1886,7 +1931,7 @@ namespace Poke1Bot.Scripting
         private bool IsMainQuest(string name)
         {
             if (string.IsNullOrEmpty(name)) return false;
-            return Bot.Game.Quests.Count > 0 && Bot.Game.Quests.Find(q => q.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase) 
+            return Bot.Game.Quests.Count > 0 && Bot.Game.Quests.Find(q => q.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase)
                 && q.Type == PSXAPI.Response.QuestType.Main) != null;
         }
 
@@ -1894,7 +1939,7 @@ namespace Poke1Bot.Scripting
         private bool IsQuestIdCompleted(string id)
         {
             if (string.IsNullOrEmpty(id)) return false;
-            return Bot.Game.Quests.Count > 0 && Bot.Game.Quests.Find(q => q.Id.Equals(id, StringComparison.InvariantCultureIgnoreCase) 
+            return Bot.Game.Quests.Count > 0 && Bot.Game.Quests.Find(q => q.Id.Equals(id, StringComparison.InvariantCultureIgnoreCase)
                 && q.Completed) != null;
         }
 
@@ -1938,6 +1983,31 @@ namespace Poke1Bot.Scripting
             var findQuest = Bot.Game.Quests.Find(q => q.Id.Equals(id, StringComparison.InvariantCultureIgnoreCase));
             if (findQuest is null) return false;
             return !findQuest.Completed ? ExecuteAction(Bot.Game.RequestPathForInCompleteQuest(findQuest)) : ExecuteAction(Bot.Game.RequestPathForCompletedQuest(findQuest));
+        }
+
+        // API: Gets destination id of a specified link.
+        private string GetDestinationId(int x, int y)
+        {
+            if (!Bot.Game.Map.HasLink(x, y))
+            {
+                Fatal($"error: ‘getDestinationId’ there is no link at {x}, {y}");
+                return null;
+            }
+
+            var destination = Bot.Game.Map.Links.Find(dest => dest.x == x && dest.z == -y);
+            if (destination is null)
+            {
+                Fatal($"error: ‘getDestinationId’ there is no link at {x}, {y}");
+                return null;
+            }
+            return destination.DestinationID.ToString();
+        }
+
+        // API: Uses an equipped mount.
+        private bool UseEquippedMount()
+        {
+            if (!ValidateAction("useEquippedMount", false)) return false;
+            return ExecuteAction(Bot.Game.UseMount());
         }
     }
 }

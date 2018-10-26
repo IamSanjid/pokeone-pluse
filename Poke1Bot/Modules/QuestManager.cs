@@ -65,6 +65,19 @@ namespace Poke1Bot.Modules
         {
             _questTimeout.Update();
 
+            if (_haveToMoveLink != null && !_bot.Game.IsInBattle && _bot.Game != null)
+            {
+                if (_bot.Game.PlayerX != _haveToMoveLink.x || _bot.Game.PlayerY != -_haveToMoveLink.z)
+                {
+                    _questTimeout.Set();
+                    _bot.Game?.ClearPath();
+                    _bot.MoveToCell(_haveToMoveLink.x, -_haveToMoveLink.z);
+                    return;
+                }
+                else
+                    _haveToMoveLink = null;
+            }
+
             if (Quests.Count > 0)
             {               
 
@@ -77,13 +90,6 @@ namespace Poke1Bot.Modules
 
                     Quests.RemoveAt(0);
                 }
-            }
-
-            if (_haveToMoveLink != null && !_bot.Game.IsInBattle)
-            {
-                _questTimeout.Set();
-                _bot.Game?.ClearPath();
-                _bot.MoveToCell(_haveToMoveLink.x, -_haveToMoveLink.z);
             }
         }
     }

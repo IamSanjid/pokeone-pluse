@@ -11,7 +11,7 @@ namespace Poke1Bot.Scripting
     {
         //HashSet used, so that dulplicate entries are filtered by default
         private HashSet<string> _baseDirs = new HashSet<string>();
-        private string proShineSystemVar = "lua_path";
+        private string poke1SystemVar = "lua_path";
 
         public CustomScriptLoader(string scriptDir)
         {
@@ -21,9 +21,9 @@ namespace Poke1Bot.Scripting
             //2. absolute path | if given an exact location on disk e.g.: C:\ultrascript.lua
             _baseDirs.Add("");
             //3. lua_path | using system variables as root keys
-            if (Environment.GetEnvironmentVariable(proShineSystemVar) != null)
+            if (Environment.GetEnvironmentVariable(poke1SystemVar) != null)
             {
-                string luaPaths = Environment.GetEnvironmentVariable(proShineSystemVar);
+                string luaPaths = Environment.GetEnvironmentVariable(poke1SystemVar);
                 foreach (var lua_path in luaPaths.Split(';'))
                     _baseDirs.Add(lua_path);
             }

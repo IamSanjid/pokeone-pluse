@@ -47,8 +47,37 @@ namespace Poke1Protocol
 
         public PSXAPI.Response.Battle Data { get; private set; }
 
+        public bool IsUpdated { get; private set; }
+
+        private List<Pokemon> _team { get; set; }
+
+        public PSXAPI.Response.Payload.BattleActive GetActivePokemon
+        {
+            get
+            {
+                var playerReq = PlayerSide == 1 ? Data.Request1 : Data.Request2;
+                if (playerReq.RequestInfo.active is null) return null;
+                var pok = playerReq.RequestInfo.active?.FirstOrDefault(s => s?.trainer?.ToLowerInvariant() == _playerName.ToLowerInvariant());
+                if (pok is null)
+                    return playerReq.RequestInfo.active[0] ?? null;
+                return pok;
+            }
+        }
+
+        public string AttackTargetType(int uid)
+        {
+            if (string.IsNullOrEmpty(_playerName) || GetActivePokemon is null)
+                return "normal";
+            var targetMove = GetActivePokemon.moves[uid - 1];
+            if (targetMove is null || string.IsNullOrEmpty(targetMove.target))
+                return "normal";
+            return targetMove.target;
+        }
+
         public Battle(string playerName, PSXAPI.Response.Battle data, List<Pokemon> team)
         {
+            IsUpdated = false;
+
             Data = data;
 
             _playerName = playerName;
@@ -56,6 +85,8 @@ namespace Poke1Protocol
             IsWild = data.CanCatch;
 
             IsFinished = data.Ended;
+
+            _team = team;
 
             if (data.Mapping1 != null && !string.IsNullOrEmpty(playerName))
             {
@@ -73,11 +104,11 @@ namespace Poke1Protocol
 
             if (data.Request1 != null)
             {
-                HandleBattleRequest(data.Request1, PlayerSide == 1, team);
+                HandleBattleRequest(data.Request1, PlayerSide == 1);
             }
             if (data.Request2 != null)
             {
-                HandleBattleRequest(data.Request2, PlayerSide == 2, team);
+                HandleBattleRequest(data.Request2, PlayerSide == 2);
             }
 
             if (data.Log != null && data.Log.Length > 0)
@@ -125,7 +156,7 @@ namespace Poke1Protocol
                             var index = req.RequestInfo.side.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
                             SelectedOpponent = index < 0 ? SelectedOpponent : index;
                             CurrentHealth = pokemon.Health;
-                            OpponentHealth = CurrentHealth;
+                            OpponentHealth = pokemon.MaxHealth;
                             OpponentGender = pokemon.Gender;
                             OpponentId = pokemon.ID;
                             OpponentLevel = pokemon.Level;
@@ -141,9 +172,13 @@ namespace Poke1Protocol
 
         public void UpdateBattle(PSXAPI.Response.Battle data, List<Pokemon> team)
         {
+            IsUpdated = true;
+
             IsWild = data.CanCatch;
 
             IsFinished = data.Ended;
+
+            _team = team;
 
             if (data.Mapping1 != null && !string.IsNullOrEmpty(_playerName))
             {
@@ -165,12 +200,12 @@ namespace Poke1Protocol
 
             if (data.Request1 != null)
             {
-                HandleBattleRequest(data.Request1, PlayerSide == 1, team);
+                HandleBattleRequest(data.Request1, PlayerSide == 1);
                 Data = data;
             }
             if (data.Request2 != null)
             {
-                HandleBattleRequest(data.Request2, PlayerSide == 2, team);
+                HandleBattleRequest(data.Request2, PlayerSide == 2);
                 Data = data;
             }
 
@@ -219,7 +254,7 @@ namespace Poke1Protocol
                             var index = req.RequestInfo.side.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
                             SelectedOpponent = index < 0 ? SelectedOpponent : index;
                             CurrentHealth = pokemon.Health;
-                            OpponentHealth = CurrentHealth;
+                            OpponentHealth = pokemon.MaxHealth;
                             OpponentGender = pokemon.Gender;
                             OpponentId = pokemon.ID;
                             OpponentLevel = pokemon.Level;
@@ -231,38 +266,53 @@ namespace Poke1Protocol
                     }
                 }
             }
+            UpdateSelectedPokemonIndex();
         }
 
         public void UpdateSelectedPokemon(int newPos) // While switching to another Pokemon.
         {
             SelectedPokemonIndex = newPos - 1;
+            UpdateSelectedPokemonIndex();
         }
 
-        private void HandleBattleRequest(PSXAPI.Response.Payload.BattleRequest request, bool isPlayerSide, List<Pokemon> team)
+        private void UpdateSelectedPokemonIndex()
+        {
+            if (GetActivePokemon != null)
+            {
+                SelectedPokemonIndex = _team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == GetActivePokemon.personality);
+            }
+        }
+
+        private void UpdateBattleHealth(PSXAPI.Response.Payload.BattlePokemon[] pokemon)
+        {
+            for (var i = 0; i < pokemon.Length; i++)
+            {
+                var condition = pokemon[i].condition;
+                var details = pokemon[i].details;
+                var newPoke = GetSwitchedPokemon(details, condition);
+                var index = _team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == pokemon[i].personality); // find the correct index...
+                _team[index].UpdateHealth(newPoke.Health, newPoke.MaxHealth);
+            }
+        }
+
+        private void HandleBattleRequest(PSXAPI.Response.Payload.BattleRequest request, bool isPlayerSide)
         {
             if (isPlayerSide)
             {
                 var p1 = request;
                 var active = p1.RequestInfo.active;
                 var activePokemon = p1.RequestInfo.side.pokemon.ToList().Find(x => x.active);
-                if (team is null || team.Count <= 0)
-                    SelectedPokemonIndex = p1.RequestInfo.side.pokemon.ToList().IndexOf(activePokemon);
-                else
-                    SelectedPokemonIndex = team.IndexOf(team.Find(p => p.PokemonData.Pokemon.Payload.Personality == activePokemon.personality));
-                var condition = activePokemon.condition;
-                if (condition.Contains("/"))
-                {
-                    var currentHpBool = int.TryParse(condition.Split('/')[0], out int curHp);
-                    var maxHpBool = int.TryParse(condition.Split('/')[1], out int maxHp);
-                    if (maxHpBool || currentHpBool)
-                        team[SelectedPokemonIndex].UpdateHealth(curHp, maxHp);
-                }
-                else if (condition.Contains("fnt"))
-                {
-                    team[SelectedPokemonIndex].UpdateHealth(0, team[SelectedPokemonIndex].BattleMaxHealth);
-                }
+
+                UpdateBattleHealth(p1.RequestInfo.side.pokemon);
+
                 ResponseID = p1.RequestID;
                 PlayerBattleSide = p1.RequestInfo.side;
+
+                if (_team is null || _team.Count <= 0)
+                    SelectedPokemonIndex = p1.RequestInfo.side.pokemon.ToList().IndexOf(activePokemon);
+                else
+                    SelectedPokemonIndex = _team.IndexOf(_team.Find(p => p.PokemonData.Pokemon.Payload.Personality == activePokemon.personality));
+                UpdateSelectedPokemonIndex();
             }
             else
             {
@@ -280,14 +330,14 @@ namespace Poke1Protocol
                 IsShiny = Poke.Shiny;
                 OpponentLevel = Poke.Level;
                 OpponentStatus = Poke.Status;
+                OpponentHealth = Poke.MaxHealth;
+                CurrentHealth = Poke.Health;
                 if (!IsWild && opponent.trainer != null)
                     TrainerName = opponent.trainer;
                 ResponseID = p2.RequestID;               
-                var opAbility = opponent.baseAbility.ToLowerInvariant().Replace(" ", "");
-                IsTrapped = opAbility == "arenatrap" || opAbility == "shadowtag" || opAbility == "magnetpull" || opponent.item == "smokeball";
+                var opAbility = opponent.baseAbility.ToLowerInvariant().Replace(" ", "");               
             }
-
-            CurrentHealth = OpponentHealth;
+            IsTrapped = GetActivePokemon?.maybeTrapped == true || GetActivePokemon?.maybeDisabled == true;
         }
 
         public void ProcessLog(string[] logs, List<Pokemon> team, Action<string> BattleMessage)
@@ -309,6 +359,7 @@ namespace Poke1Protocol
                         OnlyInfo = false;
 
                     var ranAway = logs.Any(sf => sf.Contains("--run"));
+                    var caught = logs.Any(sf => sf.Contains("--catch"));
 
                     switch (type)
                     {
@@ -338,6 +389,9 @@ namespace Poke1Protocol
                             }
                             break;
                         case "move":
+
+                            if (caught) break;
+
                             //Attacker
                             var attacker = info[2].Split(new string[]
                                 {
@@ -356,7 +410,14 @@ namespace Poke1Protocol
                                 if (findMove.CurrentPoints > 0)
                                     findMove.CurrentPoints -= 1;
                             }
+
                             BattleMessage?.Invoke($"{attacker[1]} used {move}!");
+                            if (info.Length > 5)
+                            {
+                                var happened = info[5];
+                                if (happened == "[miss]")
+                                    BattleMessage?.Invoke($"Foe {attacker[1]}'s attack missed!");
+                            }
                             break;
                         case "faint":
                             var died = info[2].Split(new string[]
@@ -398,7 +459,7 @@ namespace Poke1Protocol
                             if (isMySide)
                             {
                                 BattleMessage?.Invoke($"{info[8]} threw a " +
-                                    $" {ItemsManager.Instance.ItemClass.items.ToList().Find(itm => itm.BattleID == info[4] || itm.Name == info[4]).Name}!");
+                                    $"{ItemsManager.Instance.ItemClass.items.ToList().Find(itm => itm.BattleID == info[4] || itm.Name == info[4]).Name}!");
                             }
                             else
                             {
@@ -407,34 +468,33 @@ namespace Poke1Protocol
                                     Data.Mapping2 != null ? Data.Mapping1[0] : "Enemy"; 
 
                                 BattleMessage?.Invoke($"{info[8]} threw a " +
-                                    $" {ItemsManager.Instance.ItemClass.items.ToList().Find(itm => itm.BattleID == info[4] || itm.Name == info[4]).Name}!");
+                                    $"{ItemsManager.Instance.ItemClass.items.ToList().Find(itm => itm.BattleID == info[4] || itm.Name == info[4]).Name}!");                                
+                            }
+                            int pokeID = Convert.ToInt32(info[3]);
+                            int success = Convert.ToInt32(info[7]);
+                            int shakes = Convert.ToInt32(info[5]);
 
-                                int pokeID = Convert.ToInt32(info[3]);
-                                int success = Convert.ToInt32(info[7]);
-                                int shakes = Convert.ToInt32(info[5]);
-
-                                if (shakes < 0)
+                            if (shakes < 0)
+                            {
+                                BattleMessage?.Invoke("But it failed.");
+                            }
+                            else
+                            {
+                                if (success == 0)
                                 {
-                                    BattleMessage?.Invoke("But it failed.");
+                                    BattleMessage?.Invoke($"Gotcha! {PokemonManager.Instance.Names[OpponentId]} was caught!");
+                                }
+                                else if (shakes == 0)
+                                {
+                                    BattleMessage?.Invoke($"Oh no! The Pokémon broke free!");
+                                }
+                                else if (shakes < 2)
+                                {
+                                    BattleMessage?.Invoke("Aww! It appeared to be caught!");
                                 }
                                 else
                                 {
-                                    if (success == 0)
-                                    {
-                                        BattleMessage?.Invoke($"Gotcha! {PokemonManager.Instance.Names[OpponentId]} was caught!");
-                                    }
-                                    else if (shakes == 0)
-                                    {
-                                        BattleMessage?.Invoke($"Oh no! The Pokémon broke free!");
-                                    }
-                                    else if (shakes < 2)
-                                    {
-                                        BattleMessage?.Invoke("Aww! It appeared to be caught!");
-                                    }
-                                    else
-                                    {
-                                        BattleMessage?.Invoke("Aargh! Almost had it!");
-                                    }
+                                    BattleMessage?.Invoke("Aargh! Almost had it!");
                                 }
                             }
                             break;
