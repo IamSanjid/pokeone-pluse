@@ -1757,7 +1757,7 @@ namespace Poke1Protocol
                                         npcId = Guid.Parse(command.Split(',')[0]);
                                         var hide = command.Split(',')[1] == "0";
 
-                                        if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null)
+                                        if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null && Map.Npcs.Find(x => x.Id == npcId) != null)
                                         {
                                             Map.OriginalNpcs.Find(x => x.Id == npcId).Visible(hide);
                                             Map.Npcs.Remove(Map.OriginalNpcs.Find(x => x.Id == npcId));

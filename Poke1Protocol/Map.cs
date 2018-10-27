@@ -299,134 +299,6 @@ namespace Poke1Protocol
             return false;
         }
 
-        public int GetPerfectDimensionX(int dimX)
-        {
-            if (Width > dimX)
-            {
-                var eq = Width - dimX;
-
-                if (MapDump.Areas.Count > 1)
-                {
-                    var LastMap = MapDump.Areas.LastOrDefault();
-                    if (LastMap?.AreaName.ToLowerInvariant() == CurrentArea?.AreaName.ToLowerInvariant())
-                    {
-                        return dimX + eq;
-                    }
-                    else
-                    {
-                        int x = dimX;
-                        while (!IsAreaLink(x, DimensionY) && Width > x)
-                        {
-                            x++;
-                        }
-                        eq = x - dimX;
-                        return eq + dimX;
-                    }
-                }
-                else
-                {
-                    return dimX + eq;
-                }
-            }
-            return dimX;
-        }
-
-        public int GetPerfectDimensionY(int dimY)
-        {
-            if (Height > dimY)
-            {
-                var eq = Height - dimY;
-
-                if (MapDump.Areas.Count > 1)
-                {
-                    var LastMap = MapDump.Areas.LastOrDefault();
-                    if (LastMap?.AreaName.ToLowerInvariant() == CurrentArea?.AreaName.ToLowerInvariant())
-                    {
-                        return dimY + eq;
-                    }
-                    else
-                    {
-                        int y = dimY;
-                        while (!IsAreaLink(DimensionX, y) && Height > y)
-                        {
-                            y++;
-                        }
-                        eq = y - dimY;
-                        return eq + dimY;
-                    }
-                }
-                else
-                {
-                    return dimY + eq;
-                }
-            }
-            return dimY;
-        }
-
-        public int GetPerfectDimensionX()
-        {
-            if (Width > DimensionX)
-            {
-                var eq = Width - DimensionX;
-
-                if (MapDump.Areas.Count > 1)
-                {
-                    var LastMap = MapDump.Areas.LastOrDefault();
-                    if (LastMap?.AreaName.ToLowerInvariant() == CurrentArea?.AreaName.ToLowerInvariant())
-                    {
-                        return DimensionX + eq;
-                    }
-                    else
-                    {
-                        int x = DimensionX;
-                        while (!IsAreaLink(x, DimensionY) && Width > x)
-                        {
-                            x++;
-                        }
-                        eq = x - DimensionX;
-                        return eq + DimensionX;
-                    }
-                }
-                else
-                {
-                    return DimensionX + eq;
-                }
-            }
-            return DimensionX;
-        }
-
-        public int GetPerfectDimensionY()
-        {
-            if (Height > DimensionY)
-            {
-                var eq = Height - DimensionY;
-
-                if (MapDump.Areas.Count > 1)
-                {
-                    var LastMap = MapDump.Areas.LastOrDefault();
-                    if (LastMap?.AreaName.ToLowerInvariant() == CurrentArea?.AreaName.ToLowerInvariant())
-                    {
-                        return DimensionY + eq;
-                    }
-                    else
-                    {
-                        int y = DimensionY;
-                        while (!IsAreaLink(DimensionX, y) && Height > y)
-                        {
-                            y++;
-                        }
-                        eq = y - DimensionY;
-                        return eq + DimensionY;
-                    }
-                }
-                else
-                {
-                    return DimensionY + eq;
-                }
-            }
-            return DimensionY;
-        }
-
         public Area CheckArea(int x, int y)
         {
             if (_client.IsLoggedIn)
@@ -519,7 +391,7 @@ namespace Poke1Protocol
         public bool IsGrass(int x, int y)
         {
             if (!IsInCurrentArea(x, y)) return false;
-            return TileTypes[x, y] == 8 && !HasLink(x, y) && TileTypes2[x, y] <= 0
+            return !HasLink(x, y) && TileTypes2[x, y] <= 0
                     && (TileZones[x, y] != 0 && TileZones[x, y] != 5)
                     && GetCollider(x, y) <= 0;
         }
@@ -527,9 +399,9 @@ namespace Poke1Protocol
         public bool IsPc(int x, int y)
         {
             if (!IsInCurrentArea(x, y)) return false;
-            return (GetCollider(x, y + 1) == 20 || GetCollider(x, y + 1) == 19
-                    || Objects.Any(ob => ob.x == x && ob.z == -y && ob.Name.StartsWith("Shadow_Back")))
-                    && OriginalNpcs.Any(n => n.PositionX == x && n.PositionY == y && n.NpcName.ToLowerInvariant().StartsWith("new"));
+            return (Objects.Any(ob => ob.x == x && ob.z == -y && ob.Name.StartsWith("PCComputer"))
+                    && OriginalNpcs.Any(n => n.PositionX == x && n.PositionY == y 
+                    && n.NpcName.ToLowerInvariant().StartsWith("new")));
         }
 
         public bool IsNormalGround(int x, int y)
