@@ -88,8 +88,6 @@ namespace Poke1Protocol
 
             IsFinished = data.Ended;
 
-            IsTrapped = false;
-
             _team = team;
 
             if (data.Mapping1 != null && !string.IsNullOrEmpty(playerName))
@@ -440,7 +438,6 @@ namespace Poke1Protocol
                             if (info[3] == "0")
                             {
                                 BattleMessage?.Invoke($"{info[4]} failed to run away!");
-                                IsTrapped = true;
                             }
                             else
                             {
