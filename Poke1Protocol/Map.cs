@@ -520,7 +520,7 @@ namespace Poke1Protocol
         {
             if (!IsInCurrentArea(x, y)) return false;
             return TileTypes[x, y] == 8 && !HasLink(x, y) && TileTypes2[x, y] <= 0
-                    && (TileZones[x, y] == 6 || TileZones[x, y] == 1 || TileZones[x, y] == 2)
+                    && (TileZones[x, y] != 0 && TileZones[x, y] != 5)
                     && GetCollider(x, y) <= 0;
         }
 
@@ -744,18 +744,20 @@ namespace Poke1Protocol
                 case Direction.Up:
                     if (isOnGround)
                     {
-
-                        if (collider == 18 || collider == 0 || collider == 20 || collider == 19 || collider == 16
-                            || collider == 24 || collider == 15 || collider == 12 || collider == 11 || collider == 14)
+                        if (collider == 18 || collider == 0 || collider == 20 ||
+                            collider == 19 || collider == 16
+                            || collider == 24 || collider == 15 || collider == 12 ||
+                            collider == 11 || collider == 14)
                         {
                             return true;
                         }
-                        if (isSurfing && (collider == 2))
+                        if (isSurfing && (collider == 2 || collider == 15))
                         {
                             return true;
                         }
                     }
-                    else if (collider == 14 || collider == 15 || collider == 7 || collider == 8 || collider == 9 || collider == 0 || collider == 12 || collider == 11)
+                    else if (collider == 14 || collider == 15 || collider == 7 || collider == 8 || 
+                        collider == 9 || collider == 0 || collider == 12 || collider == 11)
                     {
                         return true;
                     }
@@ -763,18 +765,19 @@ namespace Poke1Protocol
                 case Direction.Down:
                     if (isOnGround)
                     {
-
-
-                        if (collider == 0 || collider == 15 || collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 4 || collider == 12 || collider == 11 || collider == 14)
+                        if (collider == 0 || collider == 15 || collider == 6 || 
+                            collider == 7 || collider == 8 || collider == 9 || collider == 4 ||
+                            collider == 12 || collider == 11 || collider == 14)
                         {
                             return true;
                         }
-                        if (isSurfing && (collider == 5 || collider == 2))
+                        if (isSurfing && (collider == 15 || collider == 2))
                         {
                             return true;
                         }
                     }
-                    else if (collider == 7 || collider == 8 || collider == 9 || collider == 0 || collider == 12)
+                    else if (collider == 7 || collider == 8 || collider == 9 ||
+                        collider == 0 || collider == 12)
                     {
                         return true;
                     }
@@ -782,19 +785,23 @@ namespace Poke1Protocol
                 case Direction.Left:
                     if (isOnGround)
                     {
-                        var collPre = GetCollider(_client.PlayerX, _client.PlayerY);
-                        if (collPre == 20 || collPre == 19 || collider == 16 || collider == 18 || GetCellSideMoveable(collPre))
+                        var collPre = GetCollider(destx + 1, desty);
+                        if (collPre == 19 || collider == 16 || collider == 18 || GetCellSideMoveable(collPre))
                             return false;
-                        if (collider == 14 || collider == 15 || collider == 0 || collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 4 || collider == 12 || collider == 11)
+                        if (collider == 14 || collider == 15 || collider == 0 ||
+                            collider == 6 || collider == 7 || collider == 8 || collider == 9 || 
+                            collider == 4 || collider == 12 || collider == 11 || collider == 19)
                         {
                             return true;
                         }
-                        if (isSurfing && (collider == 5 || collider == 2))
+                        if (isSurfing && (collider == 15 || collider == 2))
                         {
                             return true;
                         }
                     }
-                    else if (collider == 14 || collider == 15 || collider == 7 || collider == 8 || collider == 9 || collider == 0 || collider == 12 || collider == 11)
+                    else if (collider == 14 || collider == 15 || collider == 7 || 
+                        collider == 8 || collider == 9 || collider == 0 || collider == 12 || 
+                        collider == 11)
                     {
                         return true;
                     }
@@ -802,19 +809,23 @@ namespace Poke1Protocol
                 case Direction.Right:
                     if (isOnGround)
                     {
-                        var collPre = GetCollider(_client.PlayerX, _client.PlayerY);
-                        if (collPre == 19 || collPre == 20 || collider == 16 || collider == 18 || GetCellSideMoveable(collPre))
+                        var collPre = GetCollider(destx - 1, desty);
+                        if (collPre == 20|| collider == 16 || collider == 18 || GetCellSideMoveable(collPre))
                             return false;
-                        if (collider == 14 || collider == 15 || collider == 0 || collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 3 || collider == 12 || collider == 11)
+                        if (collider == 14 || collider == 15 || collider == 0 || 
+                            collider == 6 || collider == 7 || collider == 8 || collider == 9 || 
+                            collider == 3 || collider == 12 || collider == 11 || collider == 20)
                         {
                             return true;
                         }
-                        if (isSurfing && (collider == 5 || collider == 2))
+                        if (isSurfing && (collider == 15 || collider == 2))
                         {
                             return true;
                         }
                     }
-                    else if (collider == 14 || collider == 15 || collider == 7 || collider == 8 || collider == 9 || collider == 0 || collider == 12 || collider == 11)
+                    else if (collider == 14 || collider == 15 || collider == 7 || 
+                        collider == 8 || collider == 9 || collider == 0 ||
+                        collider == 12 || collider == 11)
                     {
                         return true;
                     }
