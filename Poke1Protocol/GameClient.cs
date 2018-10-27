@@ -59,7 +59,6 @@ namespace Poke1Protocol
         private double _lastCheckTime;
         private double _lastSentMovement;
         private DateTime _lastGameTime;
-        private PSXAPI.Response.Time _lasTimePacket;
         private bool _needToSendSync = false;
 
         private bool _isLoggedIn = false;
@@ -95,6 +94,7 @@ namespace Poke1Protocol
         public LootboxHandler RecievedLootBoxes { get; private set; }
 
         public Shop OpenedShop { get; private set; }
+        public PlayerStats PlayerStats { get; private set; }
 
         public event Action ConnectionOpened;
         public event Action AreaUpdated;
@@ -136,6 +136,8 @@ namespace Poke1Protocol
         public string[] DialogContent { get; private set; }
         private Queue<object> _dialogResponses = new Queue<object>();
         public bool IsScriptActive { get; private set; }
+        public PSXAPI.Response.Time LastTimePacket { get; private set; }
+        public string PokeTime { get; private set; }
         public string GameTime { get; private set; }
         public string Weather { get; private set; }
         public int PlayerX { get; private set; }
@@ -156,6 +158,7 @@ namespace Poke1Protocol
         public Map Map { get; private set; }
         public int Money { get; private set; }
         public int Gold { get; private set; }
+        public Dictionary<int, string> Badges { get; private set; }
 
         private List<Direction> _movements;
         private List<PSXAPI.Request.Move> _movementPackets;
@@ -215,6 +218,7 @@ namespace Poke1Protocol
             Effects = new List<PlayerEffect>();
             Quests = new List<PlayerQuest>();
             _guildLogos = new Dictionary<string, int>();
+            Badges = new Dictionary<int, string>();
         }
 
         private double GetRunningTimeInSeconds()
@@ -286,13 +290,14 @@ namespace Poke1Protocol
 
         private void UpdateTime()
         {
-            if (_lasTimePacket != null)
+            if (LastTimePacket != null)
             {
                 if (_lastCheckTime + 3 < RunningForSeconds)
                 {
                     _lastCheckTime = RunningForSeconds;
-                    GameTime = _lasTimePacket.GameDayTime.ToString() + " " + GetGameTime(_lasTimePacket.GameTime, _lasTimePacket.TimeFactor, _lastGameTime);
-                    Weather = _lasTimePacket.Weather.ToString();
+                    GameTime = LastTimePacket.GameDayTime.ToString() + " " + GetGameTime(LastTimePacket.GameTime, LastTimePacket.TimeFactor, _lastGameTime);
+                    PokeTime = GetGameTime(LastTimePacket.GameTime, LastTimePacket.TimeFactor, _lastGameTime).Replace(" PM", "").Replace(" AM", "");
+                    Weather = LastTimePacket.Weather.ToString();
                     GameTimeUpdated?.Invoke(GameTime, Weather);
                 }
             }
@@ -775,6 +780,7 @@ namespace Poke1Protocol
         private void SendMovement(PSXAPI.Request.MoveAction[] actions, int fromX, int fromY)
         {
             OpenedShop = null;
+            PlayerStats = null;
 
             var movePacket = new PSXAPI.Request.Move
             {
@@ -1052,6 +1058,26 @@ namespace Poke1Protocol
             return false;
         }
 
+        private void SendPlayerStatsRequest(string username = null)
+        {
+            SendProto(new PSXAPI.Request.Stats
+            {
+                Username = username
+            });
+        }
+
+        // Asking trainer card info
+        public bool AskForPlayerStats()
+        {
+            if (PlayerStats is null)
+            {
+                SendPlayerStatsRequest();
+                _dialogTimeout.Set(Rand.Next(1500, 2000));
+                return true;
+            }
+            return false;
+        }
+
         public TimeSpan PingUpdateTime
         {
             get => pingUpdateTime;
@@ -1079,7 +1105,8 @@ namespace Poke1Protocol
 
         public bool RequestPathForInCompleteQuest(PlayerQuest quest)
         {
-            if (quest.Target == Guid.Empty || quest.Completed) return false;
+            if (quest.Target == Guid.Empty || quest.Completed || quest.IsRequestedForPath) return false;
+            quest.UpdateRequests(true);
             SendProto(new PSXAPI.Request.Path
             {
                 Request = quest.Target
@@ -1089,7 +1116,8 @@ namespace Poke1Protocol
 
         public bool RequestPathForCompletedQuest(PlayerQuest quest)
         {
-            if (quest.QuestData.TargetCompleted == Guid.Empty || !quest.Completed) return false;
+            if (quest.QuestData.TargetCompleted == Guid.Empty || !quest.Completed || quest.IsRequestedForPath) return false;
+            quest.UpdateRequests(true);
             SendProto(new PSXAPI.Request.Path
             {
                 Request = quest.QuestData.TargetCompleted
@@ -1155,6 +1183,16 @@ namespace Poke1Protocol
                             break;
                         case PSXAPI.Response.GuildEmblem em:
 
+                            break;
+                        case PSXAPI.Response.Badges bd:
+                            Console.WriteLine("BADGES: " + bd.All.Length);
+                            break;
+                        case PSXAPI.Response.Stats stats:
+                            OnPlayerStats(stats);
+                            break;
+                        case PSXAPI.Response.Badge badge:
+                            if (badge.Active)
+                                Badges.Add(badge.Id, BadgeFromID(badge.Id));
                             break;
                         case PSXAPI.Response.Level lvl:
                             OnLevel(lvl);
@@ -1264,6 +1302,18 @@ namespace Poke1Protocol
                     Console.WriteLine(proto._Name);
 #endif
                 }
+            }
+        }
+
+        private void OnPlayerStats(Stats stats)
+        {
+            var playerStats = new PlayerStats(stats);
+            if (playerStats.PlayerName == PlayerName || stats.Result == StatsResult.Self)
+            {
+                PlayerStats = playerStats;
+                Badges.Clear();
+                foreach (var id in PlayerStats.Badges)
+                    Badges.Add(id, BadgeFromID(id));
             }
         }
 
@@ -1563,6 +1613,7 @@ namespace Poke1Protocol
         {
             ClearPath();
             _slidingDirection = null;
+            PlayerStats = null;
 
             IsInBattle = !battle.Ended;
             if (ActiveBattle != null && !ActiveBattle.OnlyInfo)
@@ -2204,9 +2255,10 @@ namespace Poke1Protocol
 
         private void OnUpdateTime(PSXAPI.Response.Time time)
         {
-            _lasTimePacket = time;
+            LastTimePacket = time;
             _lastGameTime = DateTime.UtcNow;
             GameTime = time.GameDayTime.ToString() + " " + GetGameTime(time.GameTime, time.TimeFactor, _lastGameTime);
+            PokeTime = GetGameTime(LastTimePacket.GameTime, LastTimePacket.TimeFactor, _lastGameTime).Replace(" PM", "").Replace(" AM", "");
             Weather = time.Weather.ToString();
             GameTimeUpdated?.Invoke(GameTime, Weather);
         }
@@ -2288,7 +2340,7 @@ namespace Poke1Protocol
                     SendUseItem(item.Id);
                     _itemUseTimeout.Set();
                 }
-                else if (!_battleTimeout.IsActive && IsInBattle && item.CanBeUsedInBattle)
+                else if (!_battleTimeout.IsActive && IsInBattle && item.CanBeUsedInBattle && !item.CanBeUsedOnPokemonInBattle)
                 {
                     SendUseItemInBattle(item.Id, ActiveBattle.SelectedOpponent + 1, moveId);
                     _battleTimeout.Set(Rand.Next(1500, 2000));
@@ -2369,6 +2421,7 @@ namespace Poke1Protocol
 
             ClearPath();
             OpenedShop = null;
+            PlayerStats = null;
             _surfAfterMovement = false;
             _slidingDirection = null;
             _dialogResponses.Clear();
@@ -2563,9 +2616,10 @@ namespace Poke1Protocol
         public InventoryItem GetItemFromName(string itemName)
         {
             return Items.FirstOrDefault(i => (
-                (ItemsManager.Instance.ItemClass.items.Any(itm => 
-                    itm.Name.Equals(itemName, StringComparison.InvariantCultureIgnoreCase) 
-                    || itm.BattleID.Equals(itemName.RemoveAllUnknownSymbols().Replace(" ", ""), StringComparison.InvariantCultureIgnoreCase)))
+                (i.Name.Equals(itemName, StringComparison.InvariantCultureIgnoreCase)
+                    || (ItemsManager.Instance.ItemClass.items.Any(itm => 
+                    itm.BattleID.Equals(itemName.RemoveAllUnknownSymbols().Replace(" ", ""), StringComparison.InvariantCultureIgnoreCase)
+                    && itm.ID == i.Id)))
                     && i.Quantity > 0));
         }
 
@@ -2580,6 +2634,113 @@ namespace Poke1Protocol
         }
 
         public bool HasEffectName(string effectName) => GetEffectFromName(effectName) != null;
+        public static string BadgeFromID(int id)
+        {
+            string result;
+            switch (id)
+            {
+                case 1:
+                    result = "Boulder Badge";
+                    break;
+                case 2:
+                    result = "Cascade Badge";
+                    break;
+                case 3:
+                    result = "Thunder Badge";
+                    break;
+                case 4:
+                    result = "Rainbow Badge";
+                    break;
+                case 5:
+                    result = "Soul Badge";
+                    break;
+                case 6:
+                    result = "Marsh Badge";
+                    break;
+                case 7:
+                    result = "Volcano Badge";
+                    break;
+                case 8:
+                    result = "Earth Badge";
+                    break;
+                case 9:
+                    result = "Zephyr Badge";
+                    break;
+                case 10:
+                    result = "Hive Badge";
+                    break;
+                case 11:
+                    result = "Plain Badge";
+                    break;
+                case 12:
+                    result = "Fog Badge";
+                    break;
+                case 13:
+                    result = "Storm Badge";
+                    break;
+                case 14:
+                    result = "Mineral Badge";
+                    break;
+                case 15:
+                    result = "Glacier Badge";
+                    break;
+                case 16:
+                    result = "Rising Badge";
+                    break;
+                case 17:
+                    result = "Stone Badge";
+                    break;
+                case 18:
+                    result = "Knuckle Badge";
+                    break;
+                case 19:
+                    result = "Dynamo Badge";
+                    break;
+                case 20:
+                    result = "Heat Badge";
+                    break;
+                case 21:
+                    result = "Balance Badge";
+                    break;
+                case 22:
+                    result = "Feather Badge";
+                    break;
+                case 23:
+                    result = "Mind Badge";
+                    break;
+                case 24:
+                    result = "Rain Badge";
+                    break;
+                case 25:
+                    result = "Coal Badge";
+                    break;
+                case 26:
+                    result = "Forest Badge";
+                    break;
+                case 27:
+                    result = "Cobble Badge";
+                    break;
+                case 28:
+                    result = "Fen Badge";
+                    break;
+                case 29:
+                    result = "Relic Badge";
+                    break;
+                case 30:
+                    result = "Mine Badge";
+                    break;
+                case 31:
+                    result = "Icicle Badge";
+                    break;
+                case 32:
+                    result = "Beacon Badge";
+                    break;
+                default:
+                    result = "";
+                    break;
+            }
+            return result;
+        }
     }
 
     public static class StringExtention

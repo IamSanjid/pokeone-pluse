@@ -25,6 +25,7 @@ namespace Poke1Protocol
         public int Progress { get; }
         public int ProgressId { get; }
         public PSXAPI.Response.QuestProgressType ProgressType { get; }
+        public bool IsRequestedForPath { get; private set; }
 
         internal PlayerQuest(PSXAPI.Response.Quest data)
         {
@@ -45,6 +46,11 @@ namespace Poke1Protocol
             Progress = data.Progress;
             ProgressId = data.ProgressID;
             ProgressType = data.ProgressType;
+        }
+
+        public void UpdateRequests(bool isReq)
+        {
+            IsRequestedForPath = isReq;
         }
     }
 }

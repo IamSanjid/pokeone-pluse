@@ -66,11 +66,11 @@ namespace Poke1Bot
 
             Console.WriteLine(pc);
 
-            var packet = @"Script ChIJ58BJyJ4+RkkRmbR+rHtRwegQESINMTcsMzAwLC0xLDEwMCIMNCwyMDAsLTEsMzAwIg0xOCwxMDAsLTEsMTAwIg0yMiwyMDAsLTEsMTAw";
+            var packet = @"BattleItem CAEQEhgBKAE=";
             var data = packet.Split(" ".ToCharArray());
 
             byte[] array = Convert.FromBase64String(data[1]);
-            var type = Type.GetType($"PSXAPI.Response.{data[0]}, PSXAPI");
+            var type = Type.GetType($"PSXAPI.Request.{data[0]}, PSXAPI");
 
             if (type != null)
             {
@@ -157,7 +157,6 @@ namespace Poke1Bot
 
             if (PokemonEvolver.Update()) return;
             if (MoveTeacher.Update()) return;
-            if (QuestManager.IsWorking) return;
 
             if (Game.IsMapLoaded && Game.AreNpcReceived && Game.IsInactive)
             {
@@ -283,6 +282,12 @@ namespace Poke1Bot
                 MovementResynchronizer.ApplyMovement(x, y);
             }
             return result;
+        }
+
+        public bool CanMoveTo(int x, int y)
+        {
+            Pathfinding path = new Pathfinding(Game);
+            return path.CanMoveTo(x, y);
         }
 
         public bool MoveToAreaLink(string destinationMap)

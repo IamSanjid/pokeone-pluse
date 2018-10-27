@@ -45,6 +45,8 @@ namespace Poke1Bot.Modules
                 var getLink = _bot.Game.Map.Links.Find(l => l.ID == link);
                 if (getLink != null)
                 {
+                    if (SelectedQuest is null is false)
+                        SelectedQuest.UpdateRequests(false);
                     _haveToMoveLink = getLink;
                     break;
                 }
@@ -65,6 +67,9 @@ namespace Poke1Bot.Modules
         {
             _questTimeout.Update();
 
+            if (_bot.Game != null && _bot.Game.IsInBattle)
+                _haveToMoveLink = null;
+
             if (_haveToMoveLink != null && !_bot.Game.IsInBattle && _bot.Game != null)
             {
                 if (_bot.Game.PlayerX != _haveToMoveLink.x || _bot.Game.PlayerY != -_haveToMoveLink.z)
@@ -72,6 +77,7 @@ namespace Poke1Bot.Modules
                     _questTimeout.Set();
                     _bot.Game?.ClearPath();
                     _bot.MoveToCell(_haveToMoveLink.x, -_haveToMoveLink.z);
+                    _haveToMoveLink = null;
                     return;
                 }
                 else
@@ -83,12 +89,15 @@ namespace Poke1Bot.Modules
 
                 if (_bot.Script?.IsLoaded == true)
                 {
-                    _bot.Script?.OnQuestUpdated(Quests[0].Name, Quests[0].Type.ToString(), Quests[0].Description);
+                    var quest = Quests[0];
+                    Quests.RemoveAt(0);
 
-                    if (_bot.Game.AutoCompleteQuest(Quests[0]))
+                    _bot.Script?.OnQuestUpdated(quest.Name, quest.Type.ToString(), quest.Description);
+
+                    if (_bot.Game.AutoCompleteQuest(quest))
                         _questTimeout.Set();
 
-                    Quests.RemoveAt(0);
+                    _questTimeout.Set();
                 }
             }
         }

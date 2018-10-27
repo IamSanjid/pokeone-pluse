@@ -64,7 +64,7 @@ namespace Poke1Bot
             if (_client.ActiveBattle.IsTrapped) return false;
             if (index < 1 || index > _client.Team.Count) return false;
             Pokemon pokemon = _client.Team[index - 1];
-            if (pokemon.CurrentHealth > 0 && pokemon != ActivePokemon)
+            if (pokemon.BattleCurrentHealth > 0 && pokemon != ActivePokemon)
             {
                 _client.ChangePokemon(pokemon.Uid);
                 return true;
@@ -89,7 +89,7 @@ namespace Poke1Bot
         public bool SendAnyPokemon()
         {
             if (_client.ActiveBattle.IsTrapped) return false;
-            Pokemon pokemon = _client.Team.FirstOrDefault(p => p != ActivePokemon && p.CurrentHealth > 0);
+            Pokemon pokemon = _client.Team.FirstOrDefault(p => p != ActivePokemon && p.BattleCurrentHealth > 0);
             if (pokemon != null)
             {
                 _client.ChangePokemon(pokemon.Uid);
@@ -194,7 +194,7 @@ namespace Poke1Bot
                 }
 
                 if (move.Id + 1 == Explosion || move.Id + 1 == Selfdestruct ||
-                    (move.Id + 1 == DoubleEdge && ActivePokemon.CurrentHealth < _client.ActiveBattle.OpponentHealth / 3))
+                    (move.Id + 1 == DoubleEdge && ActivePokemon.BattleCurrentHealth < _client.ActiveBattle.CurrentHealth / 3))
                 {
                     continue;
                 }
