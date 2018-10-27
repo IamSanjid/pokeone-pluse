@@ -66,7 +66,7 @@ namespace Poke1Bot
 
             Console.WriteLine(pc);
 
-            var packet = @"BattleItem CAEQEhgBKAE=";
+            var packet = @"Battle KgpBbWluYXRhMTIzKgpBbWluYXRhMTIzKgpBbWluYXRhMTIzSAFQAVgBYBM=";
             var data = packet.Split(" ".ToCharArray());
 
             byte[] array = Convert.FromBase64String(data[1]);
@@ -83,6 +83,22 @@ namespace Poke1Bot
                 }) as PSXAPI.IProto;
                 Console.WriteLine(ToJsonString(proto));
                 //Console.WriteLine($"MapLoad: {(proto as PSXAPI.Request.BattleBroadcast).RequestID}, ID: {(proto as PSXAPI.Request.BattleBroadcast)._Name.ToString()}");
+            }
+            else
+            {
+                type = Type.GetType($"PSXAPI.Response.{data[0]}, PSXAPI");
+                if (type != null)
+                {
+                    var proto = typeof(PSXAPI.Proto).GetMethod("Deserialize").MakeGenericMethod(new Type[]
+                    {
+                        type
+                    }).Invoke(null, new object[]
+                    {
+                        array
+                    }) as PSXAPI.IProto;
+                    Console.WriteLine(ToJsonString(proto));
+                    //Console.WriteLine($"MapLoad: {(proto as PSXAPI.Request.BattleBroadcast).RequestID}, ID: {(proto as PSXAPI.Request.BattleBroadcast)._Name.ToString()}");
+                }
             }
 #endif
         }

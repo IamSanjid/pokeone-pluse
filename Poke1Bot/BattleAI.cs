@@ -188,7 +188,7 @@ namespace Poke1Bot
 
                 MovesManager.MoveData moveData = MovesManager.Instance.GetMoveData(move.Id);
 
-                if (move.Id + 1 == DreamEater && _client.ActiveBattle.OpponentStatus != "SLEEP")
+                if (move.Id + 1 == DreamEater && _client.ActiveBattle.OpponentStatus != "slp")
                 {
                     continue;
                 }
@@ -274,6 +274,8 @@ namespace Poke1Bot
         {
             if ((pokemon.CurrentHealth > 0 && !_client.IsInBattle) || (pokemon.BattleCurrentHealth > 0 && _client.IsInBattle))
             {
+                if (pokemon.Status.ToLowerInvariant() == "sleep")
+                    return false;
                 foreach (PokemonMove move in pokemon.Moves)
                 {
                     MovesManager.MoveData moveData = MovesManager.Instance.GetMoveData(move.Id);
