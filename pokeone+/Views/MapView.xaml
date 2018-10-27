@@ -7,14 +7,14 @@
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300">
     <Grid>
-        <Canvas Name="MapCanvas" ClipToBounds="True" MouseLeftButtonDown="MapCanvas_MouseLeftButtonDown" 
-                MouseRightButtonDown="MapCanvas_MouseRightButtonDown" MouseEnter="MapCanvas_MouseEnter"
-                MouseRightButtonUp="MapCanvas_MouseRightButtonUp"  MouseMove="MapCanvas_MouseMove" MouseLeave="MapCanvas_MouseLeave">
-            <Popup Name="FloatingTip" Placement="Relative" PlacementTarget="{Binding ElementName=MapCanvas}" IsOpen="True">
-                <Border BorderBrush="{x:Null}" BorderThickness="1">
-                    <TextBlock Name="TipText" Background="#1E1E1E" Foreground="#F1F1F1" Padding="2"/>
-                </Border>
-            </Popup>
-        </Canvas>
+        <Image Name="MapImage" MouseEnter="MapImage_MouseEnter" MouseLeave="MapImage_MouseLeave" MouseMove="MapImage_MouseMove" MouseLeftButtonDown="MapImage_MouseLeftButtonDown" MouseRightButtonDown="MapImage_MouseRightButtonDown" MouseRightButtonUp="MapImage_MouseRightButtonUp" Stretch="None"/>
+        <Popup Name="FloatingTip" Placement="Relative" PlacementTarget="{Binding ElementName=MapImage}" IsOpen="True">
+            <Border BorderBrush="{x:Null}" BorderThickness="1">
+                <TextBlock Name="TipText" Background="#1E1E1E" Foreground="#F1F1F1" Padding="2"/>
+            </Border>
+        </Popup>
+        <Border Margin="20,20" Background="#55FFFFFF" VerticalAlignment="Top" HorizontalAlignment="Left">
+            <TextBlock Name="FpsCounter" FontFamily="Verdana" FontSize="22" ></TextBlock>
+        </Border>
     </Grid>
 </UserControl>
