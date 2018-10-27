@@ -1745,7 +1745,7 @@ namespace Poke1Protocol
                                         var command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
                                         var npcId = Guid.Parse(command.Split(',')[0]);
                                         var los = Convert.ToInt32(command.Split(',')[1]);
-                                        if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null)
+                                        if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null && Map.Npcs.Find(x => x.Id == npcId) != null)
                                         {
                                             Map.OriginalNpcs.Find(x => x.Id == npcId).UpdateLos(los);
                                             Map.Npcs.Find(x => x.Id == npcId).UpdateLos(los);
