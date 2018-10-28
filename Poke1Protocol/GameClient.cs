@@ -1042,6 +1042,7 @@ namespace Poke1Protocol
             {
                 _itemUseTimeout.Set();
                 SendShopPokemart(OpenedShop.ScriptId, itemId, quantity);
+                CloseShop();
                 return true;
             }
             return false;
@@ -2216,13 +2217,11 @@ namespace Poke1Protocol
             Money = (int)data.Money;
             Gold = (int)data.Gold;
             UpdateItems(data.Items);
-            InventoryUpdated?.Invoke();
         }
 
         private void UpdateItems(PSXAPI.Response.InventoryItem[] items)
         {
-            if (items is null) return;
-            if (items.Length == 1)
+            if (items != null && items.Length == 1)
             {
                 var item = new InventoryItem(items[0]);
                 if (Items.Count > 0)
@@ -2243,7 +2242,7 @@ namespace Poke1Protocol
                     Items.Add(item);
                 }
             }
-            else
+            else if (items != null)
             {
                 Items.Clear();
                 foreach (var item in items)
@@ -2251,6 +2250,7 @@ namespace Poke1Protocol
                     Items.Add(new InventoryItem(item));
                 }
             }
+            InventoryUpdated?.Invoke();
         }
 
         private void OnUpdateTime(PSXAPI.Response.Time time)
