@@ -1246,6 +1246,9 @@ namespace Poke1Protocol
                         case PSXAPI.Response.InventoryItem invItm:
                             UpdateItems(new PSXAPI.Response.InventoryItem[] { invItm });
                             break;
+                        case PSXAPI.Response.Pokemon poke:
+                            
+                            break;
                         case PSXAPI.Response.Script sc:
                             OnScript(sc);
                             break;
@@ -2141,7 +2144,7 @@ namespace Poke1Protocol
                     {
                         foundPoke.UpdatePokemonData(pokemons[0]);
                     }
-                    else
+                    else if (poke.PokemonData.Box == 0)
                     {
                         Team.Add(poke);
                     }
