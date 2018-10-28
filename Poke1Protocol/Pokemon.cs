@@ -158,5 +158,14 @@ namespace Poke1Protocol
         {
             Uid = uid;
         }
+
+        public void UpdateStatus(string status)
+        {
+            if (!string.IsNullOrEmpty(status) && status.ToLowerInvariant() != "none")
+            {
+                
+                _status = GameClient.GetStatus(status);
+            }
+        }
     }
 }

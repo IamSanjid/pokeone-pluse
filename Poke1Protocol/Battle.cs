@@ -49,6 +49,8 @@ namespace Poke1Protocol
 
         public bool IsUpdated { get; private set; }
 
+        public int CurrentBattlingPokemonIndex { get; private set; } // different than SelectedPokemonIndex
+
         private List<Pokemon> _team { get; set; }
 
         public PSXAPI.Response.Payload.BattleActive GetActivePokemon
@@ -292,6 +294,7 @@ namespace Poke1Protocol
                 var newPoke = GetSwitchedPokemon(details, condition);
                 var index = _team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == pokemon[i].personality); // find the correct index...
                 _team[index].UpdateHealth(newPoke.Health, newPoke.MaxHealth);
+                _team[index].UpdateStatus(newPoke.Status);
             }
         }
 
@@ -303,9 +306,11 @@ namespace Poke1Protocol
                 var active = p1.RequestInfo.active;
                 var activePokemon = p1.RequestInfo.side.pokemon.ToList().Find(x => x.active);
 
+                CurrentBattlingPokemonIndex = p1.RequestInfo.side.pokemon.ToList().FindIndex(x => x.active) + 1;
+
                 UpdateBattleHealth(p1.RequestInfo.side.pokemon);
 
-                ResponseID = p1.RequestID;
+                ResponseID = request.RequestID;
                 PlayerBattleSide = p1.RequestInfo.side;
 
                 if (_team is null || _team.Count <= 0)
@@ -420,6 +425,7 @@ namespace Poke1Protocol
                             }
                             break;
                         case "faint":
+                            if (caught) break;
                             var died = info[2].Split(new string[]
                             {
                                 ": "
@@ -438,8 +444,9 @@ namespace Poke1Protocol
                                 BattleMessage?.Invoke("You got away safely!");
                             }
                             break;
-                        case "win":
+                        case "win":                           
                             IsFinished = true;
+                            if (caught) break;
                             var winner = info[2];
                             if (!ranAway)
                                 BattleMessage?.Invoke((winner == "p1" && PlayerSide == 1) || (winner == "p2" && PlayerSide == 2)

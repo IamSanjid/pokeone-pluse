@@ -230,8 +230,8 @@ namespace pokeone_plus
                     if (player.PosX < camX1 || player.PosX > camX2 || player.PosY < camY1 || player.PosY > camY2)
                         continue;
 
-                    int pX = (player.PosX + (int)deltaX)*_cellWidth;
-                    int pY = (player.PosY + (int)deltaY)*_cellWidth;
+                    int pX = (player.PosX + (int)deltaX) * _cellWidth;
+                    int pY = (player.PosY + (int)deltaY) * _cellWidth;
                     _mapBmp.FillEllipse(pX, pY, pX + _cellWidth, pY + _cellWidth, _otherPlayersColor);
                 }
             }
@@ -341,7 +341,7 @@ namespace pokeone_plus
             {
                 if (_bot.Game != null &&
                     _bot.Game.IsMapLoaded &&
-                    //_bot.Game.AreNpcReceived &&
+                    _bot.Game.AreNpcReceived &&
                     _bot.Game.IsInactive &&
                     !_bot.Game.IsInBattle &&
                     _bot.Running != BotClient.State.Started)
@@ -495,8 +495,8 @@ namespace pokeone_plus
             {
                 _selectedRegion.X = (ingameX + (int)deltaX) * _cellWidth;
                 _selectedRegion.Y = (ingameY + (int)deltaY) * _cellWidth;
-                _selectedRegion.Width = _cellWidth-1;
-                _selectedRegion.Height = _cellWidth-1;
+                _selectedRegion.Width = _cellWidth - 1;
+                _selectedRegion.Height = _cellWidth - 1;
             }
 
             lock (_bot)
@@ -592,8 +592,8 @@ namespace pokeone_plus
                 {
                     _selectedRegion.X = (ingameX + (int)deltaX) * _cellWidth;
                     _selectedRegion.Y = (ingameY + (int)deltaY) * _cellWidth;
-                    _selectedRegion.Width = _cellWidth-1;
-                    _selectedRegion.Height = _cellWidth-1;
+                    _selectedRegion.Width = _cellWidth - 1;
+                    _selectedRegion.Height = _cellWidth - 1;
                 }
 
                 lock (_bot)
@@ -626,12 +626,13 @@ namespace pokeone_plus
                 _mapHeight = _bot.Game.Map.Height;
                 _mapWidth = _bot.Game.Map.Width;
             }
+            _mapBmp = null;
             _isMapDirty = true;
         }
 
         public void Client_AreaUpdated()
         {
-            
+
         }
 
         public void Client_PositionUpdated(string map, int x, int y)

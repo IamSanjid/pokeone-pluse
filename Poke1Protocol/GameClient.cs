@@ -879,7 +879,7 @@ namespace Poke1Protocol
                     "|",
                     ActiveBattle.Turn.ToString(),
                     "|",
-                    ActiveBattle.SelectedPokemonIndex.ToString(),
+                    ActiveBattle.CurrentBattlingPokemonIndex.ToString(),
                     "|",
                     ActiveBattle.AttackTargetType(id)
                 })
@@ -889,7 +889,7 @@ namespace Poke1Protocol
             {
                 MoveID = id,
                 Target = ActiveBattle.SelectedOpponent,
-                Position = ActiveBattle.SelectedPokemonIndex + 1,
+                Position = ActiveBattle.CurrentBattlingPokemonIndex,
                 RequestID = ActiveBattle.ResponseID,
                 MegaEvo = megaEvo,
                 ZMove = false
@@ -913,7 +913,7 @@ namespace Poke1Protocol
                     "|0|",
                     ActiveBattle.Turn.ToString(),
                     "|",
-                    ActiveBattle.SelectedPokemonIndex.ToString()
+                    ActiveBattle.CurrentBattlingPokemonIndex.ToString()
                 })
             });
         }
@@ -944,7 +944,7 @@ namespace Poke1Protocol
                         "|",
                         ActiveBattle.Turn.ToString(),
                         "|",
-                        ActiveBattle.SelectedPokemonIndex.ToString()
+                        ActiveBattle.CurrentBattlingPokemonIndex.ToString()
                     })
                 });
 
@@ -954,7 +954,7 @@ namespace Poke1Protocol
                     RequestID = ActiveBattle.ResponseID,
                     Target = targetId,
                     TargetMove = moveTarget,
-                    Position = ActiveBattle.SelectedPokemonIndex + 1
+                    Position = ActiveBattle.CurrentBattlingPokemonIndex
                 });
             }
             else
@@ -971,7 +971,7 @@ namespace Poke1Protocol
                         "|",
                         ActiveBattle.Turn.ToString(),
                         "|",
-                        ActiveBattle.SelectedPokemonIndex.ToString()
+                        ActiveBattle.CurrentBattlingPokemonIndex.ToString()
                     })
                 });
 
@@ -981,7 +981,7 @@ namespace Poke1Protocol
                     RequestID = ActiveBattle.ResponseID,
                     Target = targetId,
                     TargetMove = moveTarget,
-                    Position = ActiveBattle.SelectedPokemonIndex + 1
+                    Position = ActiveBattle.CurrentBattlingPokemonIndex
                 });
             }
         }
@@ -1745,7 +1745,7 @@ namespace Poke1Protocol
                                         var command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
                                         var npcId = Guid.Parse(command.Split(',')[0]);
                                         var los = Convert.ToInt32(command.Split(',')[1]);
-                                        if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null)
+                                        if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null && Map.Npcs.Find(x => x.Id == npcId) != null)
                                         {
                                             Map.OriginalNpcs.Find(x => x.Id == npcId).UpdateLos(los);
                                             Map.Npcs.Find(x => x.Id == npcId).UpdateLos(los);
@@ -1757,7 +1757,7 @@ namespace Poke1Protocol
                                         npcId = Guid.Parse(command.Split(',')[0]);
                                         var hide = command.Split(',')[1] == "0";
 
-                                        if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null)
+                                        if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null && Map.Npcs.Find(x => x.Id == npcId) != null)
                                         {
                                             Map.OriginalNpcs.Find(x => x.Id == npcId).Visible(hide);
                                             Map.Npcs.Remove(Map.OriginalNpcs.Find(x => x.Id == npcId));
@@ -2342,7 +2342,7 @@ namespace Poke1Protocol
                 }
                 else if (!_battleTimeout.IsActive && IsInBattle && item.CanBeUsedInBattle && !item.CanBeUsedOnPokemonInBattle)
                 {
-                    SendUseItemInBattle(item.Id, ActiveBattle.SelectedOpponent + 1, moveId);
+                    SendUseItemInBattle(item.Id, ActiveBattle.CurrentBattlingPokemonIndex, moveId);
                     _battleTimeout.Set(Rand.Next(1500, 2000));
                 }
             }
@@ -2381,7 +2381,7 @@ namespace Poke1Protocol
 
         public void ChangePokemon(int number)
         {
-            SendChangePokemon(ActiveBattle.SelectedPokemonIndex + 1, number);
+            SendChangePokemon(ActiveBattle.CurrentBattlingPokemonIndex, number);
 
             ActiveBattle?.UpdateSelectedPokemon(number);
 
@@ -2740,6 +2740,32 @@ namespace Poke1Protocol
                     break;
             }
             return result;
+        }
+
+        public static string GetStatus(string status)
+        {
+            switch (status)
+            {
+                case "slp":
+                    status = "Sleep";
+                    break;
+                case "brn":
+                    status = "Brun";
+                    break;
+                case "psn":
+                    status = "Posion";
+                    break;
+                case "par":
+                    status = "Paralized";
+                    break;
+                case "tox":
+                    status = "Posion";
+                    break;
+                default:
+                    status = "";
+                    break;
+            }
+            return status;
         }
     }
 

@@ -299,134 +299,6 @@ namespace Poke1Protocol
             return false;
         }
 
-        public int GetPerfectDimensionX(int dimX)
-        {
-            if (Width > dimX)
-            {
-                var eq = Width - dimX;
-
-                if (MapDump.Areas.Count > 1)
-                {
-                    var LastMap = MapDump.Areas.LastOrDefault();
-                    if (LastMap?.AreaName.ToLowerInvariant() == CurrentArea?.AreaName.ToLowerInvariant())
-                    {
-                        return dimX + eq;
-                    }
-                    else
-                    {
-                        int x = dimX;
-                        while (!IsAreaLink(x, DimensionY) && Width > x)
-                        {
-                            x++;
-                        }
-                        eq = x - dimX;
-                        return eq + dimX;
-                    }
-                }
-                else
-                {
-                    return dimX + eq;
-                }
-            }
-            return dimX;
-        }
-
-        public int GetPerfectDimensionY(int dimY)
-        {
-            if (Height > dimY)
-            {
-                var eq = Height - dimY;
-
-                if (MapDump.Areas.Count > 1)
-                {
-                    var LastMap = MapDump.Areas.LastOrDefault();
-                    if (LastMap?.AreaName.ToLowerInvariant() == CurrentArea?.AreaName.ToLowerInvariant())
-                    {
-                        return dimY + eq;
-                    }
-                    else
-                    {
-                        int y = dimY;
-                        while (!IsAreaLink(DimensionX, y) && Height > y)
-                        {
-                            y++;
-                        }
-                        eq = y - dimY;
-                        return eq + dimY;
-                    }
-                }
-                else
-                {
-                    return dimY + eq;
-                }
-            }
-            return dimY;
-        }
-
-        public int GetPerfectDimensionX()
-        {
-            if (Width > DimensionX)
-            {
-                var eq = Width - DimensionX;
-
-                if (MapDump.Areas.Count > 1)
-                {
-                    var LastMap = MapDump.Areas.LastOrDefault();
-                    if (LastMap?.AreaName.ToLowerInvariant() == CurrentArea?.AreaName.ToLowerInvariant())
-                    {
-                        return DimensionX + eq;
-                    }
-                    else
-                    {
-                        int x = DimensionX;
-                        while (!IsAreaLink(x, DimensionY) && Width > x)
-                        {
-                            x++;
-                        }
-                        eq = x - DimensionX;
-                        return eq + DimensionX;
-                    }
-                }
-                else
-                {
-                    return DimensionX + eq;
-                }
-            }
-            return DimensionX;
-        }
-
-        public int GetPerfectDimensionY()
-        {
-            if (Height > DimensionY)
-            {
-                var eq = Height - DimensionY;
-
-                if (MapDump.Areas.Count > 1)
-                {
-                    var LastMap = MapDump.Areas.LastOrDefault();
-                    if (LastMap?.AreaName.ToLowerInvariant() == CurrentArea?.AreaName.ToLowerInvariant())
-                    {
-                        return DimensionY + eq;
-                    }
-                    else
-                    {
-                        int y = DimensionY;
-                        while (!IsAreaLink(DimensionX, y) && Height > y)
-                        {
-                            y++;
-                        }
-                        eq = y - DimensionY;
-                        return eq + DimensionY;
-                    }
-                }
-                else
-                {
-                    return DimensionY + eq;
-                }
-            }
-            return DimensionY;
-        }
-
         public Area CheckArea(int x, int y)
         {
             if (_client.IsLoggedIn)
@@ -519,17 +391,17 @@ namespace Poke1Protocol
         public bool IsGrass(int x, int y)
         {
             if (!IsInCurrentArea(x, y)) return false;
-            return TileTypes[x, y] == 8 && !HasLink(x, y) && TileTypes2[x, y] <= 0
-                    && (TileZones[x, y] == 6 || TileZones[x, y] == 1 || TileZones[x, y] == 2)
+            return !HasLink(x, y) && TileTypes2[x, y] <= 0
+                    && (TileZones[x, y] != 0 && TileZones[x, y] != 5)
                     && GetCollider(x, y) <= 0;
         }
 
         public bool IsPc(int x, int y)
         {
             if (!IsInCurrentArea(x, y)) return false;
-            return (GetCollider(x, y + 1) == 20 || GetCollider(x, y + 1) == 19
-                    || Objects.Any(ob => ob.x == x && ob.z == -y && ob.Name.StartsWith("Shadow_Back")))
-                    && OriginalNpcs.Any(n => n.PositionX == x && n.PositionY == y && n.NpcName.ToLowerInvariant().StartsWith("new"));
+            return (Objects.Any(ob => ob.x == x && ob.z == -y && ob.Name.StartsWith("PCComputer"))
+                    && OriginalNpcs.Any(n => n.PositionX == x && n.PositionY == y 
+                    && n.NpcName.ToLowerInvariant().StartsWith("new")));
         }
 
         public bool IsNormalGround(int x, int y)
@@ -744,18 +616,20 @@ namespace Poke1Protocol
                 case Direction.Up:
                     if (isOnGround)
                     {
-
-                        if (collider == 18 || collider == 0 || collider == 20 || collider == 19 || collider == 16
-                            || collider == 24 || collider == 15 || collider == 12 || collider == 11 || collider == 14)
+                        if (collider == 18 || collider == 0 || collider == 20 ||
+                            collider == 19 || collider == 16
+                            || collider == 24 || collider == 15 || collider == 12 ||
+                            collider == 11 || collider == 14)
                         {
                             return true;
                         }
-                        if (isSurfing && (collider == 2))
+                        if (isSurfing && (collider == 2 || collider == 15))
                         {
                             return true;
                         }
                     }
-                    else if (collider == 14 || collider == 15 || collider == 7 || collider == 8 || collider == 9 || collider == 0 || collider == 12 || collider == 11)
+                    else if (collider == 14 || collider == 15 || collider == 7 || collider == 8 || 
+                        collider == 9 || collider == 0 || collider == 12 || collider == 11)
                     {
                         return true;
                     }
@@ -763,18 +637,19 @@ namespace Poke1Protocol
                 case Direction.Down:
                     if (isOnGround)
                     {
-
-
-                        if (collider == 0 || collider == 15 || collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 4 || collider == 12 || collider == 11 || collider == 14)
+                        if (collider == 0 || collider == 15 || collider == 6 || 
+                            collider == 7 || collider == 8 || collider == 9 || collider == 4 ||
+                            collider == 12 || collider == 11 || collider == 14)
                         {
                             return true;
                         }
-                        if (isSurfing && (collider == 5 || collider == 2))
+                        if (isSurfing && (collider == 15 || collider == 2))
                         {
                             return true;
                         }
                     }
-                    else if (collider == 7 || collider == 8 || collider == 9 || collider == 0 || collider == 12)
+                    else if (collider == 7 || collider == 8 || collider == 9 ||
+                        collider == 0 || collider == 12)
                     {
                         return true;
                     }
@@ -782,19 +657,23 @@ namespace Poke1Protocol
                 case Direction.Left:
                     if (isOnGround)
                     {
-                        var collPre = GetCollider(_client.PlayerX, _client.PlayerY);
-                        if (collPre == 20 || collPre == 19 || collider == 16 || collider == 18 || GetCellSideMoveable(collPre))
+                        var collPre = GetCollider(destx + 1, desty);
+                        if (collPre == 19 || collider == 16 || collider == 18 || GetCellSideMoveable(collPre))
                             return false;
-                        if (collider == 14 || collider == 15 || collider == 0 || collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 4 || collider == 12 || collider == 11)
+                        if (collider == 14 || collider == 15 || collider == 0 ||
+                            collider == 6 || collider == 7 || collider == 8 || collider == 9 || 
+                            collider == 4 || collider == 12 || collider == 11 || collider == 19)
                         {
                             return true;
                         }
-                        if (isSurfing && (collider == 5 || collider == 2))
+                        if (isSurfing && (collider == 15 || collider == 2))
                         {
                             return true;
                         }
                     }
-                    else if (collider == 14 || collider == 15 || collider == 7 || collider == 8 || collider == 9 || collider == 0 || collider == 12 || collider == 11)
+                    else if (collider == 14 || collider == 15 || collider == 7 || 
+                        collider == 8 || collider == 9 || collider == 0 || collider == 12 || 
+                        collider == 11)
                     {
                         return true;
                     }
@@ -802,19 +681,23 @@ namespace Poke1Protocol
                 case Direction.Right:
                     if (isOnGround)
                     {
-                        var collPre = GetCollider(_client.PlayerX, _client.PlayerY);
-                        if (collPre == 19 || collPre == 20 || collider == 16 || collider == 18 || GetCellSideMoveable(collPre))
+                        var collPre = GetCollider(destx - 1, desty);
+                        if (collPre == 20|| collider == 16 || collider == 18 || GetCellSideMoveable(collPre))
                             return false;
-                        if (collider == 14 || collider == 15 || collider == 0 || collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 3 || collider == 12 || collider == 11)
+                        if (collider == 14 || collider == 15 || collider == 0 || 
+                            collider == 6 || collider == 7 || collider == 8 || collider == 9 || 
+                            collider == 3 || collider == 12 || collider == 11 || collider == 20)
                         {
                             return true;
                         }
-                        if (isSurfing && (collider == 5 || collider == 2))
+                        if (isSurfing && (collider == 15 || collider == 2))
                         {
                             return true;
                         }
                     }
-                    else if (collider == 14 || collider == 15 || collider == 7 || collider == 8 || collider == 9 || collider == 0 || collider == 12 || collider == 11)
+                    else if (collider == 14 || collider == 15 || collider == 7 || 
+                        collider == 8 || collider == 9 || collider == 0 ||
+                        collider == 12 || collider == 11)
                     {
                         return true;
                     }

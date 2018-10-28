@@ -7,7 +7,10 @@
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300">
     <Grid>
-        <Image Name="MapImage" MouseEnter="MapImage_MouseEnter" MouseLeave="MapImage_MouseLeave" MouseMove="MapImage_MouseMove" MouseLeftButtonDown="MapImage_MouseLeftButtonDown" MouseRightButtonDown="MapImage_MouseRightButtonDown" MouseRightButtonUp="MapImage_MouseRightButtonUp" Stretch="None"/>
+        <Image Name="MapImage" MouseEnter="MapImage_MouseEnter" MouseLeave="MapImage_MouseLeave" 
+               MouseMove="MapImage_MouseMove" MouseLeftButtonDown="MapImage_MouseLeftButtonDown"
+               MouseRightButtonDown="MapImage_MouseRightButtonDown"
+               MouseRightButtonUp="MapImage_MouseRightButtonUp" Stretch="None" HorizontalAlignment="Left"/>
         <Popup Name="FloatingTip" Placement="Relative" PlacementTarget="{Binding ElementName=MapImage}" IsOpen="True">
             <Border BorderBrush="{x:Null}" BorderThickness="1">
                 <TextBlock Name="TipText" Background="#1E1E1E" Foreground="#F1F1F1" Padding="2"/>
