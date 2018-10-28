@@ -44,8 +44,8 @@ namespace Poke1Protocol
             if (Names.Length > 0)
             {
                 name = name.ToUpperInvariant();
-                var foundName = Names.ToList().FirstOrDefault(x => x.Replace("-", " ").ToUpperInvariant()
-                    == name.Replace("-", " "));
+                var foundName = Names.ToList().FirstOrDefault(x => x.Replace("-", "").Replace(" ", "").ToUpperInvariant()
+                    == name.Replace("-", "").Replace(" ", ""));
                 
                 result = string.IsNullOrEmpty(foundName) ? -1 : Names.ToList().IndexOf(foundName);
             }

@@ -2226,7 +2226,10 @@ namespace Poke1Protocol
                     var foundItem = Items.Find(x => x.Id == item.Id);
                     if (foundItem != null)
                     {
-                        Items[Items.IndexOf(foundItem)] = item;
+                        if (item.Quantity > 0)
+                            Items[Items.IndexOf(foundItem)] = item;
+                        else
+                            Items.Remove(foundItem);
                     }
                     else
                     {
