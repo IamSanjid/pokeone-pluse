@@ -33,6 +33,7 @@ namespace Poke1Protocol
         private ProtocolTimeout _lootBoxTimeout = new ProtocolTimeout();
         private ProtocolTimeout _dialogTimeout = new ProtocolTimeout();
         private ProtocolTimeout _itemUseTimeout = new ProtocolTimeout();
+        private ProtocolTimeout _npcBattleTimeout = new ProtocolTimeout();
 
         private Dictionary<string, int> _guildLogos;
 
@@ -81,10 +82,10 @@ namespace Poke1Protocol
                     && !_swapTimeout.IsActive
                     && !_dialogTimeout.IsActive
                     && !_lootBoxTimeout.IsActive
-                    && !_itemUseTimeout.IsActive;
+                    && !_itemUseTimeout.IsActive
+                && !_npcBattleTimeout.IsActive;
         //&& !_fishingTimeout.IsActive
         //&& !_refreshingPCBox.IsActive
-        //&& !_npcBattleTimeout.IsActive
         //&& !_moveRelearnerTimeout.IsActive
 
         public const string Version = "0.60";
@@ -132,7 +133,9 @@ namespace Poke1Protocol
         public event Action<PSXAPI.Response.Path> ReceivedPath;
         public event Action NpcReceieved;
         public event Action<Shop> ShopOpened;
-
+        public event Action<string> ServerCommandException;
+        public event Action BattleUpdated;
+        public event Action<Npc> MoveToBattleWithNpc;
         public string[] DialogContent { get; private set; }
         private Queue<object> _dialogResponses = new Queue<object>();
         public bool IsScriptActive { get; private set; }
@@ -279,6 +282,7 @@ namespace Poke1Protocol
             _lootBoxTimeout.Update();
             _itemUseTimeout.Update();
             _mountingTimeout.Update();
+            _npcBattleTimeout.Update();
 
             UpdateScript();
             UpdatePlayers();
@@ -425,10 +429,23 @@ namespace Poke1Protocol
                 if (ApplyMovement(direction))
                 {
                     SendMovement(direction.ToMoveActions(), fromX, fromY); // PokeOne sends the (x,y) without applying the movement(but it checks the collisions) to the server.
-                    _movementTimeout.Set(IsBiking ? 200 : 350);
+                    _movementTimeout.Set(IsBiking ? 225 : 375);
                     if (Map.HasLink(PlayerX, PlayerY))
                     {
                         _teleportationTimeout.Set();
+                    }
+                    else
+                    {
+                        Npc battler = Map.Npcs.FirstOrDefault(npc => npc.CanBattle && npc.IsInLineOfSight(PlayerX, PlayerY));
+                        if (battler != null)
+                        {
+                            battler.CanBattle = false;
+                            LogMessage?.Invoke("The NPC " + (battler.NpcName ?? battler.Id.ToString()) + " saw us, interacting...");
+                            int distanceFromBattler = DistanceBetween(PlayerX, PlayerY, battler.PositionX, battler.PositionY);
+                            _npcBattleTimeout.Set(Rand.Next(1000, 2000) + distanceFromBattler);
+                            ClearPath();
+                            MoveToBattleWithNpc?.Invoke(battler);
+                        }
                     }
                     _lootBoxTimeout.Cancel();
                 }
@@ -865,7 +882,7 @@ namespace Poke1Protocol
             });
         }
 
-        private void SendAttack(int id, bool megaEvo)
+        private void SendAttack(int id, int selected, int opponent, bool megaEvo)
         {
             SendProto(new PSXAPI.Request.BattleBroadcast
             {
@@ -875,11 +892,11 @@ namespace Poke1Protocol
                     "1|",
                     PlayerName,
                     "|",
-                    ActiveBattle.SelectedOpponent.ToString(),
+                    opponent.ToString(),
                     "|",
                     ActiveBattle.Turn.ToString(),
                     "|",
-                    ActiveBattle.CurrentBattlingPokemonIndex.ToString(),
+                    (selected - 1).ToString(),
                     "|",
                     ActiveBattle.AttackTargetType(id)
                 })
@@ -888,15 +905,15 @@ namespace Poke1Protocol
             SendProto(new PSXAPI.Request.BattleMove
             {
                 MoveID = id,
-                Target = ActiveBattle.SelectedOpponent,
-                Position = ActiveBattle.CurrentBattlingPokemonIndex,
+                Target = opponent,
+                Position = selected,
                 RequestID = ActiveBattle.ResponseID,
                 MegaEvo = megaEvo,
                 ZMove = false
             });
         }
 
-        private void SendRunFromBattle()
+        private void SendRunFromBattle(int selected)
         {
             SendProto(new PSXAPI.Request.BattleRun
             {
@@ -913,7 +930,7 @@ namespace Poke1Protocol
                     "|0|",
                     ActiveBattle.Turn.ToString(),
                     "|",
-                    ActiveBattle.CurrentBattlingPokemonIndex.ToString()
+                    (selected - 1).ToString()
                 })
             });
         }
@@ -928,14 +945,12 @@ namespace Poke1Protocol
             });
         }
 
-        private void SendUseItemInBattle(int id, int targetId, int moveTarget = 0)
+        private void SendUseItemInBattle(int id, int targetId, int selected, int moveTarget = 0)
         {
-            if (ActiveBattle.PokemonCount > 1)
+            SendProto(new PSXAPI.Request.BattleBroadcast
             {
-                SendProto(new PSXAPI.Request.BattleBroadcast
-                {
-                    RequestID = ActiveBattle.ResponseID,
-                    Message = string.Concat(new string[]
+                RequestID = ActiveBattle.ResponseID,
+                Message = string.Concat(new string[]
                     {
                         "2|",
                         PlayerName,
@@ -944,46 +959,18 @@ namespace Poke1Protocol
                         "|",
                         ActiveBattle.Turn.ToString(),
                         "|",
-                        ActiveBattle.CurrentBattlingPokemonIndex.ToString()
+                        (selected - 1).ToString()
                     })
-                });
+            });
 
-                SendProto(new PSXAPI.Request.BattleItem
-                {
-                    Item = id,
-                    RequestID = ActiveBattle.ResponseID,
-                    Target = targetId,
-                    TargetMove = moveTarget,
-                    Position = ActiveBattle.CurrentBattlingPokemonIndex
-                });
-            }
-            else
+            SendProto(new PSXAPI.Request.BattleItem
             {
-                SendProto(new PSXAPI.Request.BattleBroadcast
-                {
-                    RequestID = ActiveBattle.ResponseID,
-                    Message = string.Concat(new string[]
-                    {
-                        "3|",
-                        PlayerName,
-                        "|",
-                        targetId.ToString(),
-                        "|",
-                        ActiveBattle.Turn.ToString(),
-                        "|",
-                        ActiveBattle.CurrentBattlingPokemonIndex.ToString()
-                    })
-                });
-
-                SendProto(new PSXAPI.Request.BattleItem
-                {
-                    Item = id,
-                    RequestID = ActiveBattle.ResponseID,
-                    Target = targetId,
-                    TargetMove = moveTarget,
-                    Position = ActiveBattle.CurrentBattlingPokemonIndex
-                });
-            }
+                Item = id,
+                RequestID = ActiveBattle.ResponseID,
+                Target = targetId,
+                TargetMove = moveTarget,
+                Position = selected
+            });
         }
 
         public void SendAcceptEvolution(Guid evolvingPokemonUid)
@@ -1234,6 +1221,11 @@ namespace Poke1Protocol
                             OnPlayerSync(sync);
                             break;
                         case PSXAPI.Response.DebugMessage dMsg:
+                            if (dMsg.Message.Contains("Command Exception"))
+                            {
+                                ServerCommandException?.Invoke(dMsg.Message);
+                                break;
+                            }
                             SystemMessage?.Invoke(dMsg.Message);
                             break;
                         case PSXAPI.Response.InventoryPokemon iPoke:
@@ -1617,9 +1609,10 @@ namespace Poke1Protocol
             PlayerStats = null;
 
             IsInBattle = !battle.Ended;
+
             if (ActiveBattle != null && !ActiveBattle.OnlyInfo)
             {
-                ActiveBattle.UpdateBattle(battle, Team);
+                ActiveBattle.UpdateBattle(PlayerName, battle, Team);
             }
             else
             {
@@ -1644,6 +1637,7 @@ namespace Poke1Protocol
                 ActiveBattle.AlreadyCaught = IsCaughtById(ActiveBattle.OpponentId);
 
             OnBattleMessage(battle.Log);
+            BattleUpdated?.Invoke();
         }
 
         private void ActiveBattleMessage(string txt)
@@ -1657,11 +1651,11 @@ namespace Poke1Protocol
 
             if (ActiveBattle.IsFinished)
             {
-                _battleTimeout.Set(Rand.Next(2000, 5000));
+                _battleTimeout.Set(ActiveBattle.PokemonCount > 1 ? Rand.Next(3500, 6000) : Rand.Next(2000, 5000));
             }
             else
             {
-                _battleTimeout.Set(Rand.Next(2000, 4000));
+                _battleTimeout.Set(ActiveBattle.PokemonCount > 1 ? Rand.Next(3500, 5000) : Rand.Next(2000, 4000));
             }
             if (ActiveBattle.IsFinished)
             {
@@ -2310,16 +2304,20 @@ namespace Poke1Protocol
             return result;
         }
 
-        public void RunFromBattle()
+        public void RunFromBattle(int selected = 0)
         {
-            SendRunFromBattle();
-            _battleTimeout.Set(Rand.Next(1500, 2000));
+            if (selected == 0)
+                selected = ActiveBattle.CurrentBattlingPokemonIndex;
+            SendRunFromBattle(selected);
+            _battleTimeout.Set(ActiveBattle.PokemonCount > 1 ? Rand.Next(2500, 4000) : Rand.Next(1500, 3000));
         }
 
-        public void UseAttack(int number, bool megaEvolve = false)
+        public void UseAttack(int number, int selectedPoke = 0, int opponent = 0, bool megaEvolve = false)
         {
-            SendAttack(number, megaEvolve);
-            _battleTimeout.Set(Rand.Next(1500, 3000));
+            if (selectedPoke == 0)
+                selectedPoke = ActiveBattle.CurrentBattlingPokemonIndex;
+            SendAttack(number, selectedPoke, opponent, megaEvolve);
+            _battleTimeout.Set(ActiveBattle.PokemonCount > 1 ? Rand.Next(3500, 4000) : Rand.Next(1500, 3000));
         }
 
         public void UseItem(int id, int pokemonUid = 0, int moveId = 0)
@@ -2335,6 +2333,7 @@ namespace Poke1Protocol
             }
             if (pokemonUid == 0) // simple use
             {
+                pokemonUid = ActiveBattle.CurrentBattlingPokemonIndex;
                 if (!_itemUseTimeout.IsActive && !IsInBattle && item.CanBeUsedOutsideOfBattle)
                 {
                     SendUseItem(item.Id);
@@ -2342,8 +2341,8 @@ namespace Poke1Protocol
                 }
                 else if (!_battleTimeout.IsActive && IsInBattle && item.CanBeUsedInBattle && !item.CanBeUsedOnPokemonInBattle)
                 {
-                    SendUseItemInBattle(item.Id, ActiveBattle.CurrentBattlingPokemonIndex, moveId);
-                    _battleTimeout.Set(Rand.Next(1500, 2000));
+                    SendUseItemInBattle(item.Id, pokemonUid, pokemonUid, moveId);
+                    _battleTimeout.Set(ActiveBattle.PokemonCount > 1 ? Rand.Next(3500, 4000) : Rand.Next(1500, 3000));
                 }
             }
             else // use item on pokemon
@@ -2355,8 +2354,8 @@ namespace Poke1Protocol
                 }
                 else if (!_battleTimeout.IsActive && IsInBattle && item.CanBeUsedOnPokemonInBattle)
                 {
-                    SendUseItemInBattle(item.Id, pokemonUid);
-                    _battleTimeout.Set(Rand.Next(1500, 2000));
+                    SendUseItemInBattle(item.Id, pokemonUid, pokemonUid, moveId);
+                    _battleTimeout.Set(ActiveBattle.PokemonCount > 1 ? Rand.Next(3500, 4000) : Rand.Next(1500, 3000));
                 }
             }
         }

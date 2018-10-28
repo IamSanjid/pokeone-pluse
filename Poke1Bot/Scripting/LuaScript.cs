@@ -161,6 +161,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["getPokemonMaxHealth"] = new Func<int, int>(GetPokemonMaxHealth);
                 _lua.Globals["getPokemonLevel"] = new Func<int, int>(GetPokemonLevel);
                 _lua.Globals["getPokemonStatus"] = new Func<int, string>(GetPokemonStatus);
+                _lua.Globals["getPokemonForme"] = new Func<int, string>(GetPokemonForme);
                 _lua.Globals["getPokemonHeldItem"] = new Func<int, string>(GetPokemonHeldItem);
                 _lua.Globals["getRemainingPowerPoints"] = new Func<int, string, int>(GetRemainingPowerPoints);
                 _lua.Globals["getPokemonMaxPowerPoints"] = new Func<int, int, int>(GetPokemonMaxPowerPoints);
@@ -253,6 +254,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["getOpponentHealthPercent"] = new Func<int>(GetOpponentHealthPercent);
                 _lua.Globals["getOpponentLevel"] = new Func<int>(GetOpponentLevel);
                 _lua.Globals["getOpponentStatus"] = new Func<string>(GetOpponentStatus);
+                _lua.Globals["getOpponentForme"] = new Func<string>(GetOpponentForme);
                 _lua.Globals["isOpponentEffortValue"] = new Func<string, bool>(IsOpponentEffortValue);
                 _lua.Globals["getOpponentEffortValue"] = new Func<string, int>(GetOpponentEffortValue);
                 _lua.Globals["getOpponentType"] = new Func<string[]>(GetOpponentType);
@@ -845,6 +847,17 @@ namespace Poke1Bot.Scripting
             return Bot.Game.Team[index - 1].Status;
         }
 
+        // API: Returns the forme of the specified pokémon in the team.
+        private string GetPokemonForme(int index)
+        {
+            if (index < 1 || index > Bot.Game.Team.Count)
+            {
+                Fatal("error: getPokemonForme: tried to retrieve the non-existing pokemon " + index + ".");
+                return null;
+            }
+            return Bot.Game.Team[index - 1].Forme;
+        }
+
         // API: Returns the item held by the specified pokemon in the team, null if empty.
         private string GetPokemonHeldItem(int index)
         {
@@ -1263,6 +1276,46 @@ namespace Poke1Bot.Scripting
                 return null;
             }
             return Bot.Game.ActiveBattle.OpponentStatus;
+        }
+
+        // API: Returns the forme of the opponent pokémon in the current battle.
+        private string GetOpponentForme()
+        {
+            if (!Bot.Game.IsInBattle)
+            {
+                Fatal("error: getOpponentForme can only be used in battle.");
+                return null;
+            }
+            var forme = Bot.Game.ActiveBattle.OpponentForme;
+            if (!string.IsNullOrEmpty(forme))
+            {
+                switch (forme)
+                {
+                    case "-mega-x":
+                        forme = "Mega X";
+                        break;
+                    case "-mega-y":
+                        forme = "Mega Y";
+                        break;
+                    case "-mega":
+                        forme = "Mega";
+                        break;
+                    case "-primal":
+                        forme = "Primal";
+                        break;
+                    case "mimikyubusted":
+                        forme = "Mimikyu Busted";
+                        break;
+                    case "wishiwashischool":
+                        forme = "Wishi Washi School";
+                        break;
+                    default:
+                        forme = null;
+                        break;
+                }
+
+            }
+            return forme;
         }
 
         // API: Returns true if the opponent is only giving the specified effort value.

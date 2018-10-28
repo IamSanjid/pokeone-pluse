@@ -52,6 +52,7 @@ namespace Poke1Protocol
         public PSXAPI.Response.Payload.PokemonMoveID[] LearnableMoves { get; private set; }
         public PSXAPI.Response.Payload.PokemonID CanEvolveTo { get; private set; }
         public Guid UniqueID { get; private set; }
+        public string Forme { get; private set; }
         internal Pokemon(InventoryPokemon data)
         {
             if (data != null)
@@ -98,6 +99,7 @@ namespace Poke1Protocol
                 Nature = data.Pokemon.Payload.Nature.ToString().FirstOrDefault().ToString().ToUpperInvariant() + data.Pokemon.Payload.Nature.ToString().Substring(1);
                 Name = PokemonManager.Instance.Names[Id];
             }
+            Forme = "Normal";
         }
 
         public void UpdatePokemonData(InventoryPokemon data)
@@ -165,6 +167,38 @@ namespace Poke1Protocol
             {
                 
                 _status = GameClient.GetStatus(status);
+            }
+        }
+
+        public void UpdateForme(string forme)
+        {
+            if (!string.IsNullOrEmpty(forme))
+            {
+                switch (forme)
+                {
+                    case "-mega-x":
+                        forme = "Mega X";
+                        break;
+                    case "-mega-y":
+                        forme = "Mega Y";
+                        break;
+                    case "-mega":
+                        forme = "Mega";
+                        break;
+                    case "-primal":
+                        forme = "Primal";
+                        break;
+                    case "mimikyubusted":
+                        forme = "Mimikyu Busted";
+                        break;
+                    case "wishiwashischool":
+                        forme = "Wishi Washi School";
+                        break;
+                    default:
+                        forme = "";
+                        break;
+                }
+                Forme = forme;
             }
         }
     }

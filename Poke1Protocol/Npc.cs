@@ -20,6 +20,7 @@ namespace Poke1Protocol
         public bool IsMoving => _path.Length > 0 || Data.Settings.LookRandomly;
         public NPCData Data { get; }
         public bool IsBattler { get; private set; }
+        public bool CanBattle { get; set; }
 
         private readonly string _path;
 
@@ -36,6 +37,7 @@ namespace Poke1Protocol
             _path = data.Settings.Path;
             IsBattler = LosLength > 0 && (data.Settings.SightAction == "Move To Player"
                 || data.Settings.SightAction == "Player To NPC");
+            CanBattle = IsBattler;
             CanBlockPlayer = en;
             IsVisible = true;
 #if DEBUG
@@ -167,7 +169,8 @@ namespace Poke1Protocol
         public void UpdateLos(int los)
         {
             LosLength = los;
-            IsBattler = LosLength > 0 && Data?.Settings.SightAction != "Move To Player";
+            IsBattler = LosLength > 0 && (Data.Settings.SightAction == "Move To Player"
+                || Data.Settings.SightAction == "Player To NPC");
         }
 
         public void Visible(bool hide)

@@ -19,9 +19,21 @@ namespace Poke1Bot
 
         private readonly GameClient _client;
 
+        public ProtocolTimeout _waitForResponseInbattle = new ProtocolTimeout();
+
+        public bool IsBusy { get; private set; }
+
         public BattleAI(GameClient client)
         {
             _client = client;
+            _client.BattleUpdated += Client_BattleUpdated;
+        }
+
+        private void Client_BattleUpdated()
+        {
+            if (IsBusy)
+                _waitForResponseInbattle.Set();
+            IsBusy = false;
         }
 
         public int UsablePokemonsCount
@@ -41,6 +53,8 @@ namespace Poke1Bot
         }
 
         public Pokemon ActivePokemon => _client.Team[_client.ActiveBattle.SelectedPokemonIndex];
+        public SwitchedPokemon[] ActivePokemons => _client.ActiveBattle.PlayerAcivePokemon;
+        public SwitchedPokemon[] ActiveOpponentPokemons => _client.ActiveBattle.OpponentActivePokemon;
 
         public bool UseMandatoryAction()
         {
@@ -50,12 +64,42 @@ namespace Poke1Bot
         public bool Attack()
         {
             if (!IsPokemonUsable(ActivePokemon)) return false;
+            if (ActivePokemons != null && ActiveOpponentPokemons != null)
+            {
+                if (ActiveOpponentPokemons.Length > 1)
+                {
+                    // double battle...
+                    var opponentsChoosed = new List<int>();
+                    for (int i = 0; i < ActivePokemons.Length; ++i)
+                    {
+                        if (ActivePokemons[i].Trainer == _client.ActiveBattle._playerName
+                            && _client.Team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == ActivePokemons[i].Personality) >= 0)
+                            return UseAttack(true, _client.Team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == ActivePokemons[i].Personality));
+                    }
+                    return false;
+                }
+            }
             return UseAttack(true);
         }
 
         public bool WeakAttack()
         {
             if (!IsPokemonUsable(ActivePokemon)) return false;
+            if (ActivePokemons != null && ActiveOpponentPokemons != null)
+            {
+                if (ActiveOpponentPokemons.Length > 1)
+                {
+                    // double battle...
+                    var opponentsChoosed = new List<int>();
+                    for (int i = 0; i < ActivePokemons.Length; ++i)
+                    {
+                        if (ActivePokemons[i].Trainer == _client.ActiveBattle._playerName
+                            && _client.Team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == ActivePokemons[i].Personality) >= 0)
+                            return UseAttack(true, _client.Team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == ActivePokemons[i].Personality));
+                    }
+                    return false;
+                }
+            }
             return UseAttack(false);
         }
 
@@ -120,7 +164,19 @@ namespace Poke1Bot
                     MovesManager.MoveData moveData = MovesManager.Instance.GetMoveData(move.Id);
                     if (moveData.Name.ToUpperInvariant() == moveName)
                     {
-                        _client.UseAttack(i + 1);
+                        if (ActiveOpponentPokemons.Length > 1) {
+                            var selected = 0;
+                            for (int j = 0; j < ActivePokemons.Length; ++j)
+                                if (ActivePokemons[i].Trainer == _client.ActiveBattle._playerName
+                                && _client.Team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == ActivePokemons[i].Personality) >= 0)
+                                    selected = j;
+                            _client.UseAttack(i + 1, selected == 0 ? 0 : selected, _client.Rand.Next(0, ActiveOpponentPokemons.Length - 1) + 1);
+                        }
+                        else
+                        {
+                            _client.UseAttack(i + 1);
+                        }
+
                         return true;
                     }
                 }
@@ -167,6 +223,118 @@ namespace Poke1Bot
                 _client.ActiveBattle.RepeatAttack = false;
                 return true;
             }
+            return false;
+        }
+
+        private bool UseAttack(bool useBestAttack, int activePoke = 0)
+        {
+            PokemonMove bestMove = null;
+            int bestIndex = 0;
+            double bestPower = 0;
+
+            PokemonMove worstMove = null;
+            int worstIndex = 0;
+            double worstPower = 0;
+
+            int opponentIndex = 0;
+
+            for (int j = 0; j < ActiveOpponentPokemons.Length; ++j)
+            {
+                if (ActiveOpponentPokemons[j].Health <= 0)
+                    continue;
+                var activePokemon = _client.Team[activePoke];
+                for (int i = 0; i < activePokemon.Moves.Length; ++i)
+                {
+                    PokemonMove move = activePokemon.Moves[i];
+                    if (move.CurrentPoints == 0)
+                        continue;
+
+                    MovesManager.MoveData moveData = MovesManager.Instance.GetMoveData(move.Id);
+
+                    if (move.Id + 1 == DreamEater && _client.ActiveBattle.OpponentStatus != "slp")
+                    {
+                        continue;
+                    }
+
+                    if (move.Id + 1 == Explosion || move.Id + 1 == Selfdestruct ||
+                        (move.Id + 1 == DoubleEdge && activePokemon.BattleCurrentHealth < _client.ActiveBattle.CurrentHealth / 3))
+                    {
+                        continue;
+                    }
+
+                    if (!IsMoveOffensive(move, moveData) || _client.ActiveBattle.GetActivePokemon?.moves[i]?.disabled == true)
+                        continue;
+
+                    PokemonType attackType = PokemonTypeExtensions.FromName(moveData.Type);
+
+                    PokemonType playerType1 = TypesManager.Instance.Type1[activePokemon.Id];
+                    PokemonType playerType2 = TypesManager.Instance.Type2[activePokemon.Id];
+
+                    PokemonType opponentType1 = TypesManager.Instance.Type1[ActiveOpponentPokemons[j].ID];
+                    PokemonType opponentType2 = TypesManager.Instance.Type2[ActiveOpponentPokemons[j].ID];
+
+                    double accuracy = (moveData.Accuracy < 0 ? 101.0 : moveData.Accuracy);
+
+                    double power = moveData.RealPower * accuracy;
+
+                    if (attackType == playerType1 || attackType == playerType2)
+                    {
+                        power *= 1.5;
+                    }
+
+                    power *= TypesManager.Instance.GetMultiplier(attackType, opponentType1);
+                    power *= TypesManager.Instance.GetMultiplier(attackType, opponentType2);
+
+                    if (attackType == PokemonType.Ground && PokemonManager.Instance.IsLavitatingPokemon(ActiveOpponentPokemons[j].ID))
+                    {
+                        power = 0;
+                    }
+
+                    power = ApplySpecialEffects(move, power);
+
+                    if (move.Id + 1 == Synchronoise)
+                    {
+                        if (playerType1 != opponentType1 && playerType1 != opponentType2 &&
+                            (playerType2 == PokemonType.None || playerType2 != opponentType1) &&
+                            (playerType2 == PokemonType.None || playerType2 != opponentType2))
+                        {
+                            power = 0;
+                        }
+                    }
+
+                    if (power < 0.01)
+                        continue;
+
+                    if (bestMove == null || power > bestPower)
+                    {
+                        bestMove = move;
+                        bestPower = power;
+                        bestIndex = i;
+                    }
+
+                    if (worstMove == null || power < worstPower)
+                    {
+                        worstMove = move;
+                        worstPower = power;
+                        worstIndex = i;
+                    }
+                }
+                opponentIndex = j;
+            }
+
+            IsBusy = true;
+
+            if (useBestAttack && bestMove != null)
+            {
+                _client.UseAttack(bestIndex + 1, activePoke + 1, opponentIndex + 1);
+                return true;
+            }
+            if (!useBestAttack && worstMove != null)
+            {
+                _client.UseAttack(worstIndex + 1, activePoke + 1, opponentIndex + 1);
+                return true;
+            }
+
             return false;
         }
 
@@ -274,8 +442,6 @@ namespace Poke1Bot
         {
             if ((pokemon.CurrentHealth > 0 && !_client.IsInBattle) || (pokemon.BattleCurrentHealth > 0 && _client.IsInBattle))
             {
-                if (pokemon.Status.ToLowerInvariant() == "sleep")
-                    return false;
                 foreach (PokemonMove move in pokemon.Moves)
                 {
                     MovesManager.MoveData moveData = MovesManager.Instance.GetMoveData(move.Id);

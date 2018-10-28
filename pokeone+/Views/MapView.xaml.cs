@@ -96,8 +96,11 @@ namespace pokeone_plus
         // completely redraw and resize the map (if needed)
         private void ResetMap()
         {
-            MapImage.Source = null;
-            _mapBmp = null;
+            Dispatcher.InvokeAsync(delegate
+            {
+                MapImage.Source = null;
+                _mapBmp = null;
+            });
             _isMapDirty = true;
         }
 

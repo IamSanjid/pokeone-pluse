@@ -66,7 +66,7 @@ namespace Poke1Bot
 
             Console.WriteLine(pc);
 
-            var packet = @"Battle KgpBbWluYXRhMTIzKgpBbWluYXRhMTIzKgpBbWluYXRhMTIzSAFQAVgBYBM=";
+            var packet = @"Battle Chp8LS1vbmxpbmV8cDF8MHxnaWJ1eWhpbHRvbioGeW93aXRhKgtnaWJ1eWhpbHRvbioLZ2lidXloaWx0b244WkgBUAFYAWBO";
             var data = packet.Split(" ".ToCharArray());
 
             byte[] array = Convert.FromBase64String(data[1]);
@@ -97,7 +97,7 @@ namespace Poke1Bot
                         array
                     }) as PSXAPI.IProto;
                     Console.WriteLine(ToJsonString(proto));
-                    //Console.WriteLine($"MapLoad: {(proto as PSXAPI.Request.BattleBroadcast).RequestID}, ID: {(proto as PSXAPI.Request.BattleBroadcast)._Name.ToString()}");
+                  // Console.WriteLine($"MapLoad: {(proto as PSXAPI.Request.BattleBroadcast).RequestID}, ID: {(proto as PSXAPI.Request.BattleBroadcast)._Name.ToString()}");
                 }
             }
 #endif
@@ -162,6 +162,7 @@ namespace Poke1Bot
             AutoReconnector.Update();
             AutoLootBoxOpener.Update();
             QuestManager.Update();
+            AI?._waitForResponseInbattle.Update();
 
             if (Script?.IsLoaded == true)
                 Script?.Update();
@@ -173,6 +174,7 @@ namespace Poke1Bot
 
             if (PokemonEvolver.Update()) return;
             if (MoveTeacher.Update()) return;
+            if (AI != null && (AI.IsBusy || AI._waitForResponseInbattle.IsActive)) return;
 
             if (Game.IsMapLoaded && Game.AreNpcReceived && Game.IsInactive)
             {
@@ -372,11 +374,24 @@ namespace Poke1Bot
                 client.ConnectionClosed += Client_ConnectionClosed;
                 client.BattleMessage += Client_BattleMessage;
                 client.SystemMessage += Client_SystemMessage;
+                client.ServerCommandException += Client_ServerCommandException;
                 client.DialogOpened += Client_DialogOpened;
                 client.TeleportationOccuring += Client_TeleportationOccuring;
                 client.LogMessage += LogMessage;
+                client.MoveToBattleWithNpc += Client_MoveToBattleWithNpc;
             }
             ClientChanged?.Invoke();
+        }
+
+        private void Client_MoveToBattleWithNpc(Npc battler)
+        {
+            TalkToNpc(battler);
+        }
+
+        private void Client_ServerCommandException(string msg)
+        {
+            Stop();
+            LogMessage("Server occurred an exception: " + msg, Brushes.Firebrick);
         }
 
         private void ExecuteNextAction()

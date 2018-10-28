@@ -19,6 +19,8 @@ namespace Poke1Protocol
         public bool IsWild { get; private set; }
         public string OpponentGender { get; private set; }
         public string OpponentStatus { get; private set; }
+
+        public string OpponentForme { get; private set; }
         public string TrainerName { get; private set; }
         public bool IsPvp { get; }
         public int PokemonCount { get; private set; }
@@ -32,8 +34,6 @@ namespace Poke1Protocol
 
         public PokemonStats OpponentStats { get; private set; }
         public int ResponseID { get; private set; }
-
-        public int SelectedOpponent { get; private set; }
 
         public int Turn { get; private set; } = 1;
 
@@ -51,6 +51,10 @@ namespace Poke1Protocol
 
         public int CurrentBattlingPokemonIndex { get; private set; } // different than SelectedPokemonIndex
 
+        public SwitchedPokemon[] OpponentActivePokemon { get; private set; }
+
+        public SwitchedPokemon[] PlayerAcivePokemon { get; private set; }
+
         private List<Pokemon> _team { get; set; }
 
         public PSXAPI.Response.Payload.BattleActive GetActivePokemon
@@ -58,22 +62,32 @@ namespace Poke1Protocol
             get
             {
                 var playerReq = PlayerSide == 1 ? Data.Request1 : Data.Request2;
-                if (playerReq.RequestInfo.active is null) return null;
-                var pok = playerReq.RequestInfo.active?.FirstOrDefault(s => s?.trainer?.ToLowerInvariant() == _playerName.ToLowerInvariant());
+                if (playerReq is null || playerReq.RequestInfo.active is null) return null;
+                var pok = playerReq.RequestInfo.active?.FirstOrDefault(s => s?.trainer?.ToLowerInvariant() == _playerName?.ToLowerInvariant());
                 if (pok is null)
                     return playerReq.RequestInfo.active[0] ?? null;
                 return pok;
             }
         }
 
-        public string AttackTargetType(int uid)
+        public string AttackTargetType(int uid, int pokeUid = 0)
         {
             if (string.IsNullOrEmpty(_playerName) || GetActivePokemon is null)
                 return "normal";
-            var targetMove = GetActivePokemon.moves[uid - 1];
-            if (targetMove is null || string.IsNullOrEmpty(targetMove.target))
-                return "normal";
-            return targetMove.target;
+            if (pokeUid == 0)
+            {
+                var targetMove = GetActivePokemon.moves[uid - 1];
+                if (targetMove is null || string.IsNullOrEmpty(targetMove.target))
+                    return "normal";
+                return targetMove.target;
+            }
+            else
+            {
+                var targetMove = PlayerAcivePokemon[pokeUid].Moves[uid - 1];
+                if (targetMove is null || string.IsNullOrEmpty(targetMove.target))
+                    return "normal";
+                return targetMove.target;
+            }
         }
 
         public Battle(string playerName, PSXAPI.Response.Battle data, List<Pokemon> team)
@@ -156,7 +170,6 @@ namespace Poke1Protocol
                             //oppoenent
                             var req = PlayerSide == 1 ? Data.Request2 : Data.Request1;
                             var index = req.RequestInfo.side.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
-                            SelectedOpponent = index < 0 ? SelectedOpponent : index;
                             CurrentHealth = pokemon.Health;
                             OpponentHealth = pokemon.MaxHealth;
                             OpponentGender = pokemon.Gender;
@@ -172,8 +185,10 @@ namespace Poke1Protocol
             }
         }
 
-        public void UpdateBattle(PSXAPI.Response.Battle data, List<Pokemon> team)
+        public void UpdateBattle(string playerName, PSXAPI.Response.Battle data, List<Pokemon> team)
         {
+            _playerName = playerName;
+
             IsUpdated = true;
 
             IsWild = data.CanCatch;
@@ -254,7 +269,6 @@ namespace Poke1Protocol
                             //oppoenent
                             var req = PlayerSide == 1 ? Data.Request2 : Data.Request1;
                             var index = req.RequestInfo.side.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
-                            SelectedOpponent = index < 0 ? SelectedOpponent : index;
                             CurrentHealth = pokemon.Health;
                             OpponentHealth = pokemon.MaxHealth;
                             OpponentGender = pokemon.Gender;
@@ -293,8 +307,11 @@ namespace Poke1Protocol
                 var details = pokemon[i].details;
                 var newPoke = GetSwitchedPokemon(details, condition);
                 var index = _team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == pokemon[i].personality); // find the correct index...
-                _team[index].UpdateHealth(newPoke.Health, newPoke.MaxHealth);
-                _team[index].UpdateStatus(newPoke.Status);
+                if (index >= 0)
+                {
+                    _team[index].UpdateHealth(newPoke.Health, newPoke.MaxHealth);
+                    _team[index].UpdateStatus(newPoke.Status);
+                }
             }
         }
 
@@ -318,14 +335,32 @@ namespace Poke1Protocol
                 else
                     SelectedPokemonIndex = _team.IndexOf(_team.Find(p => p.PokemonData.Pokemon.Payload.Personality == activePokemon.personality));
                 UpdateSelectedPokemonIndex();
+                var pokemons = p1.RequestInfo.side.pokemon;
+                if (p1.RequestInfo is null) return;
+                if (p1.RequestInfo.active is null is false && p1.RequestInfo.active.Length > 0)
+                {
+                    PlayerAcivePokemon = new SwitchedPokemon[p1.RequestInfo.active.Length];
+                    for (var i = 0; i < p1.RequestInfo.active.Length; i++)
+                    {
+                        var condition = pokemons[i].condition;
+                        var details = pokemons[i].details;
+                        var newPoke = GetSwitchedPokemon(details, condition);
+                        PlayerAcivePokemon[i] = newPoke;
+                        PlayerAcivePokemon[i].Moves = p1.RequestInfo.active[i].moves;
+                        PlayerAcivePokemon[i].Trainer = p1.RequestInfo.active[i].trainer;
+                        PlayerAcivePokemon[i].Personality = p1.RequestInfo.active[i].personality;
+                    }
+                }
+                else
+                {
+                    PlayerAcivePokemon = null;
+                }
             }
             else
             {
                 var p2 = request;
                 PokemonCount = p2.RequestInfo.side.pokemon.Length;
                 var opponent = p2.RequestInfo.side.pokemon.ToList().Find(x => x.active);
-
-                SelectedOpponent = p2.RequestInfo.side.pokemon.ToList().IndexOf(opponent);
 
                 var Poke = GetSwitchedPokemon(opponent.details, opponent.condition);
 
@@ -337,10 +372,31 @@ namespace Poke1Protocol
                 OpponentStatus = Poke.Status;
                 OpponentHealth = Poke.MaxHealth;
                 CurrentHealth = Poke.Health;
+                OpponentForme = Poke.Forme;
                 if (!IsWild && opponent.trainer != null)
                     TrainerName = opponent.trainer;
                 ResponseID = p2.RequestID;               
-                var opAbility = opponent.baseAbility.ToLowerInvariant().Replace(" ", "");               
+                var opAbility = opponent.baseAbility.ToLowerInvariant().Replace(" ", "");
+                var pokemons = p2.RequestInfo.side.pokemon;
+                if (p2.RequestInfo is null) return;
+                if (p2.RequestInfo.active is null is false && p2.RequestInfo.active.Length > 0)
+                {
+                    OpponentActivePokemon = new SwitchedPokemon[p2.RequestInfo.active.Length];
+                    for (var i = 0; i < p2.RequestInfo.active.Length; i++)
+                    {
+                        var condition = pokemons[i].condition;
+                        var details = pokemons[i].details;
+                        var newPoke = GetSwitchedPokemon(details, condition);
+                        OpponentActivePokemon[i] = newPoke;
+                        OpponentActivePokemon[i].Moves = p2.RequestInfo.active[i].moves;
+                        OpponentActivePokemon[i].Trainer = p2.RequestInfo.active[i].trainer;
+                        OpponentActivePokemon[i].Personality = p2.RequestInfo.active[i].personality;
+                    }
+                }
+                else
+                {
+                    OpponentActivePokemon = null;
+                }
             }
             IsTrapped = GetActivePokemon?.maybeTrapped == true || GetActivePokemon?.maybeDisabled == true;
         }
@@ -385,7 +441,8 @@ namespace Poke1Protocol
                                 var st = Regex.Replace(info[3], @"[a-zA-Z]+", "");
                                 int currentHp = Convert.ToInt32(st.Split('/')[0]);
                                 int maxHp = Convert.ToInt32(st.Split('/')[1]);
-                                team[SelectedPokemonIndex].UpdateHealth(currentHp, maxHp);
+                                if (SelectedPokemonIndex >= 0)
+                                    team[SelectedPokemonIndex].UpdateHealth(currentHp, maxHp);
                             }
                             else if (((damageTaker[0].Contains("p1") && PlayerSide != 1)
                                 || (damageTaker[0].Contains("p2") && PlayerSide != 2)))
@@ -412,7 +469,7 @@ namespace Poke1Protocol
                             if ((attacker[0].Contains("p1") && PlayerSide == 1) || (attacker[0].Contains("p2") && PlayerSide == 2))
                             {
                                 var findMove = team[SelectedPokemonIndex].Moves.ToList().Find(x => x.Name.ToLowerInvariant() == move.ToLowerInvariant());
-                                if (findMove.CurrentPoints > 0)
+                                if (findMove != null && findMove.CurrentPoints > 0)
                                     findMove.CurrentPoints -= 1;
                             }
 
@@ -537,26 +594,32 @@ namespace Poke1Protocol
             if (array[0].ToLower().Contains("-mega-x"))
             {
                 switchPkmn.Forme = "-mega-x";
+                array[0].Replace("-mega-x", "");
             }
             else if (array[0].ToLower().Contains("-mega-y"))
             {
                 switchPkmn.Forme = "-mega-y";
+                array[0].Replace("-mega-y", "");
             }
             else if (array[0].ToLower().Contains("-mega"))
             {
                 switchPkmn.Forme = "-mega";
+                array[0].Replace("-mega", "");
             }
             else if (array[0].ToLower().Contains("-primal"))
             {
                 switchPkmn.Forme = "-primal";
+                array[0].Replace("-primal", "");
             }
             else if (array[0].ToLowerInvariant().Contains("mimikyubusted"))
             {
                 switchPkmn.Forme = "mimikyubusted";
+                array[0].Replace("mimikyubusted", "");
             }
             else if (array[0].ToLowerInvariant().Contains("wishiwashischool"))
             {
                 switchPkmn.Forme = "wishiwashischool";
+                array[0].Replace("wishiwashischool", "");
             }
             switchPkmn.ID = PokemonManager.Instance.GetIdByName(array[0]);
             if (switchPkmn.Level == 0)
@@ -591,28 +654,31 @@ namespace Poke1Protocol
             }
             return switchPkmn;
         }
+    }
+    public class SwitchedPokemon
+    {
+        public string Species = "";
 
+        public bool Shiny = false;
 
+        public int Level = 0;
 
-        private class SwitchedPokemon
-        {
-            public string Species = "";
+        public string Gender = "";
 
-            public bool Shiny = false;
+        public int Health = 1;
 
-            public int Level = 0;
+        public int MaxHealth = 1;
 
-            public string Gender = "";
+        public string Status;
 
-            public int Health = 1;
+        public int ID;
 
-            public int MaxHealth = 1;
+        public string Forme = null;
 
-            public string Status;
+        public PSXAPI.Response.Payload.BattleMove[] Moves = null;
 
-            public int ID;
+        public string Trainer = null;
 
-            public string Forme = null;
-        }
+        public int Personality = -1;
     }
 }
