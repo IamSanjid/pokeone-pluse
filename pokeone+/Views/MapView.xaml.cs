@@ -93,6 +93,14 @@ namespace pokeone_plus
 #endif
         }
 
+        // completely redraw and resize the map (if needed)
+        private void ResetMap()
+        {
+            MapImage.Source = null;
+            _mapBmp = null;
+            _isMapDirty = true;
+        }
+
         private void Draw()
         {
             if (_mapBmp == null)
@@ -293,9 +301,7 @@ namespace pokeone_plus
 
         private void MapView_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            MapImage.Source = null;
-            _mapBmp = null;
-            _isMapDirty = true;
+            ResetMap();
         }
 
         private void Parent_KeyDown(object sender, KeyEventArgs e)
@@ -303,15 +309,17 @@ namespace pokeone_plus
             e.Handled = true;
             if (e.Key == Key.Add)
             {
-                _cellWidth += 2;
-                if (_cellWidth > 64) _cellWidth = 64;
-                _isMapDirty = true;
+                _cellWidth += 5;
+                if (_cellWidth > 50) _cellWidth = 50;
+
+                ResetMap();
             }
             else if (e.Key == Key.Subtract)
             {
-                _cellWidth -= 2;
-                if (_cellWidth < 4) _cellWidth = 4;
-                _isMapDirty = true;
+                _cellWidth -= 5;
+                if (_cellWidth < 5) _cellWidth = 5;
+
+                ResetMap();
             }
             else if (e.Key == Key.Up)
             {
@@ -626,8 +634,7 @@ namespace pokeone_plus
                 _mapHeight = _bot.Game.Map.Height;
                 _mapWidth = _bot.Game.Map.Width;
             }
-            _mapBmp = null;
-            _isMapDirty = true;
+            ResetMap();
         }
 
         public void Client_AreaUpdated()
@@ -658,7 +665,6 @@ namespace pokeone_plus
         public void Client_PlayerMoved(PlayerInfos player)
         {
             _isMapDirty = true;
-            //Draw();
         }
     }
 }
