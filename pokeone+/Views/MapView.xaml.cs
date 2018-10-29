@@ -58,7 +58,7 @@ namespace pokeone_plus
                 { 3, Colors.Gray },
                 { 4, Colors.Gray },
                 { 5, Colors.LightSkyBlue },
-                { 6, Colors.LightGreen },
+                { 6, Colors.Gray },
                 { 7, Colors.White },
                 { 8, Colors.LightGreen },
                 { 9, Colors.White },
@@ -177,6 +177,11 @@ namespace pokeone_plus
                         {
                             rectHeight = _cellWidth / 4;
                             //rect.VerticalAlignment = VerticalAlignment.Top;
+                        }
+
+                        if (collider == 6)
+                        {
+                            rectWidth = _cellWidth / 4;
                         }
 
                         if (collider == 19 || collider == 20)

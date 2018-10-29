@@ -586,7 +586,7 @@ namespace Poke1Protocol
                 return MoveResult.Fail;
             }
 
-            if (collider == 4)
+            if (collider == 4 || collider == 6)
             {
                 return MoveResult.Jump;
             }
@@ -766,7 +766,7 @@ namespace Poke1Protocol
                 case Direction.Down:
                     if (isOnGround)
                     {
-                        if (collider == 0 || collider == 15 || collider == 6 || 
+                        if (collider == 0 || collider == 15 ||
                             collider == 7 || collider == 8 || collider == 9 || collider == 4 ||
                             collider == 12 || collider == 11 || collider == 14)
                         {
@@ -789,8 +789,7 @@ namespace Poke1Protocol
                         var collPre = GetCollider(destx + 1, desty);
                         if (collPre == 19 || collider == 16 || collider == 18 || GetCellSideMoveable(collPre))
                             return false;
-                        if (collider == 14 || collider == 15 || collider == 0 ||
-                            collider == 6 || collider == 7 || collider == 8 || collider == 9 || 
+                        if (collider == 14 || collider == 15 || collider == 0 || collider == 7 || collider == 8 || collider == 9 || 
                             collider == 4 || collider == 12 || collider == 11 || collider == 19)
                         {
                             return true;
