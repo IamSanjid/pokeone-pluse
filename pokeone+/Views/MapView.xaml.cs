@@ -96,11 +96,8 @@ namespace pokeone_plus
         // completely redraw and resize the map (if needed)
         private void ResetMap()
         {
-            Dispatcher.InvokeAsync(delegate
-            {
-                MapImage.Source = null;
-                _mapBmp = null;
-            });
+            MapImage.Source = null;
+            _mapBmp = null;
             _isMapDirty = true;
         }
 
@@ -642,7 +639,10 @@ namespace pokeone_plus
                 _mapHeight = _bot.Game.Map.Height;
                 _mapWidth = _bot.Game.Map.Width;
             }
-            ResetMap();
+            Dispatcher.InvokeAsync(delegate
+            {
+                ResetMap();
+            });
         }
 
         public void Client_AreaUpdated()

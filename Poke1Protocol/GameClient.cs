@@ -378,7 +378,7 @@ namespace Poke1Protocol
                     list.Add(_movementPackets[i].Actions[0]);
                     goto IL_118;
                 }
-                if (list.Count == 2)
+                if (list.Count > 2)
                     Console.WriteLine("Yes I am working like PokeOne :D");
                 SendProto(new PSXAPI.Request.Move
                 {
@@ -429,7 +429,7 @@ namespace Poke1Protocol
                 if (ApplyMovement(direction))
                 {
                     SendMovement(direction.ToMoveActions(), fromX, fromY); // PokeOne sends the (x,y) without applying the movement(but it checks the collisions) to the server.
-                    _movementTimeout.Set(IsBiking ? 225 : 375);
+                    _movementTimeout.Set(IsBiking ? 225 : 400);
                     if (Map.HasLink(PlayerX, PlayerY))
                     {
                         _teleportationTimeout.Set();

@@ -35,7 +35,6 @@ namespace Poke1Protocol
             { 17, true },
             { 18, true }
         };
-        public Dictionary<string, List<Tuple<int, int>>> AreaLinks { get; } 
         public List<LINKData> Links { get; }
         public MAPAPI.Response.MapDump MapDump { get; }
         public int[,] Colliders { get; }
@@ -78,7 +77,6 @@ namespace Poke1Protocol
             IsSessioned = isSessioned;
             Npcs = new List<Npc>();
             OriginalNpcs = new List<Npc>();
-            AreaLinks = new Dictionary<string, List<Tuple<int, int>>>();
             if (MapDump.NPCs != null && MapDump?.NPCs.Count > 0)
             {
                 foreach (var npc in MapDump.NPCs)
@@ -135,124 +133,6 @@ namespace Poke1Protocol
                     };
                 }
             }
-            if (MapDump.Areas is null) return;
-            foreach(var ar in MapDump.Areas)
-            {
-                var destination = ar.AreaName.ToUpperInvariant();
-                if (!AreaLinks.ContainsKey(destination))
-                {
-                    AreaLinks.Add(destination, new List<Tuple<int, int>>());
-                }
-                var linky = ar.EndY;
-
-                for (int y = ar.StartY; y <= ar.EndY; ++y)
-                {
-                    for (int x = ar.StartX; x <= ar.EndX; ++x)
-                    {
-                        if (GetCollider(x, y) != 1)
-                        {
-                            if (IsInArea(ar, x, y))
-                                AreaLinks[destination].Add(new Tuple<int, int>(x, y));
-                            else if (IsInArea(ar, x, y - 1) && !(y - 1 < ar.StartY))
-                                AreaLinks[destination].Add(new Tuple<int, int>(x, y - 1));
-                            else if (IsInArea(ar, x, y + 1) && !(y + 1 > ar.EndY))
-                                AreaLinks[destination].Add(new Tuple<int, int>(x, y + 1));
-                            else if (IsInArea(ar, x - 1, y) && !(x - 1 < ar.StartX))
-                                AreaLinks[destination].Add(new Tuple<int, int>(x - 1, y));
-                            else if (IsInArea(ar, x + 1, y) && !(x + 1 > ar.EndX))
-                                AreaLinks[destination].Add(new Tuple<int, int>(x + 1, y));
-                        }
-                    }
-                }              
-            }
-
-        }
-
-        private bool IsAreaHorizontallyPlaced(Area area)
-        {
-            if (MapDump.Areas.Count > 1)
-            {
-                var lastMap = MapDump.Areas.LastOrDefault();
-                var firstMap = MapDump.Areas.FirstOrDefault();
-
-                if (lastMap.AreaName.ToLowerInvariant() == area.AreaName.ToLowerInvariant())
-                {
-                    var index = MapDump.Areas.IndexOf(area) - 1;
-
-                    var currentArea = MapDump.Areas[index];
-
-                    var isHori = currentArea.StartX >= area.EndX || area.StartX >= currentArea.EndX; // Horizontal
-                    return isHori;
-                }
-                else if (firstMap.AreaName.ToLowerInvariant() == area.AreaName.ToLowerInvariant())
-                {
-                    var index = MapDump.Areas.IndexOf(area) + 1;
-
-                    var currentArea = MapDump.Areas[index];
-
-                    var isHori = currentArea.StartX >= area.EndX || area.StartX >= currentArea.EndX; // Horizontal
-                    return isHori;
-                }
-                else
-                {
-                    var previousIndex = MapDump.Areas.IndexOf(area) - 1;
-                    var afterIndex = MapDump.Areas.IndexOf(area) + 1;
-
-                    var currentArea = MapDump.Areas[previousIndex];
-                    var currentArea2 = MapDump.Areas[afterIndex];
-
-                    var isHori = currentArea.StartX >= area.EndX || area.StartX >= currentArea.EndX; // Horizontal
-
-                    var isHori2 = currentArea2.StartX >= area.EndX || area.StartX >= currentArea2.EndX; // Horizontal
-                    return isHori || isHori2;
-                }
-
-            }
-            return false;
-        }
-
-        private bool IsAreaVerticallyPlaced(Area area)
-        {
-            if (MapDump.Areas.Count == 1) return true;
-            if (MapDump.Areas.Count > 1)
-            {
-                var lastMap = MapDump.Areas.LastOrDefault();
-                var firstMap = MapDump.Areas.FirstOrDefault();
-
-                if (lastMap.AreaName.ToLowerInvariant() == area.AreaName.ToLowerInvariant())
-                {
-                    var index = MapDump.Areas.IndexOf(area) - 1;
-
-                    var currentArea = MapDump.Areas[index];
-
-                    var isVerti = currentArea.EndY <= area.StartY || currentArea.StartY >= area.EndY; // Vertical
-                    return isVerti;
-                }
-                else if (firstMap.AreaName.ToLowerInvariant() == area.AreaName.ToLowerInvariant())
-                {
-                    var index = MapDump.Areas.IndexOf(area) + 1;
-
-                    var currentArea = MapDump.Areas[index];
-
-                    var isVerti = currentArea.EndY <= area.StartY || currentArea.StartY >= area.EndY; // Vertical
-                    return isVerti;
-                }
-                else
-                {
-                    var previousIndex = MapDump.Areas.IndexOf(area) - 1;
-                    var afterIndex = MapDump.Areas.IndexOf(area) + 1;
-
-                    var currentArea = MapDump.Areas[previousIndex];
-                    var currentArea2 = MapDump.Areas[afterIndex];
-
-                    var isVerti = currentArea.EndY <= area.StartY || currentArea.StartY >= area.EndY; // Vertical
-
-                    var isVerti2 = currentArea2.EndY <= area.StartY || currentArea2.StartY >= area.EndY; // Vertical
-                    return isVerti || isVerti2;
-                }
-
-            }
-            return false;
         }
 
         public void UpdateArea()
@@ -306,15 +186,15 @@ namespace Poke1Protocol
 
         private Tuple<int, int> GetPerfectAreaLinks(Area ar, int x, int y)
         {
-            if (IsInArea(ar, x, y))
+            if (CheckArea(ar, x, y))
                 return (new Tuple<int, int>(x, y));
-            else if (IsInArea(ar, x, y - 1) && !(y - 1 < ar.StartY))
+            else if (CheckArea(ar, x, y - 1) && !(y - 1 < ar.StartY))
                 return (new Tuple<int, int>(x, y - 1));
-            else if (IsInArea(ar, x, y + 1) && !(y + 1 > ar.EndY))
+            else if (CheckArea(ar, x, y + 1) && !(y + 1 > ar.EndY))
                 return (new Tuple<int, int>(x, y + 1));
-            else if (IsInArea(ar, x - 1, y) && !(x - 1 < ar.StartX))
+            else if (CheckArea(ar, x - 1, y) && !(x - 1 < ar.StartX))
                 return (new Tuple<int, int>(x - 1, y));
-            else if (IsInArea(ar, x + 1, y) && !(x + 1 > ar.EndX))
+            else if (CheckArea(ar, x + 1, y) && !(x + 1 > ar.EndX))
                 return (new Tuple<int, int>(x + 1, y));
 
             return new Tuple<int, int>(x, y);
@@ -322,78 +202,92 @@ namespace Poke1Protocol
 
         public IEnumerable<Tuple<int, int>> GetNearestLinks(string linkName, int x, int y)
         {
-            if (AreaLinks.ContainsKey(linkName))
+            var findArea = MapDump.Areas.Find(ar => ar.AreaName?.ToLowerInvariant() == linkName?.ToLowerInvariant());
+            if (findArea != null)
             {
-                return AreaLinks[linkName].OrderBy(link => GameClient.DistanceBetween(x, y, link.Item1, link.Item2));
-            }
-            return null;
-        }
-
-        private bool IsInArea(MAPAPI.Response.Area area, int x, int y)
-        {
-            if (x >= area.StartX && x <= area.EndX && y >= area.StartY && y <= area.EndY)
-            {
-                if (MapDump.Areas.Count > 1)
+                var newLinks = new List<Tuple<int, int>>();
+                Console.WriteLine("IsHorizontal: " + IsHorizontal(findArea) + " IsVertical: " + IsVertical(findArea));
+                var destFromStart = GameClient.DistanceBetween(x, y, findArea.StartX, findArea.StartY);
+                var destFromEnd = GameClient.DistanceBetween(x, y, findArea.EndX, findArea.EndY);
+                if (IsVertical(findArea))
                 {
-                    var lastMap = MapDump.Areas.LastOrDefault();
-                    var firstMap = MapDump.Areas.FirstOrDefault();
-
-                    if (lastMap.AreaName.ToLowerInvariant() == area.AreaName.ToLowerInvariant())
+                    if (destFromEnd > destFromStart)
                     {
-                        var index = MapDump.Areas.IndexOf(area) - 1;
-
-                        if (y == MapDump.Areas[index].StartY || x == MapDump.Areas[index].StartX)
-                            return false;
-                    }
-                    else if (firstMap.AreaName.ToLowerInvariant() == area.AreaName.ToLowerInvariant())
-                    {
-                        var index = MapDump.Areas.IndexOf(area) + 1;
-
-                        if (y == MapDump.Areas[index].EndY || x == MapDump.Areas[index].EndX)
+                        var ay = findArea.StartY;
+                        for (int ax = findArea.StartX; ax <= findArea.EndX; ++ax)
                         {
-                            return false;
+                            if (GetCollider(ax, ay) != 1)
+                            {
+                                if (CheckArea(ax, ay) == findArea && IsAreaLink(findArea, ax, ay))
+                                    newLinks.Add(new Tuple<int, int>(ax, ay));
+                            }
                         }
                     }
                     else
                     {
-                        var previousIndex = MapDump.Areas.IndexOf(area) - 1;
-                        var afterIndex = MapDump.Areas.IndexOf(area) + 1;
-
-                        var currentArea = MapDump.Areas[previousIndex];
-                        var currentArea2 = MapDump.Areas[afterIndex];
-
-                        var isHori = currentArea.StartX >= area.EndX || area.StartX >= currentArea.EndX; // Horizontal
-                        var isVerti = currentArea.EndY <= area.StartY || currentArea.StartY >= area.EndY; // Vertical
-
-                        var isHori2 = currentArea2.StartX >= area.EndX || area.StartX >= currentArea2.EndX; // Horizontal
-                        var isVerti2 = currentArea2.EndY <= area.StartY || currentArea2.StartY >= area.EndY; // Vertical
-
-                        if (isHori)
+                        var ay = findArea.EndY;
+                        for (int ax = findArea.StartX; ax <= findArea.EndX; ++ax)
                         {
-                            if (y == MapDump.Areas[previousIndex].EndY || x == MapDump.Areas[previousIndex].EndX)
-                                return false;
-                        }
-                        else if (isVerti)
-                        {
-                            if (y == MapDump.Areas[previousIndex].StartY || x == MapDump.Areas[previousIndex].StartX)
-                                return false;
-                        }
-
-                        if (isHori2)
-                        {
-                            if (y == MapDump.Areas[afterIndex].StartY || x == MapDump.Areas[afterIndex].StartX)
-                                return false;
-                        }
-                        else if (isVerti2)
-                        {
-                            if (y == MapDump.Areas[afterIndex].EndY || x == MapDump.Areas[afterIndex].EndX)
-                                return false;
+                            if (GetCollider(ax, ay) != 1)
+                            {
+                                if (CheckArea(ax, ay) == findArea && IsAreaLink(findArea, ax, ay))
+                                    newLinks.Add(new Tuple<int, int>(ax, ay));
+                            }
                         }
                     }
                 }
-                return true;
+                else if (IsHorizontal(findArea))
+                {
+                    if (destFromEnd > destFromStart)
+                    {
+                        var ax = findArea.StartX;
+                        for (int ay = findArea.StartY; ay <= findArea.EndY; ++ay)
+                        {
+                            if (GetCollider(ax, ay) != 1)
+                            {
+                                if (CheckArea(ax, ay) == findArea && IsAreaLink(findArea, ax, ay))
+                                    newLinks.Add(new Tuple<int, int>(ax, ay));
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var ax = findArea.EndX;
+                        for (int ay = findArea.StartY; ay <= findArea.EndY; ++ay)
+                        {
+                            if (GetCollider(ax, ay) != 1)
+                            {
+                                if (CheckArea(ax, ay) == findArea && IsAreaLink(findArea, ax, ay))
+                                    newLinks.Add(new Tuple<int, int>(ax, ay));
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    for (int ay = findArea.StartY; ay <= findArea.EndY; ++ay)
+                    {
+                        for (int ax = findArea.StartX; ax <= findArea.EndX; ++ax)
+                        {
+                            if (GetCollider(ax, ay) != 1)
+                            {
+                                if (CheckArea(ax, ay) == findArea && IsAreaLink(findArea, ax, ay))
+                                    newLinks.Add(new Tuple<int, int>(ax, ay));
+                                //else if (CheckArea(ar, x, y - 1) && !(y - 1 < ar.StartY))
+                                //    AreaLinks[destination].Add(new Tuple<int, int>(x, y - 1));
+                                //else if (CheckArea(ar, x, y + 1) && !(y + 1 > ar.EndY))
+                                //    AreaLinks[destination].Add(new Tuple<int, int>(x, y + 1));
+                                //else if (CheckArea(ar, x - 1, y) && !(x - 1 < ar.StartX))
+                                //    AreaLinks[destination].Add(new Tuple<int, int>(x - 1, y));
+                                //else if (CheckArea(ar, x + 1, y) && !(x + 1 > ar.EndX))
+                                //    AreaLinks[destination].Add(new Tuple<int, int>(x + 1, y));
+                            }
+                        }
+                    }
+                }
+                return newLinks.OrderBy(link => GameClient.DistanceBetween(x, y, link.Item1, link.Item2));
             }
-            return false;
+            return null;
         }
 
         public bool IsAreaLink(int x, int y)
@@ -428,6 +322,67 @@ namespace Poke1Protocol
             return false;
         }
 
+        public bool IsAreaLink(Area area, int x, int y)
+        {
+            var currentArea = CurrentArea;
+            if (area?.AreaName.ToLowerInvariant() != CurrentArea?.AreaName.ToLowerInvariant())
+            {
+                if (area != null && currentArea != null)
+                {
+                    var isHori = currentArea.StartX >= area.EndX || area.StartX >= currentArea.EndX; // Horizontal
+                    var isVerti = currentArea.EndY <= area.StartY || currentArea.StartY >= area.EndY; // Vertical
+                    if (Colliders[x, y] == 0)
+                    {
+                        if ((isHori && (x == area.EndX || x == area.StartX)) || (isVerti && (y == area.StartY || y == area.EndY)))
+                            return true;
+                        else if ((currentArea.StartX == area.EndX && (x == area.EndX))
+                            || (currentArea.StartY == area.EndY && (y == area.EndY)))
+                            return true;
+                        else if ((currentArea.EndX == area.StartX && (x == area.StartX))
+                            || (currentArea.EndY == area.StartY && (y == area.StartY)))
+                            return true;
+                        else if ((currentArea.StartX == area.EndX && (x - 1 == area.EndX || x + 1 == area.EndX))
+                            || (currentArea.StartY == area.EndY && (y - 1 == area.EndY || y + 1 == area.EndY)))
+                            return true;
+                        else if ((currentArea.EndX == area.StartX && (x - 1 == area.StartX || x + 1 == area.StartX))
+                            || (currentArea.EndY == area.StartY && (y + 1 == area.StartY || y - 1 == area.StartY)))
+                            return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        public bool IsHorizontal(Area area)
+        {
+            var currentArea = CurrentArea;
+            if (area?.AreaName.ToLowerInvariant() != CurrentArea?.AreaName.ToLowerInvariant())
+            {
+                if (area != null && currentArea != null)
+                {
+                    var isHori = currentArea.StartX >= area.EndX || area.StartX >= currentArea.EndX; // Horizontal
+                    var isVerti = currentArea.EndY <= area.StartY || currentArea.StartY >= area.EndY; // Vertical
+                    return isHori;
+                }
+            }
+            return false;
+        }
+
+        public bool IsVertical(Area area)
+        {
+            var currentArea = CurrentArea;
+            if (area?.AreaName.ToLowerInvariant() != CurrentArea?.AreaName.ToLowerInvariant())
+            {
+                if (area != null && currentArea != null)
+                {
+                    var isHori = currentArea.StartX >= area.EndX || area.StartX >= currentArea.EndX; // Horizontal
+                    var isVerti = currentArea.EndY <= area.StartY || currentArea.StartY >= area.EndY; // Vertical
+                    return isVerti;
+                }
+            }
+            return false;
+        }
+
         public Area CheckArea(int x, int y)
         {
             if (_client.IsLoggedIn)
@@ -442,6 +397,22 @@ namespace Poke1Protocol
                     }
             }
             return null;
+        }
+
+        public bool CheckArea(Area ar, int x, int y)
+        {
+            if (_client.IsLoggedIn)
+            {
+                if (MapDump.Areas != null && MapDump.Areas.Count > 0)
+                    foreach (MAPAPI.Response.Area area in MapDump.Areas)
+                    {
+                        if (x >= area.StartX && x <= area.EndX && y >= area.StartY && y <= area.EndY)
+                        {
+                            return area == ar;
+                        }
+                    }
+            }
+            return false;
         }
 
         public bool IsInCurrentArea(int x, int y)
@@ -529,7 +500,7 @@ namespace Poke1Protocol
         {
             if (!IsInCurrentArea(x, y)) return false;
             return (Objects.Any(ob => ob.x == x && ob.z == -y && ob.Name.StartsWith("PCComputer"))
-                    && OriginalNpcs.Any(n => n.PositionX == x && n.PositionY == y 
+                    && OriginalNpcs.Any(n => n.PositionX == x && n.PositionY == y
                     && n.NpcName.ToLowerInvariant().StartsWith("new")));
         }
 
@@ -757,7 +728,7 @@ namespace Poke1Protocol
                             return true;
                         }
                     }
-                    else if (collider == 14 || collider == 15 || collider == 7 || collider == 8 || 
+                    else if (collider == 14 || collider == 15 || collider == 7 || collider == 8 ||
                         collider == 9 || collider == 0 || collider == 12 || collider == 11)
                     {
                         return true;
@@ -789,7 +760,7 @@ namespace Poke1Protocol
                         var collPre = GetCollider(destx + 1, desty);
                         if (collPre == 19 || collider == 16 || collider == 18 || GetCellSideMoveable(collPre))
                             return false;
-                        if (collider == 14 || collider == 15 || collider == 0 || collider == 7 || collider == 8 || collider == 9 || 
+                        if (collider == 14 || collider == 15 || collider == 0 || collider == 7 || collider == 8 || collider == 9 ||
                             collider == 4 || collider == 12 || collider == 11 || collider == 19)
                         {
                             return true;
@@ -799,8 +770,8 @@ namespace Poke1Protocol
                             return true;
                         }
                     }
-                    else if (collider == 14 || collider == 15 || collider == 7 || 
-                        collider == 8 || collider == 9 || collider == 0 || collider == 12 || 
+                    else if (collider == 14 || collider == 15 || collider == 7 ||
+                        collider == 8 || collider == 9 || collider == 0 || collider == 12 ||
                         collider == 11)
                     {
                         return true;
@@ -810,10 +781,10 @@ namespace Poke1Protocol
                     if (isOnGround)
                     {
                         var collPre = GetCollider(destx - 1, desty);
-                        if (collPre == 20|| collider == 16 || collider == 18 || GetCellSideMoveable(collPre))
+                        if (collPre == 20 || collider == 16 || collider == 18 || GetCellSideMoveable(collPre))
                             return false;
-                        if (collider == 14 || collider == 15 || collider == 0 || 
-                            collider == 6 || collider == 7 || collider == 8 || collider == 9 || 
+                        if (collider == 14 || collider == 15 || collider == 0 ||
+                            collider == 6 || collider == 7 || collider == 8 || collider == 9 ||
                             collider == 3 || collider == 12 || collider == 11 || collider == 20)
                         {
                             return true;
@@ -823,7 +794,7 @@ namespace Poke1Protocol
                             return true;
                         }
                     }
-                    else if (collider == 14 || collider == 15 || collider == 7 || 
+                    else if (collider == 14 || collider == 15 || collider == 7 ||
                         collider == 8 || collider == 9 || collider == 0 ||
                         collider == 12 || collider == 11)
                     {
