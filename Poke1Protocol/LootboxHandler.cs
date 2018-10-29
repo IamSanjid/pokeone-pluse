@@ -11,7 +11,7 @@ namespace Poke1Protocol
     {
         public event Action<PSXAPI.Response.Payload.LootboxRoll[], PSXAPI.Response.LootboxType> BoxOpened;
         public event Action<string> LootBoxMessage;
-        public event Action<LootboxHandler> RecievedBox;
+        public event Action<PSXAPI.Response.Lootbox> RecievedBox;
 
         public List<PSXAPI.Response.Lootbox> Lootboxes { get; private set; } = new List<PSXAPI.Response.Lootbox>();
 
@@ -65,7 +65,9 @@ namespace Poke1Protocol
             if (count > (long)((ulong)oldAmount))
             {
                 LootBoxMessage?.Invoke("You gained Loot Box x" + count + ".");
-                RecievedBox?.Invoke(this);
+                foreach(var box in Lootboxes)
+                    RecievedBox?.Invoke(box);
+                Lootboxes.Clear();
             }
             TotalLootBoxes = (int)(NormalBoxes + SmallBoxes);
 

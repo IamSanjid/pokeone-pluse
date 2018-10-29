@@ -147,6 +147,7 @@ namespace Poke1Bot.Scripting
                 // general condition
                 _lua.Globals["getPlayerX"] = new Func<int>(GetPlayerX);
                 _lua.Globals["getPlayerY"] = new Func<int>(GetPlayerY);
+                _lua.Globals["getPlayerLevel"] = new Func<int>(GetPlayerLevel);
                 _lua.Globals["getAccountName"] = new Func<string>(GetAccountName);
                 _lua.Globals["getAreaName"] = new Func<string>(GetAreaName);
                 _lua.Globals["getMapName"] = new Func<string>(GetMapName);
@@ -470,6 +471,12 @@ namespace Poke1Bot.Scripting
         private int GetPlayerY()
         {
             return Bot.Game.PlayerY;
+        }
+
+        // API:Returns player's current level of current region.
+        private int GetPlayerLevel()
+        {
+            return Bot.Game.Level != null ? (int)Bot.Game.Level.UserLevel : 5; // 5 is default level
         }
 
         // API: Returns current account name.
@@ -2241,7 +2248,7 @@ namespace Poke1Bot.Scripting
 
         private int CountBadges()
         {
-            if(Bot.Game.PlayerStats is null)
+            if(Bot.Game.PlayerStats is null && Bot.Game.Badges.Count <= 0)
             {
                 Fatal("error: 'countBadges' haven't received player stats yet.");
                 return -1;
@@ -2252,7 +2259,7 @@ namespace Poke1Bot.Scripting
         // API: Retruns true if player contains specified badge id.
         private bool HasBadgeId(int id)
         {
-            if (Bot.Game.PlayerStats is null)
+            if (Bot.Game.PlayerStats is null && Bot.Game.Badges.Count <= 0)
             {
                 Fatal("error: 'hasBadgeId' haven't received player stats yet.");
                 return false;
@@ -2263,7 +2270,7 @@ namespace Poke1Bot.Scripting
         // API: Retruns true if player contains specified badge.
         private bool HasBadge(string name)
         {
-            if (Bot.Game.PlayerStats is null)
+            if (Bot.Game.PlayerStats is null && Bot.Game.Badges.Count <= 0)
             {
                 Fatal("error: 'hasBadge' haven't received player stats yet.");
                 return false;

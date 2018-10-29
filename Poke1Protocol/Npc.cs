@@ -39,7 +39,7 @@ namespace Poke1Protocol
                 || data.Settings.SightAction == "Player To NPC");
             CanBattle = IsBattler;
             CanBlockPlayer = en;
-            IsVisible = true;
+            IsVisible = en;
 #if DEBUG
             Console.WriteLine($"LOS: {LosLength}, Is Battler: {IsBattler}, Path = {_path}, Enabled: {en}");
             if (!en)

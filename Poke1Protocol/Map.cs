@@ -207,6 +207,8 @@ namespace Poke1Protocol
             {
                 var newLinks = new List<Tuple<int, int>>();
                 Console.WriteLine("IsHorizontal: " + IsHorizontal(findArea) + " IsVertical: " + IsVertical(findArea));
+
+
                 var destFromStart = GameClient.DistanceBetween(x, y, findArea.StartX, findArea.StartY);
                 var destFromEnd = GameClient.DistanceBetween(x, y, findArea.EndX, findArea.EndY);
                 if (IsVertical(findArea))
@@ -220,6 +222,10 @@ namespace Poke1Protocol
                             {
                                 if (CheckArea(ax, ay) == findArea && IsAreaLink(findArea, ax, ay))
                                     newLinks.Add(new Tuple<int, int>(ax, ay));
+                                else if (CheckArea(findArea, ax, ay - 1) && !(ay - 1 < findArea.StartY))
+                                    newLinks.Add(new Tuple<int, int>(ax, ay - 1));
+                                else if (CheckArea(findArea, ax, ay + 1) && !(ay + 1 < findArea.EndY))
+                                    newLinks.Add(new Tuple<int, int>(ax, ay + 1));
                             }
                         }
                     }
@@ -232,6 +238,10 @@ namespace Poke1Protocol
                             {
                                 if (CheckArea(ax, ay) == findArea && IsAreaLink(findArea, ax, ay))
                                     newLinks.Add(new Tuple<int, int>(ax, ay));
+                                else if (CheckArea(findArea, ax, ay - 1) && !(ay - 1 < findArea.StartY))
+                                    newLinks.Add(new Tuple<int, int>(ax, ay - 1));
+                                else if (CheckArea(findArea, ax, ay + 1) && !(ay + 1 < findArea.EndY))
+                                    newLinks.Add(new Tuple<int, int>(ax, ay + 1));
                             }
                         }
                     }
@@ -247,6 +257,10 @@ namespace Poke1Protocol
                             {
                                 if (CheckArea(ax, ay) == findArea && IsAreaLink(findArea, ax, ay))
                                     newLinks.Add(new Tuple<int, int>(ax, ay));
+                                else if (CheckArea(findArea, ax - 1, ay) && !(ax - 1 < findArea.StartX))
+                                    newLinks.Add(new Tuple<int, int>(ax - 1, ay));
+                                else if (CheckArea(findArea, ax + 1, ay) && !(ax + 1 < findArea.EndX))
+                                    newLinks.Add(new Tuple<int, int>(ax + 1, ay));
                             }
                         }
                     }
@@ -259,6 +273,10 @@ namespace Poke1Protocol
                             {
                                 if (CheckArea(ax, ay) == findArea && IsAreaLink(findArea, ax, ay))
                                     newLinks.Add(new Tuple<int, int>(ax, ay));
+                                else if (CheckArea(findArea, ax - 1, ay) && !(ax - 1 < findArea.StartX))
+                                    newLinks.Add(new Tuple<int, int>(ax - 1, ay));
+                                else if (CheckArea(findArea, ax + 1, ay) && !(ax + 1 < findArea.EndX))
+                                    newLinks.Add(new Tuple<int, int>(ax + 1, ay));
                             }
                         }
                     }
@@ -273,14 +291,14 @@ namespace Poke1Protocol
                             {
                                 if (CheckArea(ax, ay) == findArea && IsAreaLink(findArea, ax, ay))
                                     newLinks.Add(new Tuple<int, int>(ax, ay));
-                                //else if (CheckArea(ar, x, y - 1) && !(y - 1 < ar.StartY))
-                                //    AreaLinks[destination].Add(new Tuple<int, int>(x, y - 1));
-                                //else if (CheckArea(ar, x, y + 1) && !(y + 1 > ar.EndY))
-                                //    AreaLinks[destination].Add(new Tuple<int, int>(x, y + 1));
-                                //else if (CheckArea(ar, x - 1, y) && !(x - 1 < ar.StartX))
-                                //    AreaLinks[destination].Add(new Tuple<int, int>(x - 1, y));
-                                //else if (CheckArea(ar, x + 1, y) && !(x + 1 > ar.EndX))
-                                //    AreaLinks[destination].Add(new Tuple<int, int>(x + 1, y));
+                                else if (CheckArea(findArea, ax, ay - 1) && !(ay - 1 < findArea.StartY))
+                                    newLinks.Add(new Tuple<int, int>(ax, ay - 1));
+                                else if (CheckArea(findArea, ax, ay + 1) && !(ay + 1 < findArea.EndY))
+                                    newLinks.Add(new Tuple<int, int>(ax, ay + 1));
+                                else if (CheckArea(findArea, ax - 1, ay) && !(ax - 1 < findArea.StartX))
+                                    newLinks.Add(new Tuple<int, int>(ax - 1, ay));
+                                else if (CheckArea(findArea, ax + 1, ay) && !(ax + 1 < findArea.EndX))
+                                    newLinks.Add(new Tuple<int, int>(ax + 1, ay));
                             }
                         }
                     }
@@ -455,27 +473,32 @@ namespace Poke1Protocol
         }
         public bool CanSurf(int positionX, int positionY, bool isOnGround)
         {
-            int currentCollider = GetCollider(positionX, positionY);
             int collider = GetCollider(positionX, positionY - 1);
-            if ((collider == 2 || collider == 15 || collider == 31 || collider == 32 || collider == 33 || collider == 34) && isOnGround)
+            int zone = TileZones[positionX, positionY - 1];
+
+            if ((collider == 2 || collider == 15 ) && isOnGround)
             {
                 return true;
             }
 
             collider = GetCollider(positionX, positionY + 1);
-            if ((collider == 2 || collider == 15 || collider == 31 || collider == 32 || collider == 33 || collider == 34) && isOnGround)
+            zone = TileZones[positionX, positionY + 1];
+
+            if ((collider == 2 || collider == 15 ) && isOnGround)
             {
                 return true;
             }
 
             collider = GetCollider(positionX - 1, positionY);
-            if ((collider == 2 || collider == 15 || collider == 31 || collider == 32 || collider == 33 || collider == 34) && isOnGround)
+            zone = TileZones[positionX - 1, positionY];
+            if ((collider == 2 || collider == 15 ) && isOnGround)
             {
                 return true;
             }
 
             collider = GetCollider(positionX + 1, positionY);
-            if ((collider == 2 || collider == 15 || collider == 31 || collider == 32 || collider == 33 || collider == 34) && isOnGround)
+            zone = TileZones[positionX + 1, positionY];
+            if ((collider == 2 || collider == 15 || zone == 5) && isOnGround)
             {
                 return true;
             }
@@ -561,6 +584,9 @@ namespace Poke1Protocol
             {
                 return MoveResult.Jump;
             }
+
+            if (collider == 2 || collider == 15 || TileZones[destinationX, destinationY] == 5)
+                return MoveResult.NoLongerOnGround;
 
             if (isSurfing && !IsWater(destinationX, destinationY))
                 return MoveResult.NoLongerSurfing;

@@ -526,11 +526,11 @@ namespace pokeone_plus
             });
         }
 
-        private void Client_RecievedLootBox(LootboxHandler handler)
+        private void Client_RecievedLootBox(PSXAPI.Response.Lootbox box)
         {
             Dispatcher.InvokeAsync(delegate
             {
-                LogMessage("You've received a Loot Box!", Brushes.Tomato);
+                LogMessage($"You've received a {box.Type}!", Brushes.Tomato);
             });
         }
 

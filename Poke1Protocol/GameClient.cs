@@ -111,7 +111,7 @@ namespace Poke1Protocol
         public event Action<string> MapLoaded;
         public event Action<string> SystemMessage;
         public event Action<string> LootBoxMessage;
-        public event Action<LootboxHandler> RecievedLootBox;
+        public event Action<PSXAPI.Response.Lootbox> RecievedLootBox;
         public event Action<string> LogMessage;
         public event Action BattleStarted;
         public event Action<string> BattleMessage;
@@ -352,6 +352,12 @@ namespace Poke1Protocol
             {
                 List<PSXAPI.Request.MoveAction> list = new List<PSXAPI.Request.MoveAction>();
                 int i = 0;
+
+                for (int j = 0; i < _movementPackets.Count; ++j)
+                {
+
+                }
+
                 while (i < _movementPackets.Count)
                 {
                     if (i + 1 >= _movementPackets.Count)
@@ -423,13 +429,12 @@ namespace Poke1Protocol
                 //SendMovemnetPackets();
                 Direction direction = _movements[0];
                 _movements.RemoveAt(0);
-                // before applying the movement
                 int fromX = PlayerX;
                 int fromY = PlayerY;
                 if (ApplyMovement(direction))
                 {
                     SendMovement(direction.ToMoveActions(), fromX, fromY); // PokeOne sends the (x,y) without applying the movement(but it checks the collisions) to the server.
-                    _movementTimeout.Set(IsBiking ? 225 : 400);
+                    _movementTimeout.Set(IsBiking ? 200 : 400);
                     if (Map.HasLink(PlayerX, PlayerY))
                     {
                         _teleportationTimeout.Set();
@@ -806,8 +811,8 @@ namespace Poke1Protocol
                 X = fromX,
                 Y = fromY
             };
-            _movementPackets.Add(movePacket);
-            //SendProto(movePacket);
+            //_movementPackets.Add(movePacket);
+            SendProto(movePacket);
         }
 
         public bool OpenLootBox(PSXAPI.Request.LootboxType type)
@@ -828,6 +833,7 @@ namespace Poke1Protocol
         public void TalkToNpc(Npc npc)
         {
             SendTalkToNpc(npc.Id);
+            npc.CanBattle = false;
             _dialogTimeout.Set();
         }
 
@@ -1743,10 +1749,11 @@ namespace Poke1Protocol
                                         var command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
                                         var npcId = Guid.Parse(command.Split(',')[0]);
                                         var los = Convert.ToInt32(command.Split(',')[1]);
-                                        if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null && Map.Npcs.Find(x => x.Id == npcId) != null)
+                                        if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null)
                                         {
                                             Map.OriginalNpcs.Find(x => x.Id == npcId).UpdateLos(los);
-                                            Map.Npcs.Find(x => x.Id == npcId).UpdateLos(los);
+                                            if (Map.Npcs.Find(x => x.Id == npcId) != null)
+                                                Map.Npcs.Find(x => x.Id == npcId).UpdateLos(los);
                                         }
                                         active = false;
                                         break;
@@ -1755,10 +1762,13 @@ namespace Poke1Protocol
                                         npcId = Guid.Parse(command.Split(',')[0]);
                                         var hide = command.Split(',')[1] == "0";
 
-                                        if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null && Map.Npcs.Find(x => x.Id == npcId) != null)
+                                        if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null)
                                         {
                                             Map.OriginalNpcs.Find(x => x.Id == npcId).Visible(hide);
-                                            Map.Npcs.Remove(Map.OriginalNpcs.Find(x => x.Id == npcId));
+                                            if (hide && Map.Npcs.Find(x => x.Id == npcId) != null)
+                                                Map.Npcs.Remove(Map.OriginalNpcs.Find(x => x.Id == npcId));
+                                            else if (!hide && Map.Npcs.Find(x => x.Id == npcId) == null)
+                                                Map.Npcs.Add(Map.OriginalNpcs.Find(x => x.Id == npcId));
                                         }
                                         active = false;
                                         break;
@@ -1808,6 +1818,7 @@ namespace Poke1Protocol
                     {
                         Map.OriginalNpcs.Find(x => x.Id == npcId).UpdateLos(los);
                     }
+                    OnNpcs(Map.OriginalNpcs);
                     break;
                 case "enablenpc":
                     command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
@@ -1817,9 +1828,9 @@ namespace Poke1Protocol
                     {
                         Map.OriginalNpcs.Find(x => x.Id == npcId).Visible(hide);
                     }
+                    OnNpcs(Map.OriginalNpcs);
                     break;
             }
-            OnNpcs(Map.OriginalNpcs);
         }
 
         private void OnLootBoxRecieved(IProto dl, TimeSpan? timeSpan = null)
@@ -1836,7 +1847,7 @@ namespace Poke1Protocol
             LootBoxOpened?.Invoke(rewards, type);
         }
 
-        private void RecievedLootBoxes_RecievedBox(LootboxHandler obj)
+        private void RecievedLootBoxes_RecievedBox(PSXAPI.Response.Lootbox obj)
         {
             RecievedLootBox?.Invoke(obj);
             _lootBoxTimeout.Set(Rand.Next(1500, 2000));
@@ -2052,20 +2063,27 @@ namespace Poke1Protocol
             AddDefaultChannels();
             if (RecievedLootBoxes.TotalLootBoxes > 0)
             {
-                RecievedLootBox?.Invoke(RecievedLootBoxes);
+                foreach(var loot in RecievedLootBoxes.Lootboxes)
+                    RecievedLootBox?.Invoke(loot);
             }
         }
 
         private void OnQuest(Quest[] quests)
         {
             foreach (var quest in quests)
-            {
+            {               
                 var foundQuest = Quests.Find(q => q.Id == quest.ID);
                 if (foundQuest != null)
+                {
                     Quests.Remove(foundQuest);
-
-                Quests.Add(new PlayerQuest(quest));
+                }
+                if (!quest.Completed && !string.IsNullOrEmpty(quest.Name))
+                    Quests.Add(new PlayerQuest(quest));
             }
+            if (Quests.Count > 1)
+                Quests = (from x in Quests
+                               orderby x.Type
+                               select x).ToList();
             QuestsUpdated?.Invoke(Quests);
         }
 
@@ -2496,7 +2514,7 @@ namespace Poke1Protocol
             Map.Npcs.Clear();
             foreach (var npc in originalNpcs)
             {
-                if (npc.Data.Settings.Enabled && npc.IsVisible)
+                if (npc.IsVisible)
                     Map.Npcs.Add(npc);
             }
             if (_cachedScripts.Count > 0)

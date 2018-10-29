@@ -132,13 +132,13 @@ namespace Poke1Protocol
             switch (direction)
             {
                 case Direction.Down:
-                    return new PSXAPI.Request.MoveAction[] { PSXAPI.Request.MoveAction.Down };
+                    return new[] { PSXAPI.Request.MoveAction.Down };
                 case Direction.Up:
-                    return new PSXAPI.Request.MoveAction[] { PSXAPI.Request.MoveAction.Up };
+                    return new[] { PSXAPI.Request.MoveAction.Up };
                 case Direction.Right:
-                    return new PSXAPI.Request.MoveAction[] { PSXAPI.Request.MoveAction.Right };
+                    return new[] { PSXAPI.Request.MoveAction.Right };
                 case Direction.Left:
-                    return new PSXAPI.Request.MoveAction[] { PSXAPI.Request.MoveAction.Left };
+                    return new[] { PSXAPI.Request.MoveAction.Left };
             }
             throw new System.Exception("The direction '" + direction + "' does not exist");
         }
