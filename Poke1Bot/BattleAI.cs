@@ -19,8 +19,6 @@ namespace Poke1Bot
 
         private readonly GameClient _client;
 
-        public ProtocolTimeout _waitForResponseInbattle = new ProtocolTimeout();
-
         public bool IsBusy { get; private set; }
 
         public BattleAI(GameClient client)
@@ -31,8 +29,6 @@ namespace Poke1Bot
 
         private void Client_BattleUpdated()
         {
-            if (IsBusy)
-                _waitForResponseInbattle.Set();
             IsBusy = false;
         }
 

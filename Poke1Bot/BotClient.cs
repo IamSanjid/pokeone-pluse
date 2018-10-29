@@ -36,6 +36,8 @@ namespace Poke1Bot
         public QuestManager QuestManager { get; }
         public UserSettings Settings { get; }
 
+        private Npc _npcBattler;
+
 
         public event Action<State> StateChanged;
         public event Action<string> MessageLogged;
@@ -162,7 +164,20 @@ namespace Poke1Bot
             AutoReconnector.Update();
             AutoLootBoxOpener.Update();
             QuestManager.Update();
-            AI?._waitForResponseInbattle.Update();
+
+            if (_npcBattler != null && Game != null && Game.IsMapLoaded && Game.IsInactive)
+            {
+                if (GameClient.DistanceBetween(Game.PlayerX, Game.PlayerY, _npcBattler.PositionX, _npcBattler.PositionY) == 1)
+                {
+                    TalkToNpc(_npcBattler);
+                    _npcBattler = null;
+                }
+                else
+                {
+                    TalkToNpc(_npcBattler);
+                }
+                return;
+            }
 
             if (Script?.IsLoaded == true)
                 Script?.Update();
@@ -174,7 +189,7 @@ namespace Poke1Bot
 
             if (PokemonEvolver.Update()) return;
             if (MoveTeacher.Update()) return;
-            if (AI != null && (AI.IsBusy || AI._waitForResponseInbattle.IsActive)) return;
+            if (AI != null && AI.IsBusy) return;
 
             if (Game.IsMapLoaded && Game.AreNpcReceived && Game.IsInactive)
             {
@@ -385,7 +400,7 @@ namespace Poke1Bot
 
         private void Client_MoveToBattleWithNpc(Npc battler)
         {
-            TalkToNpc(battler);
+            _npcBattler = battler;
         }
 
         private void Client_ServerCommandException(string msg)

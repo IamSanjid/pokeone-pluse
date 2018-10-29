@@ -135,7 +135,7 @@ namespace Poke1Protocol
                     };
                 }
             }
-
+            if (MapDump.Areas is null) return;
             foreach(var ar in MapDump.Areas)
             {
                 var destination = ar.AreaName.ToUpperInvariant();

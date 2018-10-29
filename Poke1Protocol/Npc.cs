@@ -171,6 +171,7 @@ namespace Poke1Protocol
             LosLength = los;
             IsBattler = LosLength > 0 && (Data.Settings.SightAction == "Move To Player"
                 || Data.Settings.SightAction == "Player To NPC");
+            CanBattle = IsBattler;
         }
 
         public void Visible(bool hide)
