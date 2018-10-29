@@ -487,7 +487,7 @@ namespace Poke1Protocol
                             {
                                 ": "
                             }, StringSplitOptions.None);
-                            if ((died.Contains("p1") && PlayerSide == 1) || (died.Contains("p2") && PlayerSide == 2))
+                            if (((died[0].Contains("p1") && PlayerSide == 1) || (died[0].Contains("p2") && PlayerSide == 2)) && SelectedPokemonIndex >= 0)
                                 team[SelectedPokemonIndex].UpdateHealth(0, team[SelectedPokemonIndex].BattleMaxHealth);
                             BattleMessage?.Invoke(!died[0].Contains("p1") ? IsWild ? $"Wild {died[1]} fainted!" : $"Opponent's {died[1]} fainted!" : $"Your {died[1]} fainted!");
                             break;
