@@ -50,6 +50,7 @@ namespace Poke1Protocol
                     {
                         SmallBoxes = boxes[i].Remaining;
                     }
+
                     if (boxes[i].Action == PSXAPI.Response.LootboxAction.Opened)
                     {
                         if (boxes[i].Rolls != null)
@@ -58,16 +59,18 @@ namespace Poke1Protocol
                             BoxOpened?.Invoke(Rewards, boxes[i].Type);
                         }
                     }
+                    else if (boxes[i].Action == PSXAPI.Response.LootboxAction.Update)
+                    {
+                        if (NormalBoxes > 0 || SmallBoxes > 0)
+                            RecievedBox?.Invoke(boxes[i]);
+                    }
                 }
             }
             // PokeOne's way....
             int count = (int)(NormalBoxes + SmallBoxes - oldAmount);
-            if (count > (long)((ulong)oldAmount))
+            if (count > 0)
             {
                 LootBoxMessage?.Invoke("You gained Loot Box x" + count + ".");
-                foreach(var box in Lootboxes)
-                    RecievedBox?.Invoke(box);
-                Lootboxes.Clear();
             }
             TotalLootBoxes = (int)(NormalBoxes + SmallBoxes);
 

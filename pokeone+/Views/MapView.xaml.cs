@@ -65,6 +65,7 @@ namespace pokeone_plus
                 { 10, Colors.LightGray },
                 { 11, Colors.White },
                 { 12, Colors.White},
+                { 13, Colors.WhiteSmoke },
                 { 14, Colors.White },
                 { 15, Colors.White },
             };
@@ -109,7 +110,7 @@ namespace pokeone_plus
                 MapImage.Source = _mapBmp = BitmapFactory.New(camX2, camY2);
             }
 
-            if (!_isMapDirty)
+            if (!_isMapDirty || _bot.Game is null || !_bot.Game.IsMapLoaded)
                 return;
 
             using (_mapBmp.GetBitmapContext())

@@ -780,7 +780,7 @@ namespace pokeone_plus
             // Coloring there.
             test.ApplyPropertyValue(TextElement.ForegroundProperty, color);
             FileLog.Append(test.Text);
-            MessageTextBox.ScrollToEnd();
+            CleanRichtTextBox(MessageTextBox);
         }
         private void LogMessage(string message)
         {
@@ -1030,6 +1030,11 @@ namespace pokeone_plus
 
             richTextBox.Document.Blocks.Add(para);
 
+            CleanRichtTextBox(richTextBox);
+        }
+
+        public static void CleanRichtTextBox(RichTextBox richTextBox)
+        {
             TextRange range = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
             if (range.Text.Length > 12000)
             {

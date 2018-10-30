@@ -49,7 +49,8 @@ namespace Poke1Bot
         }
 
         public Pokemon ActivePokemon => _client.Team[_client.ActiveBattle.SelectedPokemonIndex];
-        public SwitchedPokemon[] ActivePokemons => _client.ActiveBattle.PlayerAcivePokemon;
+        public SwitchedPokemon[] ActivePokemons => _client.ActiveBattle.PlayerAcivePokemon
+            .ToList().FindAll(x => x.Trainer.ToLowerInvariant() == _client.ActiveBattle._playerName?.ToLowerInvariant()).ToArray();
         public SwitchedPokemon[] ActiveOpponentPokemons => _client.ActiveBattle.OpponentActivePokemon;
 
         public bool UseMandatoryAction()
@@ -65,14 +66,12 @@ namespace Poke1Bot
                 if (ActiveOpponentPokemons.Length > 1)
                 {
                     // double battle...
-                    var opponentsChoosed = new List<int>();
-                    for (int i = 0; i < ActivePokemons.Length; ++i)
+                    var result = false;
+                    foreach(var poke in ActivePokemons)
                     {
-                        if (ActivePokemons[i].Trainer == _client.ActiveBattle._playerName
-                            && _client.Team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == ActivePokemons[i].Personality) >= 0)
-                            return UseAttack(true, _client.Team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == ActivePokemons[i].Personality));
+                        result = UseAttack(true, _client.Team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == poke.Personality));
                     }
-                    return false;
+                    return result;
                 }
             }
             return UseAttack(true);
@@ -86,27 +85,33 @@ namespace Poke1Bot
                 if (ActiveOpponentPokemons.Length > 1)
                 {
                     // double battle...
-                    var opponentsChoosed = new List<int>();
-                    for (int i = 0; i < ActivePokemons.Length; ++i)
+                    var result = false;
+                    foreach (var poke in ActivePokemons)
                     {
-                        if (ActivePokemons[i].Trainer == _client.ActiveBattle._playerName
-                            && _client.Team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == ActivePokemons[i].Personality) >= 0)
-                            return UseAttack(true, _client.Team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == ActivePokemons[i].Personality));
+                        result = UseAttack(true, _client.Team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == poke.Personality));
                     }
-                    return false;
+                    return result;
                 }
             }
             return UseAttack(false);
         }
 
-        public bool SendPokemon(int index)
+        public bool SendPokemon(int index, int changeWith = 0)
         {
             if (_client.ActiveBattle.IsTrapped) return false;
             if (index < 1 || index > _client.Team.Count) return false;
             Pokemon pokemon = _client.Team[index - 1];
-            if (pokemon.BattleCurrentHealth > 0 && pokemon != ActivePokemon)
+            if (pokemon.BattleCurrentHealth > 0 && ((ActivePokemon != null && pokemon != ActivePokemon)
+                    || (ActivePokemons != null && !ActivePokemons.Any(x => x.Personality == pokemon.PokemonData.Pokemon.Payload.Personality))))
             {
-                _client.ChangePokemon(pokemon.Uid);
+                if (ActivePokemons.Length > 1 && changeWith > 0)
+                {
+                    _client.ChangePokemon(pokemon.Uid, changeWith);
+                }
+                else
+                {
+                    _client.ChangePokemon(pokemon.Uid);
+                }
                 return true;
             }
             return false;
@@ -117,9 +122,25 @@ namespace Poke1Bot
             if (_client.ActiveBattle.IsTrapped) return false;
             foreach (Pokemon pokemon in _client.Team)
             {
-                if (IsPokemonUsable(pokemon) && pokemon != ActivePokemon)
+                if (IsPokemonUsable(pokemon) && ((ActivePokemon != null && pokemon != ActivePokemon)
+                    || (ActivePokemons != null && !ActivePokemons.Any(x => x.Personality == pokemon.PokemonData.Pokemon.Payload.Personality))))
                 {
-                    _client.ChangePokemon(pokemon.Uid);
+                    if (ActivePokemons != null && ActivePokemons.Length > 1)
+                    {
+                        var changeWith = ActivePokemons.ToList().FindIndex(x => x.Health <= 1);
+                        if (changeWith >= 0)
+                            _client.ChangePokemon(pokemon.Uid, changeWith + 1);
+                        else
+                        {
+                            changeWith = ActivePokemons.ToList().FindIndex(x => x.Health <= 1 || x.Health != x.MaxHealth) <= 0 ? 1 
+                                : ActivePokemons.ToList().FindIndex(x => x.Health <= 1 || x.Health != x.MaxHealth);
+                            _client.ChangePokemon(pokemon.Uid, changeWith + 1);
+                        }
+                    }
+                    else
+                    {
+                        _client.ChangePokemon(pokemon.Uid);
+                    }
                     return true;
                 }
             }
@@ -132,7 +153,22 @@ namespace Poke1Bot
             Pokemon pokemon = _client.Team.FirstOrDefault(p => p != ActivePokemon && p.BattleCurrentHealth > 0);
             if (pokemon != null)
             {
-                _client.ChangePokemon(pokemon.Uid);
+                if (ActivePokemons != null && ActivePokemons.Length > 1)
+                {
+                    var changeWith = ActivePokemons.ToList().FindIndex(x => x.Health <= 1);
+                    if (changeWith >= 0)
+                        _client.ChangePokemon(pokemon.Uid, changeWith + 1);
+                    else
+                    {
+                        changeWith = ActivePokemons.ToList().FindIndex(x => x.Health <= 1 || x.Health != x.MaxHealth) <= 0 ? 1
+                            : ActivePokemons.ToList().FindIndex(x => x.Health <= 1 || x.Health != x.MaxHealth);
+                        _client.ChangePokemon(pokemon.Uid, changeWith + 1);
+                    }
+                }
+                else
+                {
+                    _client.ChangePokemon(pokemon.Uid);
+                }
                 return true;
             }
             return false;
@@ -160,19 +196,7 @@ namespace Poke1Bot
                     MovesManager.MoveData moveData = MovesManager.Instance.GetMoveData(move.Id);
                     if (moveData.Name.ToUpperInvariant() == moveName)
                     {
-                        if (ActiveOpponentPokemons.Length > 1) {
-                            var selected = 0;
-                            for (int j = 0; j < ActivePokemons.Length; ++j)
-                                if (ActivePokemons[i].Trainer == _client.ActiveBattle._playerName
-                                && _client.Team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == ActivePokemons[i].Personality) >= 0)
-                                    selected = j;
-                            _client.UseAttack(i + 1, selected == 0 ? 0 : selected, _client.Rand.Next(0, ActiveOpponentPokemons.Length - 1) + 1);
-                        }
-                        else
-                        {
-                            _client.UseAttack(i + 1);
-                        }
-
+                        _client.UseAttack(i + 1);
                         return true;
                     }
                 }
@@ -317,8 +341,10 @@ namespace Poke1Bot
                 }
                 opponentIndex = j;
             }
+            if (ActivePokemons.Length <= 1)
+                IsBusy = true;
 
-            IsBusy = true;
+            activePoke = ActivePokemons.ToList().FindIndex(p => p.Personality == _client.Team[activePoke].PokemonData.Pokemon.Payload.Personality);
 
             if (useBestAttack && bestMove != null)
             {

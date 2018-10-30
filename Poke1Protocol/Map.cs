@@ -18,7 +18,7 @@ namespace Poke1Protocol
             OnGround,
             NoLongerOnGround,
             Sliding,
-            Icing
+            Icing,
         }
 
         private readonly Dictionary<int, int> SliderValues = new Dictionary<int, int>
@@ -460,10 +460,10 @@ namespace Poke1Protocol
 
             int playerCollider = GetCollider(playerX, playerY);
             int npcCollider = GetCollider(npcX, npcY);
-            if ((playerCollider == 25 || playerCollider == 26 || playerCollider == 27 ||
-                playerCollider == 28 || playerCollider == 29 || playerCollider == 0 ||
-                playerCollider == 24 || playerCollider == 10 || playerCollider == 3 ||
-                playerCollider == 2 || playerCollider == 6 || playerCollider == 5 ||
+            if ((playerCollider == 16 || playerCollider == 11 || playerCollider == 19 ||
+                playerCollider == 13 || playerCollider == 20 || playerCollider == 0 ||
+                playerCollider == 14 || playerCollider == 15 || playerCollider == 3 ||
+                playerCollider == 12 || playerCollider == 6 || playerCollider == 5 ||
                 playerCollider == 7 || playerCollider == 4 || playerCollider == 0 || (IsWater(playerX, playerY)
                 && IsWater(npcX, npcY))))
             {
@@ -505,6 +505,38 @@ namespace Poke1Protocol
 
             return false;
         }
+
+        public Npc FindCut(int positionX, int positionY)
+        {
+            return Npcs.Find(npc => CanCut(positionX, positionY, true));
+        }
+
+
+        public bool CanCut(int positionX, int positionY, bool isOnGround)
+        {
+            if (IsCutTree(positionX, positionY - 1) && isOnGround)
+            {
+                return true;
+            }
+
+            if (IsCutTree(positionX, positionY + 1) && isOnGround)
+            {
+                return true;
+            }
+
+            if(IsCutTree(positionX - 1, positionY) && isOnGround)
+            {
+                return true;
+            }
+
+            if (IsCutTree(positionX + 1, positionY) && isOnGround)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         public bool IsWater(int x, int y)
         {
             if (!IsInCurrentArea(x, y)) return false;
@@ -514,9 +546,12 @@ namespace Poke1Protocol
         public bool IsGrass(int x, int y)
         {
             if (!IsInCurrentArea(x, y)) return false;
-            return !HasLink(x, y) && TileTypes2[x, y] <= 0
-                    && (TileZones[x, y] != 0 && TileZones[x, y] != 5)
-                    && GetCollider(x, y) <= 0;
+            return TileTypes[x, y] != 1999 && TileTypes[x, y] != 2778 && TileTypes[x, y] != 2768
+                && TileTypes[x, y] != 1998 && TileTypes[x, y] != 2800 && TileTypes[x, y] != 2816
+                && TileTypes[x, y] != 2327 && TileTypes[x, y] != 2832 && TileTypes[x, y] != 2261 && TileTypes[x, y] != 2311
+                && TileTypes[x, y] != 2262 && TileTypes[x, y] != 2295 && TileTypes[x, y] != 2792 && TileTypes[x, y] != 2263
+                    && (TileZones[x, y] != 0 && TileZones[x, y] != 5) && !HasLink(x, y) && TileTypes2[x, y] <= 0
+                    && GetCollider(x, y) <= 0 && TileHeight[x, y] <= 0;
         }
 
         public bool IsPc(int x, int y)
@@ -530,7 +565,7 @@ namespace Poke1Protocol
         public bool IsNormalGround(int x, int y)
         {
             if (!IsInCurrentArea(x, y)) return false;
-            return TileZones[x, y] == 0
+            return (TileZones[x, y] == 0 || TileZones[x, y] == 3)
                 && !HasLink(x, y)
                 && !IsGrass(x, y) && !IsWater(x, y);
         }
@@ -539,7 +574,7 @@ namespace Poke1Protocol
         {
             if (!IsInCurrentArea(x, y)) return false;
             if (OriginalNpcs.Find(s => s.PositionX == x && s.PositionY == y
-                   && s.NpcName.ToLowerInvariant().StartsWith(".rocksmash") && s.Data.Settings.Sprite == 11) != null)
+                   && s.NpcName.ToLowerInvariant().StartsWith(".rocksmash") && s.Data.Settings.Sprite == 11 && s.IsVisible) != null)
                 return true;
             return false;
         }
@@ -548,7 +583,7 @@ namespace Poke1Protocol
         {
             if (!IsInCurrentArea(x, y)) return false;
             return OriginalNpcs.Find(s => s.PositionX == x && s.PositionY == y
-                && s.NpcName.ToLowerInvariant().StartsWith(".cut") && s.Data.Settings.Sprite == 9) != null;
+                && s.NpcName.ToLowerInvariant().StartsWith(".cut") && s.Data.Settings.Sprite == 9 && s.IsVisible) != null;
         }
 
         public MoveResult CanMove(Direction direction, int destinationX, int destinationY, bool isOnGround, bool isSurfing, bool canUseCut, bool canUseSmashRock)
@@ -561,7 +596,9 @@ namespace Poke1Protocol
                 return MoveResult.Fail;
             }
 
-            if (OriginalNpcs.Any(npc => npc.PositionX == destinationX && npc.PositionY == destinationY && !npc.IsMoving && npc.CanBlockPlayer && npc.IsVisible))
+            if (OriginalNpcs.Any(npc => npc.PositionX == destinationX && npc.PositionY == destinationY && 
+            !IsCutTree(npc.PositionX, npc.PositionY) && !IsRockSmash(npc.PositionX, npc.PositionY) && !npc.IsMoving 
+            && npc.CanBlockPlayer && npc.IsVisible))
                 return MoveResult.Fail;
 
             if (direction != Direction.Down && GetCollider(destinationX, destinationY) == 4)
@@ -743,7 +780,7 @@ namespace Poke1Protocol
                     if (isOnGround)
                     {
                         if (collider == 18 || collider == 0 || collider == 20 ||
-                            collider == 19 || collider == 16
+                            collider == 19 || collider == 16 || collider == 13
                             || collider == 24 || collider == 15 || collider == 12 ||
                             collider == 11 || collider == 14)
                         {
@@ -764,8 +801,8 @@ namespace Poke1Protocol
                     if (isOnGround)
                     {
                         if (collider == 0 || collider == 15 ||
-                            collider == 7 || collider == 8 || collider == 9 || collider == 4 ||
-                            collider == 12 || collider == 11 || collider == 14)
+                            collider == 7 || collider == 8 || collider == 9 || collider == 4 || collider == 13 ||
+                            collider == 12 || collider == 11 || collider == 14 || collider == 20 || collider == 18 || collider == 19)
                         {
                             return true;
                         }

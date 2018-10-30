@@ -1186,7 +1186,10 @@ namespace Poke1Protocol
                             break;
                         case PSXAPI.Response.Badge badge:
                             if (badge.Active)
+                            {
                                 Badges.Add(badge.Id, BadgeFromID(badge.Id));
+                                SystemMessage?.Invoke("You've obtained " + BadgeFromID(badge.Id) + " !");
+                            }
                             break;
                         case PSXAPI.Response.Level lvl:
                             OnLevel(lvl);
@@ -1742,6 +1745,7 @@ namespace Poke1Protocol
                             {
                                 var st = text.Text;
                                 var index = st.IndexOf("(");
+                                if (index < 0) break;
                                 var scriptType = st.Substring(0, index);
                                 switch (scriptType)
                                 {
@@ -2402,9 +2406,11 @@ namespace Poke1Protocol
             _swapTimeout.Set();
         }
 
-        public void ChangePokemon(int number)
+        public void ChangePokemon(int number, int to = 0)
         {
-            SendChangePokemon(ActiveBattle.CurrentBattlingPokemonIndex, number);
+            if (to == 0)
+                to = ActiveBattle.CurrentBattlingPokemonIndex;
+            SendChangePokemon(to, number);
 
             ActiveBattle?.UpdateSelectedPokemon(number);
 
@@ -2475,8 +2481,8 @@ namespace Poke1Protocol
         {
             Players.Clear();
             Map = map;
-            Map.AreaUpdated += Map_AreaUpdated;
             OnNpcs(map.OriginalNpcs);
+            Map.AreaUpdated += Map_AreaUpdated;
 
             if (Map.IsSessioned)
             {
@@ -2512,11 +2518,6 @@ namespace Poke1Protocol
         private void OnNpcs(List<Npc> originalNpcs)
         {
             Map.Npcs.Clear();
-            foreach (var npc in originalNpcs)
-            {
-                if (npc.IsVisible)
-                    Map.Npcs.Add(npc);
-            }
             if (_cachedScripts.Count > 0)
             {
                 foreach (var script in _cachedScripts)
@@ -2524,6 +2525,11 @@ namespace Poke1Protocol
                     OnScript(script);
                 }
                 _cachedScripts.Clear();
+            }
+            foreach (var npc in originalNpcs)
+            {
+                if (npc.IsVisible)
+                    Map.Npcs.Add(npc);
             }
 
             AreNpcReceived = true;

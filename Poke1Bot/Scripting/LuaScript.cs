@@ -244,10 +244,13 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["requestPathForQuest"] = new Func<string, bool>(RequestPathForQuest);
 
                 // Battle conditions
+                _lua.Globals["isDoubleBattle"] = new Func<bool>(IsDoubleBattle);
                 _lua.Globals["isOpponentShiny"] = new Func<bool>(IsOpponentShiny);
                 _lua.Globals["isAlreadyCaught"] = new Func<bool>(IsAlreadyCaught);
                 _lua.Globals["isWildBattle"] = new Func<bool>(IsWildBattle);
                 _lua.Globals["getActivePokemonNumber"] = new Func<int>(GetActivePokemonNumber);
+                _lua.Globals["getTeamPositionFromPersonality"] = new Func<int, int>(GetTeamPositionFromPersonality);
+                _lua.Globals["getActivePokemons"] = new Func<List<Dictionary<string, DynValue>>>(GetActivePokemons);
                 _lua.Globals["getOpponentId"] = new Func<int>(GetOpponentId);
                 _lua.Globals["getOpponentName"] = new Func<string>(GetOpponentName);
                 _lua.Globals["getOpponentHealth"] = new Func<int>(GetOpponentHealth);
@@ -287,6 +290,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["sendUsablePokemon"] = new Func<bool>(SendUsablePokemon);
                 _lua.Globals["sendAnyPokemon"] = new Func<bool>(SendAnyPokemon);
                 _lua.Globals["sendPokemon"] = new Func<int, bool>(SendPokemon);
+                _lua.Globals["sendPokemonDoubleBattle"] = new Func<int, int, bool>(SendPokemonDoubleBattle);
                 _lua.Globals["useMove"] = new Func<string, bool>(UseMove);
                 _lua.Globals["useAnyMove"] = new Func<bool>(UseAnyMove);
 
@@ -1164,6 +1168,17 @@ namespace Poke1Bot.Scripting
             return Bot.Game.Map.IsOutside;
         }
 
+        // API: 
+        private bool IsDoubleBattle()
+        {
+            if(!Bot.Game.IsInBattle)
+            {
+                Fatal("error: isDoubleBattle is only usable in battle.");
+                return false;
+            }
+            return Bot.AI.ActivePokemons != null && Bot.AI.ActivePokemons.Length > 1;
+        }
+
         // API: Returns true if the opponent pokémon is shiny.
         private bool IsOpponentShiny()
         {
@@ -1206,6 +1221,40 @@ namespace Poke1Bot.Scripting
                 return 0;
             }
             return Bot.Game.ActiveBattle.SelectedPokemonIndex + 1;
+        }
+
+        // API: 
+        private int GetTeamPositionFromPersonality(int personality)
+        {
+            if (!Bot.Game.IsInBattle)
+            {
+                Fatal("error: getTeamPosition is only usable in battle.");
+                return 0;
+            }
+            return Bot.Game.Team.FindIndex(x => x.PokemonData.Pokemon.Payload.Personality == personality);
+        }
+
+        // API: Returns all active pokemons during double/triple battle, format : { { "Name" = name, "Id" = id, "Form" = form }, {...}, ... }
+        private List<Dictionary<string, DynValue>> GetActivePokemons()
+        {
+            if (!Bot.Game.IsInBattle)
+            {
+                Fatal("error: getActivePokemons is only usable in battle.");
+                return null;
+            }
+            if (Bot.AI.ActivePokemons is null)
+                return null;
+            var pokes = new List<Dictionary<string, DynValue>>();
+            foreach (var poke in Bot.AI.ActivePokemons)
+            {
+                var pokeData = new Dictionary<string, DynValue>();
+                pokeData["Name"] = DynValue.NewString(PokemonManager.Instance.Names[poke.ID]);
+                pokeData["Id"] = DynValue.NewNumber(poke.ID);
+                pokeData["Personality"] = DynValue.NewNumber(poke.Personality);
+                pokeData["Form"] = DynValue.NewString(poke.Forme);
+                pokes.Add(pokeData);
+            }
+            return pokes;
         }
 
         // API: Returns the id of the opponent pokémon in the current battle.
@@ -1908,6 +1957,20 @@ namespace Poke1Bot.Scripting
             }
 
             return ExecuteAction(Bot.AI.SendPokemon(index));
+        }
+
+        // API: Changes the specified pokemon with the specified pokemon during double/triple battle.
+        private bool SendPokemonDoubleBattle(int index, int changeWith)
+        {
+            if (!ValidateAction("sendPokemonDoubleBattle", true)) return false;
+
+            if (index < 1 || index > Bot.Game.Team.Count || changeWith > Bot.AI.ActivePokemons.Length || changeWith < 1)
+            {
+                Fatal("error: sendPokemonDoubleBattle: tried to send the non-existing pokemon " + index + " or tried to change with the non-existing pokemon" + changeWith + " .");
+                return false;
+            }
+
+            return ExecuteAction(Bot.AI.SendPokemon(index, changeWith));
         }
 
         // API: Uses the specified move in the current battle if available.
