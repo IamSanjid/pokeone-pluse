@@ -30,7 +30,6 @@
                             <ControlTemplate TargetType="{x:Type RepeatButton}">
                                 <Border x:Name="Border"
                 Margin="1"
-                CornerRadius="2"
                 BorderThickness="1">
                                     <Border.BorderBrush>
                                         <LinearGradientBrush StartPoint="0,0"
@@ -130,7 +129,7 @@
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="{x:Type Thumb}">
-                                <Border CornerRadius="2"
+                                <Border
                 Background="#4F4F4F" />
                             </ControlTemplate>
                         </Setter.Value>
@@ -141,18 +140,17 @@
                  TargetType="{x:Type ScrollBar}">
                     <Grid>
                         <Grid.RowDefinitions>
-                            <RowDefinition MaxHeight="18" />
-                            <RowDefinition Height="0.00001*" />
-                            <RowDefinition MaxHeight="18" />
+                            <RowDefinition MaxHeight="5" />
+                            <RowDefinition Height="0.01*" />
+                            <RowDefinition MaxHeight="5" />
                         </Grid.RowDefinitions>
                         <Border Grid.RowSpan="3"
-            CornerRadius="2"
             Background="Transparent" />
-                        <RepeatButton Grid.Row="0"
+                        <!--<RepeatButton Grid.Row="0"
                   Style="{StaticResource ScrollBarLineButton}"
-                  Height="18"
+                  Height="20"
                   Command="ScrollBar.LineUpCommand"
-                  Content="M 0 4 L 8 4 L 4 0 Z" />
+                  Content="M 0 4 L 8 4 L 4 0 Z" />-->
                         <Track x:Name="PART_Track"
            Grid.Row="1"
            IsDirectionReversed="true">
@@ -192,17 +190,17 @@
                                 </Thumb>
                             </Track.Thumb>
                             <Track.IncreaseRepeatButton>
-                                <RepeatButton x:Name="PageUp" Command="ScrollBar.PageDownCommand" Opacity="0" Focusable="false" />
+                                <RepeatButton x:Name="PageUp" Command="ScrollBar.PageDownCommand" Opacity="0" IsEnabled="False" Focusable="false" />
                             </Track.IncreaseRepeatButton>
                             <Track.DecreaseRepeatButton>
-                                <RepeatButton x:Name="PageDown" Command="ScrollBar.PageUpCommand" Opacity="0" Focusable="false" />
+                                <RepeatButton x:Name="PageDown" Command="ScrollBar.PageUpCommand" Opacity="0" IsEnabled="False" Focusable="false" />
                             </Track.DecreaseRepeatButton>
                         </Track>
-                        <RepeatButton Grid.Row="3"
+                        <!--<RepeatButton Grid.Row="3"
                   Style="{StaticResource ScrollBarLineButton}"
                   Height="18"
                   Command="ScrollBar.LineDownCommand"
-                  Content="M 0 0 L 4 4 L 8 0 Z" />
+                  Content="M 0 0 L 4 4 L 8 0 Z" />-->
                     </Grid>
                 </ControlTemplate>
 
@@ -214,8 +212,7 @@
                             <ColumnDefinition Width="0.00001*" />
                             <ColumnDefinition MaxWidth="18" />
                         </Grid.ColumnDefinitions>
-                        <Border Grid.ColumnSpan="3"
-            CornerRadius="2"
+                        <Border Grid.ColumnSpan="4"
             Background="Transparent" />
                         <RepeatButton Grid.Column="0"
                   Style="{StaticResource ScrollBarLineButton}"

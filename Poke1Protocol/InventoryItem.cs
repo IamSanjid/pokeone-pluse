@@ -13,10 +13,11 @@ namespace Poke1Protocol
         public PSXAPI.Response.InventoryItem Data { get; }
         public bool CanBeHeld => Data.CanHold;
         public bool CanBeUsedOutsideOfBattle => Data.CanUseOutsideBattle;
-        public bool CanBeUsedOnPokemonOutsideOfBattle => Data.CanUseOnParty;
+        public bool CanBeUsedOnPokemonOutsideOfBattle => Data.CanUseOutsideBattle && (Data.Target == PSXAPI.Response.ItemTarget.Pokemon || Data.Target == PSXAPI.Response.ItemTarget.Move);
         public bool CanBeUsedInBattle => Data.CanUseInBattle;
         public bool CanBeUsedOnPokemonInBattle => CanBeUsedInBattle &&
-            (Category == PSXAPI.Response.ItemCategory.Medicine || Category == PSXAPI.Response.ItemCategory.Berry);
+            (Category == PSXAPI.Response.ItemCategory.Medicine || Category == PSXAPI.Response.ItemCategory.Berry) 
+            && (Data.Target == PSXAPI.Response.ItemTarget.Pokemon || Data.Target == PSXAPI.Response.ItemTarget.Move);
         public bool IsTradeAble => Data.CanTrade;
         public InventoryItem(PSXAPI.Response.InventoryItem data)
         {

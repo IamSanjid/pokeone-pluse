@@ -68,6 +68,7 @@ namespace pokeone_plus
                 { 13, Colors.WhiteSmoke },
                 { 14, Colors.White },
                 { 15, Colors.White },
+                { 25, Colors.White }
             };
 
             IsVisibleChanged += MapView_IsVisibleChanged;
@@ -193,6 +194,11 @@ namespace pokeone_plus
                             rectColor = Colors.Wheat;
                             rectHeight = _cellWidth / 4;
                             //rect.VerticalAlignment = VerticalAlignment.Top;
+                        }
+
+                        if (map.IsGoingToSlide(collider))
+                        {
+                            rectColor = Colors.MediumPurple;
                         }
 
                         if (map.IsGrass(x, y)) rectColor = Colors.LightGreen;
