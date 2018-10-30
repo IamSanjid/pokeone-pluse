@@ -550,7 +550,7 @@ namespace Poke1Protocol
                 && TileTypes[x, y] != 1998 && TileTypes[x, y] != 2800 && TileTypes[x, y] != 2816
                 && TileTypes[x, y] != 2327 && TileTypes[x, y] != 2832 && TileTypes[x, y] != 2261 && TileTypes[x, y] != 2311
                 && TileTypes[x, y] != 2262 && TileTypes[x, y] != 2295 && TileTypes[x, y] != 2792 && TileTypes[x, y] != 2263
-                    && (TileZones[x, y] != 0 && TileZones[x, y] != 5) && !HasLink(x, y) && TileTypes2[x, y] <= 0
+                    && (TileZones[x, y] != 0 && TileZones[x, y] != 5) && !HasLink(x, y)
                     && GetCollider(x, y) <= 0 && TileHeight[x, y] <= 0;
         }
 
@@ -750,9 +750,9 @@ namespace Poke1Protocol
             while (slidingDirection != null && result != MoveResult.Fail);
         }
 
-        private bool IsMovementValid(Direction direction, int collider, bool isOnGround, bool isSurfing, bool canUseCut, bool canUseSmashRock, int destx = -1, int desty = -1)
+        private bool IsMovementValid(Direction direction, int collider, bool isOnGround, bool isSurfing, bool canUseCut, bool canUseSmashRock, int destx, int desty)
         {
-            if (collider < 0)
+            if (collider < 0 && destx >= 0 && desty >= 0)
                 collider = Colliders[destx, desty];
 
             if (collider == 1)
@@ -779,6 +779,7 @@ namespace Poke1Protocol
                 case Direction.Up:
                     if (isOnGround)
                     {
+                        var collPre = GetCollider(destx, desty + 1);
                         if (collider == 18 || collider == 0 || collider == 20 || collider == 25 ||
                             collider == 19 || collider == 16 || collider == 13 || IsGoingToSlide(collider)
                             || collider == 24 || collider == 15 || collider == 12 ||
@@ -800,6 +801,9 @@ namespace Poke1Protocol
                 case Direction.Down:
                     if (isOnGround)
                     {
+                        var collPre = GetCollider(destx, desty - 1);
+                        if (collPre == 22)
+                            return false;
                         if (collider == 0 || collider == 15 ||
                             collider == 7 || collider == 8 || collider == 9 || collider == 4 
                             || collider == 13 || IsGoingToSlide(collider) || collider == 25 ||
@@ -822,10 +826,10 @@ namespace Poke1Protocol
                     if (isOnGround)
                     {
                         var collPre = GetCollider(destx + 1, desty);
-                        if (collPre == 19 || collider == 16 || collider == 18 || GetCellSideMoveable(collPre))
+                        if (collPre == 19 || collider == 16 || collider == 18)
                             return false;
                         if (collider == 14 || collider == 15 || collider == 0 || collider == 7 
-                            || collider == 8 || collider == 9 || collider == 25 ||
+                            || collider == 8 || collider == 9 || collider == 25 || collider == 22 ||
                             collider == 4 || collider == 12 || collider == 11 || collider == 19 || IsGoingToSlide(collider))
                         {
                             return true;
@@ -846,10 +850,10 @@ namespace Poke1Protocol
                     if (isOnGround)
                     {
                         var collPre = GetCollider(destx - 1, desty);
-                        if (collPre == 20 || collider == 16 || collider == 18 || GetCellSideMoveable(collPre))
+                        if (collPre == 20 || collider == 16 || collider == 18)
                             return false;
                         if (collider == 14 || collider == 15 || collider == 0 || collider == 25 ||
-                            collider == 6 || collider == 7 || collider == 8 || collider == 9 ||
+                            collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 22 ||
                             collider == 3 || collider == 12 || collider == 11 || collider == 20 || IsGoingToSlide(collider))
                         {
                             return true;

@@ -170,6 +170,12 @@ namespace Poke1Protocol
             }
         }
 
+        public void UpdateMovePoints(int moveId, int currnetpp, int maxPP)
+        {
+            Moves[moveId].CurrentPoints = currnetpp;
+            Moves[moveId].MaxPoints = maxPP;
+        }
+
         public void UpdateForme(string forme)
         {
             if (!string.IsNullOrEmpty(forme))

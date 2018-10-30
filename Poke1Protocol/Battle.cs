@@ -299,7 +299,7 @@ namespace Poke1Protocol
             }
         }
 
-        private void UpdateBattleHealth(PSXAPI.Response.Payload.BattlePokemon[] pokemon)
+        private void UpdateBattlePokemon(PSXAPI.Response.Payload.BattlePokemon[] pokemon)
         {
             for (var i = 0; i < pokemon.Length; i++)
             {
@@ -311,6 +311,10 @@ namespace Poke1Protocol
                 {
                     _team[index].UpdateHealth(newPoke.Health, newPoke.MaxHealth);
                     _team[index].UpdateStatus(newPoke.Status);
+                    for (var j = 0; j < pokemon[i].moveData.Length; ++j) {
+                        var move = pokemon[i].moveData[j];
+                        _team[index].UpdateMovePoints(j, move.pp, move.maxpp);
+                    }
                 }
             }
         }
@@ -325,7 +329,7 @@ namespace Poke1Protocol
 
                 CurrentBattlingPokemonIndex = p1.RequestInfo.side.pokemon.ToList().FindIndex(x => x.active) + 1;
 
-                UpdateBattleHealth(p1.RequestInfo.side.pokemon);
+                UpdateBattlePokemon(p1.RequestInfo.side.pokemon);
 
                 ResponseID = request.RequestID;
                 PlayerBattleSide = p1.RequestInfo.side;
@@ -466,12 +470,7 @@ namespace Poke1Protocol
                             {
                                 ": "
                             }, StringSplitOptions.None);
-                            if ((attacker[0].Contains("p1") && PlayerSide == 1) || (attacker[0].Contains("p2") && PlayerSide == 2))
-                            {
-                                var findMove = team[SelectedPokemonIndex].Moves.ToList().Find(x => x.Name.ToLowerInvariant() == move.ToLowerInvariant());
-                                if (findMove != null && findMove.CurrentPoints > 0)
-                                    findMove.CurrentPoints -= 1;
-                            }
+                            
 
                             BattleMessage?.Invoke($"{attacker[1]} used {move}!");
                             if (info.Length > 5)
@@ -487,9 +486,6 @@ namespace Poke1Protocol
                             {
                                 ": "
                             }, StringSplitOptions.None);
-                            var index = team.FindIndex(x => x.Name.ToLowerInvariant() == died[1].ToLowerInvariant());
-                            if (((died[0].Contains("p1") && PlayerSide == 1) || (died[0].Contains("p2") && PlayerSide == 2)) && index >= 0)
-                                team[index].UpdateHealth(0, team[index].BattleMaxHealth);
                             BattleMessage?.Invoke(!died[0].Contains("p1") ? IsWild ? $"Wild {died[1]} fainted!" : $"Opponent's {died[1]} fainted!" : $"Your {died[1]} fainted!");
                             break;
                         case "--run":

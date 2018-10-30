@@ -34,6 +34,7 @@ namespace Poke1Protocol
         private ProtocolTimeout _dialogTimeout = new ProtocolTimeout();
         private ProtocolTimeout _itemUseTimeout = new ProtocolTimeout();
         private ProtocolTimeout _npcBattleTimeout = new ProtocolTimeout();
+        private ProtocolTimeout _fishingTimeout = new ProtocolTimeout();
 
         private Dictionary<string, int> _guildLogos;
 
@@ -45,6 +46,8 @@ namespace Poke1Protocol
         private string _guildName = "";
 
         private byte _guildEmbedId;
+
+        public int ToatlSteps { get; private set; }
 
         public string MapName { get; private set; } = "";
         public string AreaName { get; private set; } = "";
@@ -83,8 +86,8 @@ namespace Poke1Protocol
                     && !_dialogTimeout.IsActive
                     && !_lootBoxTimeout.IsActive
                     && !_itemUseTimeout.IsActive
-                && !_npcBattleTimeout.IsActive;
-        //&& !_fishingTimeout.IsActive
+                    && !_fishingTimeout.IsActive
+                    && !_npcBattleTimeout.IsActive;
         //&& !_refreshingPCBox.IsActive
         //&& !_moveRelearnerTimeout.IsActive
 
@@ -281,6 +284,7 @@ namespace Poke1Protocol
             _loadingTimeout.Update();
             _lootBoxTimeout.Update();
             _itemUseTimeout.Update();
+            _fishingTimeout.Update();
             _mountingTimeout.Update();
             _npcBattleTimeout.Update();
 
@@ -804,6 +808,8 @@ namespace Poke1Protocol
             OpenedShop = null;
             PlayerStats = null;
 
+            ToatlSteps = ToatlSteps + actions.Length;
+
             var movePacket = new PSXAPI.Request.Move
             {
                 Actions = actions,
@@ -999,7 +1005,7 @@ namespace Poke1Protocol
 
         private void SendUseItem(int id, int pokemonUid = 0, int moveId = 0)
         {
-            var foundPoke = Team.Find(poke => poke.Uid == pokemonUid || poke.Uid * -1 == pokemonUid);
+            var foundPoke = Team.Find(poke => poke.Uid == pokemonUid);
             SendProto(new PSXAPI.Request.UseItem
             {
                 Item = id,
@@ -1178,6 +1184,11 @@ namespace Poke1Protocol
                         case PSXAPI.Response.GuildEmblem em:
 
                             break;
+                        case PSXAPI.Response.Fishing fish:
+                            _itemUseTimeout.Cancel();
+                            _fishingTimeout.Set(2500 + Rand.Next(500, 1500));
+                            SystemMessage?.Invoke("You've started fishing!");
+                            break;
                         case PSXAPI.Response.Badges bd:
                             Console.WriteLine("BADGES: " + bd.All.Length);
                             break;
@@ -1317,6 +1328,7 @@ namespace Poke1Protocol
             {
                 PlayerStats = playerStats;
                 Badges.Clear();
+                ToatlSteps = (int)stats.Data.StepsTaken;
                 foreach (var id in PlayerStats.Badges)
                     Badges.Add(id, BadgeFromID(id));
             }
@@ -1634,6 +1646,7 @@ namespace Poke1Protocol
             if (!ActiveBattle.OnlyInfo && IsInBattle && IsLoggedIn && ActiveBattle.Turn <= 1 && !ActiveBattle.IsUpdated)
             {
                 // encounter message coz the server doesn't send it.
+                _fishingTimeout.Cancel();
                 _needToSendSync = true;
                 var firstEncounterMessage = ActiveBattle.IsWild ? ActiveBattle.IsShiny ?
                         $"A wild shiny {PokemonManager.Instance.Names[ActiveBattle.OpponentId]} has appeared!"
@@ -1695,6 +1708,7 @@ namespace Poke1Protocol
                 IsBiking = false;
                 IsOnGround = false;
                 IsSurfing = true;
+                _surfAfterMovement = false;
             }
         }
 
@@ -2022,6 +2036,7 @@ namespace Poke1Protocol
             OnInventoryUpdate(login.Inventory);
             OnMountUpdate(login.Mount);
             OnPlayerPosition(login.Position, false);
+            ToatlSteps = (int)login.TotalSteps;
 
             if (login.Pokedex != null)
             {
@@ -2360,8 +2375,7 @@ namespace Poke1Protocol
                 return;
             }
             if (pokemonUid == 0) // simple use
-            {
-                pokemonUid = ActiveBattle.CurrentBattlingPokemonIndex;
+            {                   
                 if (!_itemUseTimeout.IsActive && !IsInBattle && item.CanBeUsedOutsideOfBattle)
                 {
                     SendUseItem(item.Id);
@@ -2369,6 +2383,7 @@ namespace Poke1Protocol
                 }
                 else if (!_battleTimeout.IsActive && IsInBattle && item.CanBeUsedInBattle && !item.CanBeUsedOnPokemonInBattle)
                 {
+                    pokemonUid = ActiveBattle.CurrentBattlingPokemonIndex;
                     SendUseItemInBattle(item.Id, pokemonUid, pokemonUid, moveId);
                     _battleTimeout.Set(ActiveBattle.PokemonCount > 1 ? Rand.Next(3500, 4000) : Rand.Next(1500, 3000));
                 }
@@ -2785,13 +2800,13 @@ namespace Poke1Protocol
                     status = "Posion";
                     break;
                 case "par":
-                    status = "Paralized";
+                    status = "Paralysis";
                     break;
                 case "tox":
                     status = "Posion";
                     break;
                 default:
-                    status = "";
+                    status = "None";
                     break;
             }
             return status;

@@ -154,6 +154,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["getTeamSize"] = new Func<int>(GetTeamSize);
                 _lua.Globals["getPokedexOwned"] = new Func<int>(GetPokedexOwned);
                 _lua.Globals["getPokedexSeen"] = new Func<int>(GetPokedexSeen);
+                _lua.Globals["getTotalSteps"] = new Func<int>(GetTotalSteps);
 
                 _lua.Globals["getPokemonId"] = new Func<int, int>(GetPokemonId);
                 _lua.Globals["getPokemonName"] = new Func<int, string>(GetPokemonName);
@@ -514,6 +515,12 @@ namespace Poke1Bot.Scripting
         private int GetPokedexSeen()
         {
             return Bot.Game.PokedexSeen;
+        }
+
+        // API:
+        private int GetTotalSteps()
+        {
+            return Bot.Game.ToatlSteps;
         }
 
         // API: Returns the ID of the specified pokémon in the team.

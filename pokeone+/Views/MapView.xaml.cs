@@ -68,6 +68,8 @@ namespace pokeone_plus
                 { 13, Colors.WhiteSmoke },
                 { 14, Colors.White },
                 { 15, Colors.White },
+                { 22, Colors.Wheat },
+                { 24, Colors.White },
                 { 25, Colors.White }
             };
 
