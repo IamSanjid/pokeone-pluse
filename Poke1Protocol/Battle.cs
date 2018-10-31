@@ -51,9 +51,9 @@ namespace Poke1Protocol
 
         public int CurrentBattlingPokemonIndex { get; private set; } // different than SelectedPokemonIndex
 
-        public SwitchedPokemon[] OpponentActivePokemon { get; private set; }
+        public List<SwitchedPokemon> OpponentActivePokemon { get; private set; }
 
-        public SwitchedPokemon[] PlayerAcivePokemon { get; private set; }
+        public List<SwitchedPokemon> PlayerAcivePokemon { get; private set; }
 
         private List<Pokemon> _team { get; set; }
 
@@ -341,11 +341,13 @@ namespace Poke1Protocol
                 UpdateSelectedPokemonIndex();
                 var pokemons = p1.RequestInfo.side.pokemon;
                 if (p1.RequestInfo is null) return;
-                if (p1.RequestInfo.active is null is false && p1.RequestInfo.active.Length > 0)
+                if (p1.RequestInfo.active != null && p1.RequestInfo.active.Length > 1)
                 {
-                    PlayerAcivePokemon = new SwitchedPokemon[p1.RequestInfo.active.Length];
+                    PlayerAcivePokemon = new List<SwitchedPokemon>();
                     for (var i = 0; i < p1.RequestInfo.active.Length; i++)
                     {
+                        if (p1.RequestInfo.active[i].trainer.ToLowerInvariant() != _playerName.ToLowerInvariant())
+                            continue;
                         var condition = pokemons[i].condition;
                         var details = pokemons[i].details;
                         var newPoke = GetSwitchedPokemon(details, condition);
@@ -383,9 +385,9 @@ namespace Poke1Protocol
                 var opAbility = opponent.baseAbility.ToLowerInvariant().Replace(" ", "");
                 var pokemons = p2.RequestInfo.side.pokemon;
                 if (p2.RequestInfo is null) return;
-                if (p2.RequestInfo.active is null is false && p2.RequestInfo.active.Length > 0)
+                if (p2.RequestInfo.active != null && p2.RequestInfo.active.Length > 1)
                 {
-                    OpponentActivePokemon = new SwitchedPokemon[p2.RequestInfo.active.Length];
+                    OpponentActivePokemon = new List<SwitchedPokemon>();
                     for (var i = 0; i < p2.RequestInfo.active.Length; i++)
                     {
                         var condition = pokemons[i].condition;
@@ -477,7 +479,7 @@ namespace Poke1Protocol
                             {
                                 var happened = info[5];
                                 if (happened == "[miss]")
-                                    BattleMessage?.Invoke($"Foe {attacker[1]}'s attack missed!");
+                                    BattleMessage?.Invoke($"{attacker[1]}'s attack missed!");
                             }
                             break;
                         case "faint":

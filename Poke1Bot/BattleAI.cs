@@ -49,9 +49,8 @@ namespace Poke1Bot
         }
 
         public Pokemon ActivePokemon => _client.Team[_client.ActiveBattle.SelectedPokemonIndex];
-        public SwitchedPokemon[] ActivePokemons => _client.ActiveBattle.PlayerAcivePokemon
-            .ToList().FindAll(x => x.Trainer.ToLowerInvariant() == _client.ActiveBattle._playerName?.ToLowerInvariant()).ToArray();
-        public SwitchedPokemon[] ActiveOpponentPokemons => _client.ActiveBattle.OpponentActivePokemon;
+        public SwitchedPokemon[] ActivePokemons => _client.ActiveBattle.PlayerAcivePokemon != null ? _client.ActiveBattle.PlayerAcivePokemon.ToArray() : null;
+        public SwitchedPokemon[] ActiveOpponentPokemons => _client.ActiveBattle.OpponentActivePokemon != null ? _client.ActiveBattle.OpponentActivePokemon.ToArray() : null;
 
         public bool UseMandatoryAction()
         {
@@ -88,7 +87,7 @@ namespace Poke1Bot
                     var result = false;
                     foreach (var poke in ActivePokemons)
                     {
-                        result = UseAttack(true, _client.Team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == poke.Personality));
+                        result = UseAttack(false, _client.Team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == poke.Personality));
                     }
                     return result;
                 }
@@ -101,45 +100,49 @@ namespace Poke1Bot
             if (_client.ActiveBattle.IsTrapped) return false;
             if (index < 1 || index > _client.Team.Count) return false;
             Pokemon pokemon = _client.Team[index - 1];
-            if (pokemon.BattleCurrentHealth > 0 && ((ActivePokemon != null && pokemon != ActivePokemon)
-                    || (ActivePokemons != null && !ActivePokemons.Any(x => x.Personality == pokemon.PokemonData.Pokemon.Payload.Personality))))
+            if (pokemon.BattleCurrentHealth > 0)
             {
-                if (ActivePokemons.Length > 1 && changeWith > 0)
+                if (ActivePokemons != null && ActivePokemons.Length > 1 && changeWith > 0)
                 {
+                    if (ActivePokemons.Any(p => p.Personality == pokemon.PokemonData.Pokemon.Payload.Personality))
+                        return false;
                     _client.ChangePokemon(pokemon.Uid, changeWith);
                 }
                 else
                 {
-                    _client.ChangePokemon(pokemon.Uid);
+                    if (pokemon != ActivePokemon)
+                        _client.ChangePokemon(pokemon.Uid);
                 }
                 return true;
             }
             return false;
         }
 
-        public bool SendUsablePokemon()
+        public bool SendUsablePokemon(int changeWith = 0)
         {
             if (_client.ActiveBattle.IsTrapped) return false;
             foreach (Pokemon pokemon in _client.Team)
             {
-                if (IsPokemonUsable(pokemon) && ((ActivePokemon != null && pokemon != ActivePokemon)
-                    || (ActivePokemons != null && !ActivePokemons.Any(x => x.Personality == pokemon.PokemonData.Pokemon.Payload.Personality))))
+                if (IsPokemonUsable(pokemon))
                 {
                     if (ActivePokemons != null && ActivePokemons.Length > 1)
                     {
-                        var changeWith = ActivePokemons.ToList().FindIndex(x => x.Health <= 1);
-                        if (changeWith >= 0)
-                            _client.ChangePokemon(pokemon.Uid, changeWith + 1);
+                        if (ActivePokemons.Any(p => p.Personality == pokemon.PokemonData.Pokemon.Payload.Personality))
+                            continue;
+                        if (changeWith > 0)
+                            _client.ChangePokemon(pokemon.Uid, changeWith);
                         else
                         {
-                            changeWith = ActivePokemons.ToList().FindIndex(x => x.Health <= 1 || x.Health != x.MaxHealth) <= 0 ? 1 
+                            changeWith = ActivePokemons.ToList().FindIndex(x => x.Health <= 1 || x.Health != x.MaxHealth) < 0 ? 1 
                                 : ActivePokemons.ToList().FindIndex(x => x.Health <= 1 || x.Health != x.MaxHealth);
                             _client.ChangePokemon(pokemon.Uid, changeWith + 1);
                         }
                     }
                     else
                     {
-                        _client.ChangePokemon(pokemon.Uid);
+                        if (ActivePokemon == pokemon)
+                            continue;
+                        _client.ChangePokemon(pokemon.Uid, changeWith);
                     }
                     return true;
                 }

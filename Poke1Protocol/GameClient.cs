@@ -188,6 +188,7 @@ namespace Poke1Protocol
         private List<Script> Scripts { get; }
         private List<Script> _cachedScripts { get; }
         private MapUsers _cachedNerbyUsers { get; set; }
+        private PSXAPI.Response.Mount _mountPacket { get; set; }
         public GameClient(GameConnection connection, MapConnection mapConnection)
         {
             _mapClient = new MapClient(mapConnection, this);
@@ -1206,7 +1207,7 @@ namespace Poke1Protocol
                             OnLevel(lvl);
                             break;
                         case PSXAPI.Response.LoginQueue queue:
-                            LogMessage?.Invoke("[Login Queue]: Average Wait-Time: " + queue.EstimatedTime.FormatTimeString());
+                            SystemMessage?.Invoke("Login Queue: Average Wait-Time: " + queue.EstimatedTime.FormatTimeString());
                             break;
                         case PSXAPI.Response.Money money:
                             Money = (int)money.Game;
@@ -1338,11 +1339,7 @@ namespace Poke1Protocol
         {
 
             if (req.Type.ToString().Contains("Decline")) return;
-
-            SystemMessage?.Invoke($"{req.Sender} sent {req.Type.ToString().ToLowerInvariant()} request.");
-            LogMessage?.Invoke("Saying no to the request....");
             PSXAPI.Request.RequestType type = PSXAPI.Request.RequestType.None;
-
             switch (req.Type)
             {
                 case RequestType.Battle:
@@ -1360,7 +1357,12 @@ namespace Poke1Protocol
                 case RequestType.Party:
                     type = PSXAPI.Request.RequestType.Party;
                     break;
+                default:
+                    return;
             }
+
+            SystemMessage?.Invoke($"{req.Sender} sent {req.Type.ToString().ToLowerInvariant()} request.");
+            LogMessage?.Invoke("Saying no to the request....");
 
             SendProto(new PSXAPI.Request.Request
             {
@@ -1695,12 +1697,13 @@ namespace Poke1Protocol
             if (mtP.MountType == MountType.Bike || mtP.MountType == MountType.Pokemon)
             {
                 IsBiking = true;
-                IsOnGround = true;
+                IsOnGround = Map.IsGround(PlayerX, PlayerY);
+                IsSurfing = false;
             }
             else if (mtP.MountType == MountType.None)
             {
                 IsBiking = false;
-                IsOnGround = true;
+                IsOnGround = Map.IsGround(PlayerX, PlayerY);
                 IsSurfing = false;
             }
             else if (mtP.MountType == MountType.Surfing)
@@ -2034,7 +2037,7 @@ namespace Poke1Protocol
                 OnLevel(login.Level);
             OnTeamUpdated(login.Inventory.ActivePokemon);
             OnInventoryUpdate(login.Inventory);
-            OnMountUpdate(login.Mount);
+            _mountPacket = login.Mount;
             OnPlayerPosition(login.Position, false);
             ToatlSteps = (int)login.TotalSteps;
 
@@ -2508,6 +2511,7 @@ namespace Poke1Protocol
                 Players.Clear();
                 _removedPlayers.Clear();
                 CheckArea();
+                OnMountUpdate(_mountPacket);
                 MapLoaded?.Invoke(AreaName);
             }
 
@@ -2611,11 +2615,7 @@ namespace Poke1Protocol
 
         public bool HasCutAbility()
         {
-            return (HasMove("Cut")) &&
-                (Map?.Region == "1" && HasItemName("Cascade Badge") ||
-                Map?.Region == "2" && HasItemName("Hive Badge") ||
-                Map?.Region == "3" && HasItemName("Stone Badge") ||
-                Map?.Region == "4" && HasItemName("Forest Badge"));
+            return (HasMove("Cut"));
         }
         public bool HasRockSmashAbility()
         {

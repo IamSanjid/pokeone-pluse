@@ -317,6 +317,15 @@ namespace Poke1Bot
             return result;
         }
 
+        public bool MoveToNearestLink()
+        {
+            var links = Game.Map.Links.OrderBy(link => GameClient.DistanceBetween(Game.PlayerX, Game.PlayerY, link.x, -link.z));
+            foreach (var link in links)
+                if (MoveToCell(link.x, -link.z))
+                    return true;
+            return false;
+        }
+
         public bool CanMoveTo(int x, int y)
         {
             Pathfinding path = new Pathfinding(Game);

@@ -268,6 +268,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["moveToCell"] = new Func<int, int, bool>(MoveToCell);
                 _lua.Globals["moveToArea"] = new Func<string, bool>(MoveToArea);
                 _lua.Globals["moveToLink"] = new Func<string, bool>(MoveToLink);
+                _lua.Globals["moveToNearestLink"] = new Func<bool>(MoveToNearestLink);
                 _lua.Globals["moveToRectangle"] = new Func<DynValue[], bool>(MoveToRectangle);
                 _lua.Globals["moveLinearX"] = new Func<DynValue[], bool>(MoveLinearX);
                 _lua.Globals["moveLinearY"] = new Func<DynValue[], bool>(MoveLinearY);
@@ -517,7 +518,7 @@ namespace Poke1Bot.Scripting
             return Bot.Game.PokedexSeen;
         }
 
-        // API:
+        // API: Returns total steps taken by the account.
         private int GetTotalSteps()
         {
             return Bot.Game.ToatlSteps;
@@ -1477,6 +1478,13 @@ namespace Poke1Bot.Scripting
                 return false;
             }
             return ExecuteAction(Bot.MoveToCell(findLink.x, -findLink.z));
+        }
+
+        // API: Moves to nearest accessible link from player.
+        private bool MoveToNearestLink()
+        {
+            if (!ValidateAction("moveToNearestLink", false)) return false;
+            return ExecuteAction(Bot.MoveToNearestLink());
         }
 
         // API: Moves to a random accessible cell of the specified rectangle.

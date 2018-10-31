@@ -248,7 +248,7 @@ namespace Poke1Protocol
             {
                 sb.Append(obj.Seconds);
                 sb.Append(" ");
-                if (obj.Minutes > 1)
+                if (obj.Seconds > 1)
                     sb.Append("seconds");
                 else
                     sb.Append("second");
