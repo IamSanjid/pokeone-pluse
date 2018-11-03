@@ -262,7 +262,7 @@ namespace Poke1Protocol
 
         public void Open()
         {
-            _connection.Connect();
+            _mapClient.Open();
         }
 
         public void Close(Exception error = null)
@@ -621,15 +621,12 @@ namespace Poke1Protocol
 #if DEBUG
             Console.WriteLine("[+++] Connected to the map server");
 #endif
-            IsConnected = true;
-            ConnectionOpened?.Invoke();
+            _connection.Connect();
         }
 
         private void MapClient_ConnectionFailed(Exception ex)
         {
             ConnectionFailed?.Invoke(ex);
-            if (_connection.IsConnected)
-                Close();
         }
 
         private void MapClient_ConnectionClosed(Exception ex)
@@ -647,10 +644,12 @@ namespace Poke1Protocol
 
         private void OnConnectionOpened()
         {
+            IsConnected = true;
 #if DEBUG
             Console.WriteLine("[+++] Connection opened");
 #endif
-            _mapClient.Open();
+            ConnectionOpened?.Invoke();
+
             lastPingResponseUtc = DateTime.UtcNow;
             receivedPing = true;
         }
@@ -911,7 +910,7 @@ namespace Poke1Protocol
                     "|",
                     (selected - 1).ToString(),
                     "|",
-                    ActiveBattle.AttackTargetType(id)
+                    ActiveBattle.AttackTargetType(id, selected)
                 })
             });
 
@@ -1697,13 +1696,13 @@ namespace Poke1Protocol
             if (mtP.MountType == MountType.Bike || mtP.MountType == MountType.Pokemon)
             {
                 IsBiking = true;
-                IsOnGround = Map.IsGround(PlayerX, PlayerY);
+                IsOnGround = true;
                 IsSurfing = false;
             }
             else if (mtP.MountType == MountType.None)
             {
                 IsBiking = false;
-                IsOnGround = Map.IsGround(PlayerX, PlayerY);
+                IsOnGround = true;
                 IsSurfing = false;
             }
             else if (mtP.MountType == MountType.Surfing)
@@ -1902,6 +1901,9 @@ namespace Poke1Protocol
                 {
                     TeleportationOccuring?.Invoke(movement.Map, movement.X, movement.Y);
 
+                    if (IsMapLoaded)
+                        IsOnGround = Map.GetCollider(movement.X, movement.Y) != 13 && Map.GetCollider(movement.X, movement.Y) != 11;
+
                     PlayerX = movement.X;
                     PlayerY = movement.Y;
 
@@ -1916,8 +1918,8 @@ namespace Poke1Protocol
 
                         SendJoinChannel(mapChatChannel);
                     }
-
-                    LoadMap(movement.Map);
+                    if (MapName != movement.Map)
+                        LoadMap(movement.Map);
                 }
                 if (sync)
                     Resync(MapName == movement.Map);
@@ -1927,6 +1929,9 @@ namespace Poke1Protocol
                 if (MapName != syncP.Map || PlayerX != syncP.PosX || PlayerY != syncP.PosY)
                 {
                     TeleportationOccuring?.Invoke(syncP.Map, syncP.PosX, syncP.PosY);
+
+                    if (IsMapLoaded)
+                        IsOnGround = Map.GetCollider(syncP.PosX, syncP.PosY) != 13 && Map.GetCollider(syncP.PosX, syncP.PosY) != 11;
 
                     PlayerX = syncP.PosX;
                     PlayerY = syncP.PosY;
@@ -1941,8 +1946,8 @@ namespace Poke1Protocol
                             CloseChannel(Channels["Map"].ChannelName);
                         SendJoinChannel(mapChatChannel);
                     }
-
-                    LoadMap(syncP.Map);
+                    if (MapName != syncP.Map)
+                        LoadMap(syncP.Map);
                 }
                 if (sync)
                     Resync(MapName == syncP.Map);
@@ -2424,15 +2429,20 @@ namespace Poke1Protocol
             _swapTimeout.Set();
         }
 
-        public void ChangePokemon(int number, int to = 0)
+        public bool ChangePokemon(int to, int number = 0)
         {
-            if (to == 0)
-                to = ActiveBattle.CurrentBattlingPokemonIndex;
-            SendChangePokemon(to, number);
+            if (number == 0)
+                number = ActiveBattle.CurrentBattlingPokemonIndex;
+            if (to > 0)
+            {
+                SendChangePokemon(number, to);
 
-            ActiveBattle?.UpdateSelectedPokemon(number);
+                ActiveBattle?.UpdateSelectedPokemon();
 
-            _battleTimeout.Set();
+                _battleTimeout.Set();
+                return true;
+            }
+            return false;
         }
 
         public void UseSurfAfterMovement()

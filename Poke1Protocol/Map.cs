@@ -588,7 +588,7 @@ namespace Poke1Protocol
 
         public bool IsGround(int x, int y)
         {
-            return GetCollider(x, y) != 11 && GetCollider(x, y) != 13;
+            return GetCollider(x, y) != 11 && GetCollider(x, y) != 13 && TileHeight[x, y] <= 0;
         }
 
         public MoveResult CanMove(Direction direction, int destinationX, int destinationY, bool isOnGround, bool isSurfing, bool canUseCut, bool canUseSmashRock)
@@ -622,19 +622,19 @@ namespace Poke1Protocol
                 return MoveResult.Fail;
             }
 
-            if (collider == 4 || collider == 6)
+            if (collider == 4 || collider == 6 || collider == 7 || collider == 5)
             {
                 return MoveResult.Jump;
             }
 
-            if (collider == 2 || collider == 13 || collider == 11 || TileZones[destinationX, destinationY] == 5)
+            if (collider == 11 && isOnGround)
                 return MoveResult.NoLongerOnGround;
-
-            if (isSurfing && !IsWater(destinationX, destinationY))
-                return MoveResult.NoLongerSurfing;
 
             if (collider == 12 && !isOnGround)
                 return MoveResult.OnGround;
+
+            if (isSurfing && !IsWater(destinationX, destinationY))
+                return MoveResult.NoLongerSurfing;
 
             return MoveResult.Success;
         }
@@ -789,12 +789,12 @@ namespace Poke1Protocol
                     collPre = GetCollider(destx, desty + 1);
                     if (isOnGround)
                     {
-                        if (collider == 14 && collPre == 13)
+                        if (collPre == 16 || collPre == 17 || collPre == 18)
                             return false;
                         if (collider == 18 || collider == 0 || collider == 20 || collider == 25 ||
-                            collider == 19 || collider == 16 || collider == 13
-                            || collider == 24 || collider == 15 || collider == 12 ||
-                            collider == 11 || collider == 14 || IsGoingToSlide(collider))
+                            collider == 19 || collider == 16 || collider == 17 || collider == 13
+                            || collider == 24 || collider == 15 || collider == 12 || collider == 7 ||
+                            collider == 11 || IsGoingToSlide(collider))
                         {
                             return true;
                         }
@@ -803,8 +803,7 @@ namespace Poke1Protocol
                             return true;
                         }
                     }
-                    else if (collider == 14 || collider == 15 || collider == 7 || collider == 8 ||
-                        collider == 9 || collider == 0 || collider == 12 || collider == 11 || collider == 13)
+                    else if (collider == 14 || collider == 15 || collider == 12 || collider == 11 || collider == 13)
                     {
                         return true;
                     }
@@ -813,11 +812,11 @@ namespace Poke1Protocol
                     collPre = GetCollider(destx, desty - 1);
                     if (isOnGround)
                     {                       
-                        if (collPre == 22 || (collider == 14 && collPre == 13))
+                        if (collPre == 22 || collPre == 21 || collPre == 23)
                             return false;
                         if (collider == 0 || collider == 15 || collider == 11 || collider == 13 ||
-                            collider == 7 || collider == 8 || collider == 9 || collider == 4  || collider == 25 ||
-                            collider == 12 || collider == 14 || collider == 20 || collider == 18 || collider == 19 || IsGoingToSlide(collider))
+                            collider == 4  || collider == 25 || collider == 21 || collider == 22 ||
+                            collider == 12 || collider == 20 || collider == 19 || IsGoingToSlide(collider))
                         {
                             return true;
                         }
@@ -826,8 +825,7 @@ namespace Poke1Protocol
                             return true;
                         }
                     }
-                    else if (collider == 7 || collider == 8 || collider == 9 || collider == 14
-                        || collider == 12 || collider == 15 || collider == 11 || collider == 13)
+                    else if (collider == 14 || collider == 12 || collider == 15 || collider == 11 || collider == 13)
                     {
                         return true;
                     }
@@ -836,11 +834,11 @@ namespace Poke1Protocol
                     collPre = GetCollider(destx + 1, desty);
                     if (isOnGround)
                     {
-                        if (collPre == 19 || collPre == 16 || collPre == 18 || (collider == 14 && collPre == 13))
+                        if (collPre == 19 || collPre == 16 || collPre == 21)
                             return false;
-                        if (collider == 14 || collider == 15 || collider == 0 || collider == 7 || collider == 13
+                        if (collider == 15 || collider == 0 || collider == 7 || collider == 13
                             || collider == 8 || collider == 9 || collider == 25 || collider == 22 ||
-                            collider == 4 || collider == 12 || collider == 11 || collider == 19 || IsGoingToSlide(collider))
+                            collider == 5 || collider == 12 || collider == 11 || collider == 19 || IsGoingToSlide(collider))
                         {
                             return true;
                         }
@@ -849,9 +847,7 @@ namespace Poke1Protocol
                             return true;
                         }
                     }
-                    else if (collider == 14 || collider == 15 || collider == 7 || collider == 13 ||
-                        collider == 8 || collider == 9 || collider == 12 ||
-                        collider == 11)
+                    else if (collider == 14 || collider == 15|| collider == 13 || collider == 12 || collider == 11)
                     {
                         return true;
                     }
@@ -860,9 +856,9 @@ namespace Poke1Protocol
                     collPre = GetCollider(destx - 1, desty);
                     if (isOnGround)
                     {
-                        if (collPre == 20 || collPre == 16 || collPre == 18 || (collider == 14 && collPre == 13))
+                        if (collPre == 20 || collPre == 23 || collPre == 18)
                             return false;
-                        if (collider == 14 || collider == 15 || collider == 0 || collider == 25 || collider == 13 ||
+                        if (collider == 15 || collider == 0 || collider == 25 || collider == 13 ||
                             collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 22 ||
                             collider == 3 || collider == 12 || collider == 11 || collider == 20 || IsGoingToSlide(collider))
                         {
@@ -873,8 +869,7 @@ namespace Poke1Protocol
                             return true;
                         }
                     }
-                    else if (collider == 14 || collider == 15 || collider == 7 ||
-                        collider == 8 || collider == 9 || collider == 13 ||
+                    else if (collider == 14 || collider == 15 || collider == 13 ||
                         collider == 12 || collider == 11)
                     {
                         return true;

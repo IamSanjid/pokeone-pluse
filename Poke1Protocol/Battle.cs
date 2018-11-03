@@ -70,24 +70,14 @@ namespace Poke1Protocol
             }
         }
 
-        public string AttackTargetType(int uid, int pokeUid = 0)
+        public string AttackTargetType(int uid, int pokeUid)
         {
-            if (string.IsNullOrEmpty(_playerName) || GetActivePokemon is null)
+            if (string.IsNullOrEmpty(_playerName) || PlayerAcivePokemon is null)
                 return "normal";
-            if (pokeUid == 0)
-            {
-                var targetMove = GetActivePokemon.moves[uid - 1];
-                if (targetMove is null || string.IsNullOrEmpty(targetMove.target))
-                    return "normal";
-                return targetMove.target;
-            }
-            else
-            {
-                var targetMove = PlayerAcivePokemon[pokeUid].Moves[uid - 1];
-                if (targetMove is null || string.IsNullOrEmpty(targetMove.target))
-                    return "normal";
-                return targetMove.target;
-            }
+            var targetMove = PlayerAcivePokemon[pokeUid - 1].Moves[uid - 1];
+            if (targetMove is null || string.IsNullOrEmpty(targetMove.target))
+                return "normal";
+            return targetMove.target;
         }
 
         public Battle(string playerName, PSXAPI.Response.Battle data, List<Pokemon> team)
@@ -217,13 +207,13 @@ namespace Poke1Protocol
 
             if (data.Request1 != null)
             {
-                HandleBattleRequest(data.Request1, PlayerSide == 1);
                 Data = data;
+                HandleBattleRequest(data.Request1, PlayerSide == 1);
             }
             if (data.Request2 != null)
             {
-                HandleBattleRequest(data.Request2, PlayerSide == 2);
                 Data = data;
+                HandleBattleRequest(data.Request2, PlayerSide == 2);
             }
 
             if (data.Log != null && data.Log.Length > 0)
@@ -282,12 +272,10 @@ namespace Poke1Protocol
                     }
                 }
             }
-            UpdateSelectedPokemonIndex();
         }
 
-        public void UpdateSelectedPokemon(int newPos) // While switching to another Pokemon.
+        public void UpdateSelectedPokemon() // While switching to another Pokemon.
         {
-            SelectedPokemonIndex = newPos - 1;
             UpdateSelectedPokemonIndex();
         }
 
@@ -341,20 +329,17 @@ namespace Poke1Protocol
                 UpdateSelectedPokemonIndex();
                 var pokemons = p1.RequestInfo.side.pokemon;
                 if (p1.RequestInfo is null) return;
-                if (p1.RequestInfo.active != null && p1.RequestInfo.active.Length > 1)
+                if (p1.RequestInfo.active != null)
                 {
                     PlayerAcivePokemon = new List<SwitchedPokemon>();
                     for (var i = 0; i < p1.RequestInfo.active.Length; i++)
                     {
                         if (p1.RequestInfo.active[i].trainer.ToLowerInvariant() != _playerName.ToLowerInvariant())
                             continue;
-                        var condition = pokemons[i].condition;
-                        var details = pokemons[i].details;
-                        var newPoke = GetSwitchedPokemon(details, condition);
-                        PlayerAcivePokemon[i] = newPoke;
-                        PlayerAcivePokemon[i].Moves = p1.RequestInfo.active[i].moves;
-                        PlayerAcivePokemon[i].Trainer = p1.RequestInfo.active[i].trainer;
-                        PlayerAcivePokemon[i].Personality = p1.RequestInfo.active[i].personality;
+                        var newPoke = GetSwitchedPokemon(pokemons[i]);
+                        if (pokemons[i].active && pokemons[i].moveData.Length == 1)
+                            RepeatAttack = true;
+                        PlayerAcivePokemon.Add(newPoke);
                     }
                 }
                 else
@@ -385,18 +370,13 @@ namespace Poke1Protocol
                 var opAbility = opponent.baseAbility.ToLowerInvariant().Replace(" ", "");
                 var pokemons = p2.RequestInfo.side.pokemon;
                 if (p2.RequestInfo is null) return;
-                if (p2.RequestInfo.active != null && p2.RequestInfo.active.Length > 1)
+                if (p2.RequestInfo.active != null)
                 {
                     OpponentActivePokemon = new List<SwitchedPokemon>();
                     for (var i = 0; i < p2.RequestInfo.active.Length; i++)
                     {
-                        var condition = pokemons[i].condition;
-                        var details = pokemons[i].details;
-                        var newPoke = GetSwitchedPokemon(details, condition);
-                        OpponentActivePokemon[i] = newPoke;
-                        OpponentActivePokemon[i].Moves = p2.RequestInfo.active[i].moves;
-                        OpponentActivePokemon[i].Trainer = p2.RequestInfo.active[i].trainer;
-                        OpponentActivePokemon[i].Personality = p2.RequestInfo.active[i].personality;
+                        var newPoke = GetSwitchedPokemon(pokemons[i]);
+                        OpponentActivePokemon.Add(newPoke);
                     }
                 }
                 else
@@ -566,7 +546,7 @@ namespace Poke1Protocol
             }
         }
 
-        private SwitchedPokemon GetSwitchedPokemon(string text, string hpstatus)
+        public static SwitchedPokemon GetSwitchedPokemon(string text, string hpstatus)
         {
             SwitchedPokemon switchPkmn = new SwitchedPokemon();
             switchPkmn.Shiny = text.ToLowerInvariant().Contains("shiny");
@@ -652,6 +632,15 @@ namespace Poke1Protocol
                 switchPkmn.Status = string.IsNullOrEmpty(array[1]) ? "OK" : array[1];
             }
             return switchPkmn;
+        }
+
+        public static SwitchedPokemon GetSwitchedPokemon(PSXAPI.Response.Payload.BattlePokemon side)
+        {
+            var switchedPoke = GetSwitchedPokemon(side.details, side.condition);
+            switchedPoke.Moves = side.moveData;
+            switchedPoke.Personality = side.personality;
+            switchedPoke.Trainer = side.trainer;
+            return switchedPoke;
         }
     }
     public class SwitchedPokemon
