@@ -219,6 +219,8 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["hasBadgeId"] = new Func<int, bool>(HasBadgeId);
                 _lua.Globals["countBadges"] = new Func<int>(CountBadges);
 
+                _lua.Globals["getNearestMoveAbleCell"] = new Func<DynValue[], DynValue[]>(GetNearestMoveAbleCell);
+
                 // Quest conditions
                 _lua.Globals["isMainQuestId"] = new Func<string, bool>(IsMainQuestId);
                 _lua.Globals["isMainQuest"] = new Func<string, bool>(IsMainQuest);
@@ -2313,6 +2315,50 @@ namespace Poke1Bot.Scripting
                 return null;
             }
             return destination.DestinationID.ToString();
+        }
+
+        // API: Gets the nearest moveable cell from specified cells.
+        private DynValue[] GetNearestMoveAbleCell(params DynValue[] values)
+        {
+            if (values.Length != 1 && values.Length != 3 ||
+                (values.Length == 1 && values[0].Type != DataType.Table) ||
+                (values.Length == 3
+                    && (values[0].Type != DataType.Number || values[1].Type != DataType.Number
+                    || values[2].Type != DataType.Number)))
+            {
+                Fatal("error: getNearestMoveAbleCell: must receive either a table or three numbers.");
+                return null;
+            }
+            if (values.Length == 1)
+            {
+                values = values[0].Table.Values.ToArray();
+            }
+            return GetNearestMoveAbleCell((int)values[0].Number, (int)values[1].Number, (int)values[2].Number, (int)values[3].Number);
+        }
+
+        // API: Gets the nearest moveable cell from specified cells.
+        private DynValue[] GetNearestMoveAbleCell(int minX, int minY, int maxX, int maxY)
+        {
+            if (minX > maxX || minY > maxY)
+            {
+                Fatal("error: getNearestMoveAbleCell: the maximum cell cannot be less than the minimum cell.");
+                return null;
+            }
+            var cells = new List<Tuple<int, int>>();
+            for (int y = minY; y <= maxY; ++y)
+            {
+                for (int x = minX; x <= maxX; ++x)
+                {
+                    if (Bot.CanMoveTo(x, y))
+                        cells.Add(new Tuple<int, int>(x, y));
+                }
+            }
+            var orderedCells = cells.OrderBy(cell => GameClient.DistanceBetween(GetPlayerX(), GetPlayerY(), cell.Item1, cell.Item2)).ToList();
+            if (orderedCells.Count > 0)
+            {
+                return new DynValue[] { DynValue.NewNumber(orderedCells.FirstOrDefault().Item1), DynValue.NewNumber(orderedCells.FirstOrDefault().Item2) };
+            }
+            return null;
         }
 
         // API: Uses an equipped mount.

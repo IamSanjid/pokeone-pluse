@@ -526,6 +526,17 @@ namespace Poke1Protocol
                     case ScriptRequestType.WalkUser:
                         SendScriptResponse(script.ScriptID, "");
                         _dialogTimeout.Set();
+                        if (script.Data != null && script.Data.Length > 0)
+                        {
+                            foreach(var d in script.Data)
+                            {
+                                foreach(char c in d)
+                                {
+                                    if (c == 'd' || c == 'l' || c == 'r' || c == 'u')
+                                        Move(DirectionExtensions.FromChar(c));
+                                }
+                            }
+                        }
                         break;
                     case ScriptRequestType.WaitForInput:
                         SendScriptResponse(script.ScriptID, "");
@@ -896,11 +907,13 @@ namespace Poke1Protocol
 
         private void SendAttack(int id, int selected, int opponent, bool megaEvo)
         {
-            SendProto(new PSXAPI.Request.BattleBroadcast
+            if (id > 0)
             {
-                RequestID = ActiveBattle.ResponseID,
-                Message = string.Concat(new string[]
+                SendProto(new PSXAPI.Request.BattleBroadcast
                 {
+                    RequestID = ActiveBattle.ResponseID,
+                    Message = string.Concat(new string[]
+                    {
                     "1|",
                     PlayerName,
                     "|",
@@ -911,9 +924,9 @@ namespace Poke1Protocol
                     (selected - 1).ToString(),
                     "|",
                     ActiveBattle.AttackTargetType(id, selected)
-                })
-            });
-
+                    })
+                });
+            }
             SendProto(new PSXAPI.Request.BattleMove
             {
                 MoveID = id,
@@ -2086,13 +2099,7 @@ namespace Poke1Protocol
                 OnGuild(login.Guild);
             }
 
-
             AddDefaultChannels();
-            if (RecievedLootBoxes.TotalLootBoxes > 0)
-            {
-                foreach(var loot in RecievedLootBoxes.Lootboxes)
-                    RecievedLootBox?.Invoke(loot);
-            }
         }
 
         private void OnQuest(Quest[] quests)

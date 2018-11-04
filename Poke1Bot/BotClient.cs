@@ -63,45 +63,45 @@ namespace Poke1Bot
             Settings = new UserSettings();
 
 #if DEBUG
-            //byte[] bytes = new byte[] { 0x50, 0x6a, 0x03, 0xc2, 0xcf, 0x68, 0x90, 0xe6, 0xba, 0x32, 0x3c, 0x1a, 0x08, 0x00, 0x45, 0x00, 0x00, 0x28, 0x78, 0x91, 0x40, 0x00, 0x80, 0x06, 0x00, 0x00, 0xc0, 0xa8, 0x01, 0x0e, 0x5f, 0xb7, 0x30, 0x44, 0xed, 0x6f, 0x07, 0xdc, 0x54, 0x7f, 0x6b, 0x80, 0x7d, 0x82, 0x1a, 0x41, 0x50, 0x10, 0x01, 0x00, 0x51, 0xcc, 0x00, 0x00 };
-            //var pc = Convert.ToBase64String(bytes);
+            byte[] bytes = new byte[] { 0x50, 0x6a, 0x03, 0xc2, 0xcf, 0x68, 0x90, 0xe6, 0xba, 0x32, 0x3c, 0x1a, 0x08, 0x00, 0x45, 0x00, 0x00, 0x28, 0x78, 0x91, 0x40, 0x00, 0x80, 0x06, 0x00, 0x00, 0xc0, 0xa8, 0x01, 0x0e, 0x5f, 0xb7, 0x30, 0x44, 0xed, 0x6f, 0x07, 0xdc, 0x54, 0x7f, 0x6b, 0x80, 0x7d, 0x82, 0x1a, 0x41, 0x50, 0x10, 0x01, 0x00, 0x51, 0xcc, 0x00, 0x00 };
+            var pc = Convert.ToBase64String(bytes);
 
-            //Console.WriteLine(pc);
+            Console.WriteLine(pc);
 
-            //var packet = @"Battle CgZ8c3BsaXQKCXxjaG9pY2V8fAoZfGNob2ljZXxtb3ZlIHBvaXNvbnN0aW5nfAoZfGNob2ljZXx8bW92ZSB3aGlybHdpbmQgMQopfGNob2ljZXxtb3ZlIHBvaXNvbnN0aW5nfG1vdmUgd2hpcmx3aW5kIDEKAXwKK3xtb3ZlfHAxYTogQXJpYWRvc3xQb2lzb24gU3Rpbmd8cDJhOiBQaWRnZXkKBnxzcGxpdAoafC1kYW1hZ2V8cDJhOiBQaWRnZXl8MjMvNDgKGnwtZGFtYWdlfHAyYTogUGlkZ2V5fDIzLzQ4Chp8LWRhbWFnZXxwMmE6IFBpZGdleXwyMy80NwoafC1kYW1hZ2V8cDJhOiBQaWRnZXl8MjMvNDcKKHxtb3ZlfHAyYTogUGlkZ2V5fFdoaXJsd2luZHxwMWE6IEFyaWFkb3MKBnxzcGxpdApGfGRyYWd8cDFhOiBEaWdsZXR0fERpZ2xldHQsIEwxNCwgTSwgc2hpbnl8NDgvNDh8dHVpYmF5Z2F2YWl8MTA3MDUzMTAzNQpGfGRyYWd8cDFhOiBEaWdsZXR0fERpZ2xldHQsIEwxNCwgTSwgc2hpbnl8MjgvMjh8dHVpYmF5Z2F2YWl8MTA3MDUzMTAzNQpGfGRyYWd8cDFhOiBEaWdsZXR0fERpZ2xldHQsIEwxNCwgTSwgc2hpbnl8NDgvNDh8dHVpYmF5Z2F2YWl8MTA3MDUzMTAzNQpGfGRyYWd8cDFhOiBEaWdsZXR0fERpZ2xldHQsIEwxNCwgTSwgc2hpbnl8MjgvMjh8dHVpYmF5Z2F2YWl8MTA3MDUzMTAzNQoBfAoHfHVwa2VlcAoHfHR1cm58NBLNDgoCcDEQBBrEDggEEAEypAEKIwoFR3Jvd2wSBWdyb3dsGCggKCoPYWxsQWRqYWNlbnRGb2VzCiAKCEFzdG9uaXNoEghhc3RvbmlzaBgPIA8qBm5vcm1hbAofCghNdWQtU2xhcBIHbXVkc2xhcBgKIAoqBm5vcm1hbAonCglNYWduaXR1ZGUSCW1hZ25pdHVkZRgeIB4qC2FsbEFkamFjZW50Ogt0dWliYXlnYXZhaUDbg7z";
-            //var data = packet.Split(" ".ToCharArray());
+            var packet = @"Battle CgZ8c3BsaXQKCXxjaG9pY2V8fAolfGNob2ljZXxtb3ZlIHRhY2tsZSAyLCBtb3ZlIGFic29yYiAyfAopfGNob2ljZXx8bW92ZSBhc3N1cmFuY2UgMSwgbW92ZSBzY3JhdGNoIDEKRXxjaG9pY2V8bW92ZSB0YWNrbGUgMiwgbW92ZSBhYnNvcmIgMnxtb3ZlIGFzc3VyYW5jZSAxLCBtb3ZlIHNjcmF0Y2ggMQoBfAonfG1vdmV8cDJiOiBNZW93dGh8U2NyYXRjaHxwMWE6IEhvb3Rob290CgZ8c3BsaXQKHHwtZGFtYWdlfHAxYTogSG9vdGhvb3R8MCBmbnQKHHwtZGFtYWdlfHAxYTogSG9vdGhvb3R8MCBmbnQKHHwtZGFtYWdlfHAxYTogSG9vdGhvb3R8MCBmbnQKHHwtZGFtYWdlfHAxYTogSG9vdGhvb3R8MCBmbnQKFHxmYWludHxwMWE6IEhvb3Rob290Cil8bW92ZXxwMmE6IEtvZmZpbmd8QXNzdXJhbmNlfHAxYjogQXJpYWRvcwoGfHNwbGl0Cht8LWRhbWFnZXxwMWI6IEFyaWFkb3N8MCBmbnQKG3wtZGFtYWdlfHAxYjogQXJpYWRvc3wwIGZudAobfC1kYW1hZ2V8cDFiOiBBcmlhZG9zfDAgZm50Cht8LWRhbWFnZXxwMWI6IEFyaWFkb3N8MCBmbnQKE3xmYWludHxwMWI6IEFyaWFkb3MKAXwKB3x1cGtlZXAS+QkKAnAxEAsa8AkICxABKAEoATrlCQoCcDESAnAxGogCCgxwMTogSG9vdGhvb3QSD0hvb3Rob290LCBMNSwgTRoFMCBmbnQgASoKCAcQCBgIIAsoCjIJZm9yZXNpZ2h0MgVncm93bDIGdGFja2xlMghoeXBub3NpczoHa2VlbmV5ZUIASgdwb2tiYWxsUgtyZWdlbmRyaWRlcli53Kj2BmIiCglGb3Jlc2lnaHQSCWZvcmVzaWdodBgoICgqBm5vcm1hbGIjCgVHcm93bBIFZ3Jvd2wYKCAoKg9hbGxBZGphY2VudEZvZXNiHAoGVGFja2xlEgZ0YWNrbGUYIiAjKgZub3JtYWxiIAoISHlwbm9zaXMSCGh5cG5vc2lzGBQgFCoGbm9ybWFsGqwCCgtwMTogQXJpYWRvcxIOQXJpYWRvcywgTDYsIE0aBTAgZm50IAEqCggPEAsYDSAQKAoyCnN0cmluZ3Nob3QyC3N3b3Jkc2RhbmNlMgt2ZW5vbWRyZW5jaDIGYWJzb3JiOgVzd2FybUIASgdwb2tiYWxsUgtyZWdlbmRyaWRlcli/seuKAWIuCgtTdHJpbmcgU2hvdBIKc3RyaW5nc2hvdBgoICgqD2FsbEFkamFjZW50Rm9lc2IlCgxTd29yZHMgRGFuY2USC3N3b3Jkc2RhbmNlGBQgFCoEc2VsZmIwCgxWZW5vbSBEcmVuY2gSC3Zlbm9tZHJlbmNoGBQgFCoPYWxsQWRqYWNlbnRGb2VzYhwKBkFic29yYhIGYWJzb3JiGBUgGSoGbm9ybWFsGuYBCgtwMTogUmF0dGF0YRIOUmF0dGF0YSwgTDYsIE0aBTAgZm50KgoIChAJGAkgCSgPMgZ0YWNrbGUyCHRhaWx3aGlwMgtxdWlja2F0dGFjazoEZ3V0c0IASgdwb2tiYWxsUgtyZWdlbmRyaWRlclis6YyPAmIcCgZUYWNrbGUSBnRhY2tsZRgiICMqBm5vcm1hbGIqCglUYWlsIFdoaXASCHRhaWx3aGlwGB4gHioPYWxsQWRqYWNlbnRGb2VzYicKDFF1aWNrIEF0dGFjaxILcXVpY2thdHRhY2sYHiAeKgZub3JtYWwaigIKDXAxOiBXYXJ0b3J0bGUSEVdhcnRvcnRsZSwgTDE3LCBNGgUwIGZudCoKCBoQIhgeICQoHDIEYml0ZTIIdGFpbHdoaXAyCHdhdGVyZ3VuMgh3aXRoZHJhdzoHdG9ycmVudEIASghwb2tlYmFsbFILcmVnZW5kcmlkZXJYhvHAwAdiGAoEQml0ZRIEYml0ZRgEIBkqBm5vcm1hbGIqCglUYWlsIFdoaXASCHRhaWx3aGlwGB4gHioPYWxsQWRqYWNlbnRGb2VzYiEKCVdhdGVyIEd1bhIId2F0ZXJndW4YDSAZKgZub3JtYWxiHgoIV2l0aGRyYXcSCHdpdGhkcmF3GCggKCoEc2VsZhqqAQoKcDE6IExlZHliYRINTGVkeWJhLCBMNSwgTRoFMTkvMTkqCggHEAkYCCANKAoyBnRhY2tsZTIKc3VwZXJzb25pYzoFc3dhcm1CAEoHcG9rYmFsbFILcmVnZW5kcmlkZXJYoM2hGGIcCgZUYWNrbGUSBnRhY2tsZRgjICMqBm5vcm1hbGIkCgpTdXBlcnNvbmljEgpzdXBlcnNvbmljGBQgFCoGbm9ybWFsGvsHCgJwMhALGvIHIAE67QcKAnAyEgJwMhr5AQoLcDI6IEtvZmZpbmcSD0tvZmZpbmcsIEwxMywgTRoFMzIvMzMgASoKCBIQHRgUIBAoDzIGdGFja2xlMgRzbW9nMgtzbW9rZXNjcmVlbjIJYXNzdXJhbmNlOghsZXZpdGF0ZUIASghwb2tlYmFsbFjEld3RAmIcCgZUYWNrbGUSBnRhY2tsZRgjICMqBm5vcm1hbGIYCgRTbW9nEgRzbW9nGBMgFCoGbm9ybWFsYiYKC1Ntb2tlc2NyZWVuEgtzbW9rZXNjcmVlbhgRIBQqBm5vcm1hbGIiCglBc3N1cmFuY2USCWFzc3VyYW5jZRgHIAoqBm5vcm1hbBrxAQoKcDI6IE1lb3d0aBIOTWVvd3RoLCBMMTUsIEYaBTMwLzM3IAEqCggSEA0YEiARKCAyB3NjcmF0Y2gyBGJpdGUyB2Zha2VvdXQyCmZ1cnlzd2lwZXM6BnBpY2t1cEIASghwb2tlYmFsbFjHv/mMBWIeCgdTY3JhdGNoEgdzY3JhdGNoGCIgIyoGbm9ybWFsYhgKBEJpdGUSBGJpdGUYGSAZKgZub3JtYWxiHwoIRmFrZSBPdXQSB2Zha2VvdXQYCCAKKgZub3JtYWxiJQoLRnVyeSBTd2lwZXMSCmZ1cnlzd2lwZXMYDyAPKgZub3JtYWwa4gEKCXAyOiBFa2FucxINRWthbnMsIEwxMywgRhoFMCBmbnQqCggSEBAYECATKBMyBHdyYXAyC3BvaXNvbnN0aW5nMgRiaXRlMgVnbGFyZToIc2hlZHNraW5CAEoIcG9rZWJhbGxYtffxgwJiGAoEV3JhcBIEd3JhcBgTIBQqBm5vcm1hbGInCgxQb2lzb24gU3RpbmcSC3BvaXNvbnN0aW5nGCMgIyoGbm9ybWFsYhgKBEJpdGUSBGJpdGUYGSAZKgZub3JtYWxiGgoFR2xhcmUSBWdsYXJlGB4gHioGbm9ybWFsGo0CCg1wMjogR3Jvd2xpdGhlEhFHcm93bGl0aGUsIEwxNCwgRhoFMCBmbnQqCggaEA8YGCATKBUyBWVtYmVyMgRsZWVyMgpvZG9yc2xldXRoMgtoZWxwaW5naGFuZDoJZmxhc2hmaXJlQgBKCHBva2ViYWxsWN+/nIwCYhoKBUVtYmVyEgVlbWJlchgZIBkqBm5vcm1hbGIhCgRMZWVyEgRsZWVyGB0gHioPYWxsQWRqYWNlbnRGb2VzYiUKC09kb3IgU2xldXRoEgpvZG9yc2xldXRoGCggKCoGbm9ybWFsYi0KDEhlbHBpbmcgSGFuZBILaGVscGluZ2hhbmQYFCAUKgxhZGphY2VudEFsbHkqC3JlZ2VuZHJpZGVyKgtyZWdlbmRyaWRlcioLcmVnZW5kcmlkZXIqC3JlZ2VuZHJpZGVyKgtyZWdlbmRyaWRlckACWAFgMA==";
+            var data = packet.Split(" ".ToCharArray());
 
-            //byte[] array = Convert.FromBase64String(data[1]);
-            //var type = Type.GetType($"PSXAPI.Request.{data[0]}, PSXAPI");
+            byte[] array = Convert.FromBase64String(data[1]);
+            var type = Type.GetType($"PSXAPI.Request.{data[0]}, PSXAPI");
 
-            //if (type != null)
-            //{
-            //    var proto = typeof(PSXAPI.Proto).GetMethod("Deserialize").MakeGenericMethod(new Type[]
-            //    {
-            //        type
-            //    }).Invoke(null, new object[]
-            //    {
-            //        array
-            //    }) as PSXAPI.IProto;
-            //    Console.WriteLine(ToJsonString(proto));
-            //    //Console.WriteLine($"MapLoad: {(proto as PSXAPI.Request.BattleBroadcast).RequestID}, ID: {(proto as PSXAPI.Request.BattleBroadcast)._Name.ToString()}");
-            //}
-            //else
-            //{
-            //    type = Type.GetType($"PSXAPI.Response.{data[0]}, PSXAPI");
-            //    if (type != null)
-            //    {
-            //        var proto = typeof(PSXAPI.Proto).GetMethod("Deserialize").MakeGenericMethod(new Type[]
-            //        {
-            //            type
-            //        }).Invoke(null, new object[]
-            //        {
-            //            array
-            //        }) as PSXAPI.IProto;
-            //        Console.WriteLine(ToJsonString(proto));
-            //      // Console.WriteLine($"MapLoad: {(proto as PSXAPI.Request.BattleBroadcast).RequestID}, ID: {(proto as PSXAPI.Request.BattleBroadcast)._Name.ToString()}");
-            //    }
-            //}
+            if (type != null)
+            {
+                var proto = typeof(PSXAPI.Proto).GetMethod("Deserialize").MakeGenericMethod(new Type[]
+                {
+                    type
+                }).Invoke(null, new object[]
+                {
+                    array
+                }) as PSXAPI.IProto;
+                Console.WriteLine(ToJsonString(proto));
+                //Console.WriteLine($"MapLoad: {(proto as PSXAPI.Request.BattleBroadcast).RequestID}, ID: {(proto as PSXAPI.Request.BattleBroadcast)._Name.ToString()}");
+            }
+            else
+            {
+                type = Type.GetType($"PSXAPI.Response.{data[0]}, PSXAPI");
+                if (type != null)
+                {
+                    var proto = typeof(PSXAPI.Proto).GetMethod("Deserialize").MakeGenericMethod(new Type[]
+                    {
+                        type
+                    }).Invoke(null, new object[]
+                    {
+                        array
+                    }) as PSXAPI.IProto;
+                    Console.WriteLine(ToJsonString(proto));
+                    // Console.WriteLine($"MapLoad: {(proto as PSXAPI.Request.BattleBroadcast).RequestID}, ID: {(proto as PSXAPI.Request.BattleBroadcast)._Name.ToString()}");
+                }
+            }
 #endif
         }
         private static string ToJsonString(PSXAPI.IProto p) => Newtonsoft.Json.JsonConvert.SerializeObject(p, new Newtonsoft.Json.JsonSerializerSettings
@@ -161,26 +161,14 @@ namespace Poke1Bot
                 return;
             }
 
-            if (Game != null && Game.IsInBattle && Game.IsInactive && AI != null && AI.UseMandatoryAction())
-            {
-                return;
-            }
-
             AutoReconnector.Update();
             AutoLootBoxOpener.Update();
             QuestManager.Update();
 
             if (_npcBattler != null && Game != null && Game.IsMapLoaded && Game.IsInactive)
             {
-                if (GameClient.DistanceBetween(Game.PlayerX, Game.PlayerY, _npcBattler.PositionX, _npcBattler.PositionY) == 1)
-                {
-                    TalkToNpc(_npcBattler);
-                    _npcBattler = null;
-                }
-                else
-                {
-                    TalkToNpc(_npcBattler);
-                }
+                Game.ClearPath();
+                TalkToNpc(_npcBattler);
                 return;
             }
 
@@ -293,6 +281,7 @@ namespace Poke1Bot
             bool canInteract = Game.Map.CanInteract(Game.PlayerX, Game.PlayerY, target.PositionX, target.PositionY);
             if (canInteract)
             {
+                _npcBattler = null;
                 Game.TalkToNpc(target);
                 return true;
             }

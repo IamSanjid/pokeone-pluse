@@ -13,8 +13,6 @@ namespace Poke1Protocol
         public event Action<string> LootBoxMessage;
         public event Action<PSXAPI.Response.Lootbox> RecievedBox;
 
-        public List<PSXAPI.Response.Lootbox> Lootboxes { get; private set; } = new List<PSXAPI.Response.Lootbox>();
-
         public PSXAPI.Response.LootboxType LootboxType { get; private set; }
         public TimeSpan DailyTime { get; private set; }
         public DateTime LastUpdated { get; private set; }
@@ -38,10 +36,6 @@ namespace Poke1Protocol
             {
                 for (int i = 0; i < boxes.Length; i++)
                 {
-
-                    if (boxes[i].Remaining > 0 && boxes[i].Action != PSXAPI.Response.LootboxAction.Opened)
-                        Lootboxes.Add(boxes[i]);
-
                     if (boxes[i].Type == PSXAPI.Response.LootboxType.Normal)
                     {
                         NormalBoxes = boxes[i].Remaining;
@@ -61,17 +55,12 @@ namespace Poke1Protocol
                     }
                     else if (boxes[i].Action == PSXAPI.Response.LootboxAction.Update)
                     {
-                        if (NormalBoxes > 0 || SmallBoxes > 0)
+                        if (boxes[i].Remaining > 0)
                             RecievedBox?.Invoke(boxes[i]);
                     }
                 }
             }
             // PokeOne's way....
-            int count = (int)(NormalBoxes + SmallBoxes - oldAmount);
-            if (count > 0)
-            {
-                LootBoxMessage?.Invoke("You gained Loot Box x" + count + ".");
-            }
             TotalLootBoxes = (int)(NormalBoxes + SmallBoxes);
 
             oldAmount = NormalBoxes + SmallBoxes;

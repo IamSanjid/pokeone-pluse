@@ -57,6 +57,8 @@ namespace Poke1Protocol
 
         private List<Pokemon> _team { get; set; }
 
+        public PSXAPI.Response.Payload.BattleRequestData PlayerRequest { get; private set; }
+
         public PSXAPI.Response.Payload.BattleActive GetActivePokemon
         {
             get
@@ -147,32 +149,33 @@ namespace Poke1Protocol
 
                         if (pokemon is null) return;
 
-                        if (side == PlayerSide)
-                        {
-                            //player
-                            var req = PlayerSide == 1 ? Data.Request1 : Data.Request2;
-                            var index = PlayerBattleSide.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
-                            SelectedPokemonIndex = index < 0 ? SelectedPokemonIndex : index;
-                            team[index].UpdateHealth(pokemon.Health, pokemon.MaxHealth);
-                        }
-                        else
-                        {
-                            //oppoenent
-                            var req = PlayerSide == 1 ? Data.Request2 : Data.Request1;
-                            var index = req.RequestInfo.side.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
-                            CurrentHealth = pokemon.Health;
-                            OpponentHealth = pokemon.MaxHealth;
-                            OpponentGender = pokemon.Gender;
-                            OpponentId = pokemon.ID;
-                            OpponentLevel = pokemon.Level;
-                            OpponentStatus = pokemon.Status;
-                            IsShiny = pokemon.Shiny;
-                            if (index >= 0)
-                                OpponentStats = new PokemonStats(req.RequestInfo.side.pokemon[index].stats, pokemon.MaxHealth);
-                        }
+                        //if (side == PlayerSide)
+                        //{
+                        //    //player
+                        //    var req = PlayerSide == 1 ? Data.Request1 : Data.Request2;
+                        //    var index = PlayerBattleSide.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
+                        //    SelectedPokemonIndex = index < 0 ? SelectedPokemonIndex : index;
+                        //    team[index].UpdateHealth(pokemon.Health, pokemon.MaxHealth);
+                        //}
+                        //else
+                        //{
+                        //    //oppoenent
+                        //    var req = PlayerSide == 1 ? Data.Request2 : Data.Request1;
+                        //    var index = req.RequestInfo.side.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
+                        //    CurrentHealth = pokemon.Health;
+                        //    OpponentHealth = pokemon.MaxHealth;
+                        //    OpponentGender = pokemon.Gender;
+                        //    OpponentId = pokemon.ID;
+                        //    OpponentLevel = pokemon.Level;
+                        //    OpponentStatus = pokemon.Status;
+                        //    IsShiny = pokemon.Shiny;
+                        //    if (index >= 0)
+                        //        OpponentStats = new PokemonStats(req.RequestInfo.side.pokemon[index].stats, pokemon.MaxHealth);
+                        //}
                     }
                 }
             }
+
         }
 
         public void UpdateBattle(string playerName, PSXAPI.Response.Battle data, List<Pokemon> team)
@@ -191,18 +194,12 @@ namespace Poke1Protocol
             {
                 if (data.Mapping1.ToList().Any(name => name.ToLowerInvariant() == _playerName.ToLowerInvariant()))
                     PlayerSide = 1;
-
-                if (SelectedPokemonIndex > data.Mapping1.Length - 1)
-                    SelectedPokemonIndex = data.Mapping1.Length - 1;
             }
 
             if (data.Mapping2 != null && !string.IsNullOrEmpty(_playerName))
             {
                 if (data.Mapping2.ToList().Any(name => name.ToLowerInvariant() == _playerName.ToLowerInvariant()))
                     PlayerSide = 2;
-
-                if (SelectedPokemonIndex > data.Mapping2.Length - 1)
-                    SelectedPokemonIndex = data.Mapping2.Length - 1;
             }
 
             if (data.Request1 != null)
@@ -246,29 +243,29 @@ namespace Poke1Protocol
 
                         if (pokemon is null) return;
 
-                        if (side == PlayerSide)
-                        {
-                            //player
-                            var req = PlayerSide == 1 ? Data.Request1 : Data.Request2;
-                            var index = PlayerBattleSide.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
-                            SelectedPokemonIndex = index < 0 ? SelectedPokemonIndex : index;
-                            team[index].UpdateHealth(pokemon.Health, pokemon.MaxHealth);
-                        }
-                        else
-                        {
-                            //oppoenent
-                            var req = PlayerSide == 1 ? Data.Request2 : Data.Request1;
-                            var index = req.RequestInfo.side.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
-                            CurrentHealth = pokemon.Health;
-                            OpponentHealth = pokemon.MaxHealth;
-                            OpponentGender = pokemon.Gender;
-                            OpponentId = pokemon.ID;
-                            OpponentLevel = pokemon.Level;
-                            OpponentStatus = pokemon.Status;
-                            IsShiny = pokemon.Shiny;
-                            if (index >= 0)
-                                OpponentStats = new PokemonStats(req.RequestInfo.side.pokemon[index].stats, pokemon.MaxHealth);
-                        }
+                        //if (side == PlayerSide)
+                        //{
+                        //    //player
+                        //    var req = PlayerSide == 1 ? Data.Request1 : Data.Request2;
+                        //    var index = PlayerBattleSide.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
+                        //    SelectedPokemonIndex = index < 0 ? SelectedPokemonIndex : index;
+                        //    team[index].UpdateHealth(pokemon.Health, pokemon.MaxHealth);
+                        //}
+                        //else
+                        //{
+                        //    //oppoenent
+                        //    var req = PlayerSide == 1 ? Data.Request2 : Data.Request1;
+                        //    var index = req.RequestInfo.side.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
+                        //    CurrentHealth = pokemon.Health;
+                        //    OpponentHealth = pokemon.MaxHealth;
+                        //    OpponentGender = pokemon.Gender;
+                        //    OpponentId = pokemon.ID;
+                        //    OpponentLevel = pokemon.Level;
+                        //    OpponentStatus = pokemon.Status;
+                        //    IsShiny = pokemon.Shiny;
+                        //    if (index >= 0)
+                        //        OpponentStats = new PokemonStats(req.RequestInfo.side.pokemon[index].stats, pokemon.MaxHealth);
+                        //}
                     }
                 }
             }
@@ -276,15 +273,15 @@ namespace Poke1Protocol
 
         public void UpdateSelectedPokemon() // While switching to another Pokemon.
         {
-            UpdateSelectedPokemonIndex();
+            //UpdateSelectedPokemonIndex();
         }
 
         private void UpdateSelectedPokemonIndex()
         {
-            if (GetActivePokemon != null)
-            {
-                SelectedPokemonIndex = _team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == GetActivePokemon.personality);
-            }
+            if (!PlayerBattleSide.pokemon.Any(pl => pl.active))
+                return;
+            SelectedPokemonIndex = _team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality 
+            == PlayerBattleSide.pokemon.FirstOrDefault(pl => pl.active).personality);
         }
 
         private void UpdateBattlePokemon(PSXAPI.Response.Payload.BattlePokemon[] pokemon)
@@ -322,14 +319,13 @@ namespace Poke1Protocol
                 ResponseID = request.RequestID;
                 PlayerBattleSide = p1.RequestInfo.side;
 
-                if (_team is null || _team.Count <= 0)
-                    SelectedPokemonIndex = p1.RequestInfo.side.pokemon.ToList().IndexOf(activePokemon);
-                else
-                    SelectedPokemonIndex = _team.IndexOf(_team.Find(p => p.PokemonData.Pokemon.Payload.Personality == activePokemon.personality));
                 UpdateSelectedPokemonIndex();
+
                 var pokemons = p1.RequestInfo.side.pokemon;
-                if (p1.RequestInfo is null) return;
-                if (p1.RequestInfo.active != null)
+
+                PlayerRequest = p1.RequestInfo;
+
+                if (p1.RequestInfo != null && p1.RequestInfo.active != null)
                 {
                     PlayerAcivePokemon = new List<SwitchedPokemon>();
                     for (var i = 0; i < p1.RequestInfo.active.Length; i++)
@@ -337,14 +333,8 @@ namespace Poke1Protocol
                         if (p1.RequestInfo.active[i].trainer.ToLowerInvariant() != _playerName.ToLowerInvariant())
                             continue;
                         var newPoke = GetSwitchedPokemon(pokemons[i]);
-                        if (pokemons[i].active && pokemons[i].moveData.Length == 1)
-                            RepeatAttack = true;
                         PlayerAcivePokemon.Add(newPoke);
                     }
-                }
-                else
-                {
-                    PlayerAcivePokemon = null;
                 }
             }
             else
@@ -367,10 +357,9 @@ namespace Poke1Protocol
                 if (!IsWild && opponent.trainer != null)
                     TrainerName = opponent.trainer;
                 ResponseID = p2.RequestID;               
-                var opAbility = opponent.baseAbility.ToLowerInvariant().Replace(" ", "");
+
                 var pokemons = p2.RequestInfo.side.pokemon;
-                if (p2.RequestInfo is null) return;
-                if (p2.RequestInfo.active != null)
+                if (p2.RequestInfo != null && p2.RequestInfo.active != null)
                 {
                     OpponentActivePokemon = new List<SwitchedPokemon>();
                     for (var i = 0; i < p2.RequestInfo.active.Length; i++)
@@ -381,7 +370,8 @@ namespace Poke1Protocol
                 }
                 else
                 {
-                    OpponentActivePokemon = null;
+                    if (p2.RequestInfo.side.pokemon.All(p => p.condition.Contains("fnt")))
+                        OpponentActivePokemon = null;
                 }
             }
             IsTrapped = GetActivePokemon?.maybeTrapped == true || GetActivePokemon?.maybeDisabled == true;
@@ -420,21 +410,6 @@ namespace Poke1Protocol
                                 {
                                     ": "
                                 }, StringSplitOptions.None);
-                            if (((damageTaker[0].Contains("p1") && PlayerSide == 1)
-                                || (damageTaker[0].Contains("p2") && PlayerSide == 2)) 
-                                && !info[3].Contains("fnt"))
-                            {
-                                var st = Regex.Replace(info[3], @"[a-zA-Z]+", "");
-                                int currentHp = Convert.ToInt32(st.Split('/')[0]);
-                                int maxHp = Convert.ToInt32(st.Split('/')[1]);
-                                if (SelectedPokemonIndex >= 0)
-                                    team[SelectedPokemonIndex].UpdateHealth(currentHp, maxHp);
-                            }
-                            else if (((damageTaker[0].Contains("p1") && PlayerSide != 1)
-                                || (damageTaker[0].Contains("p2") && PlayerSide != 2)))
-                            {
-                                CurrentHealth = 0;
-                            }
                             break;
                         case "move":
 
@@ -640,6 +615,7 @@ namespace Poke1Protocol
             switchedPoke.Moves = side.moveData;
             switchedPoke.Personality = side.personality;
             switchedPoke.Trainer = side.trainer;
+            switchedPoke.Sent = side.active;
             return switchedPoke;
         }
     }
@@ -668,5 +644,7 @@ namespace Poke1Protocol
         public string Trainer = null;
 
         public int Personality = -1;
+
+        public bool Sent = false;
     }
 }

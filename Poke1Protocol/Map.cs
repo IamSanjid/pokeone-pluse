@@ -551,7 +551,7 @@ namespace Poke1Protocol
                 && TileTypes[x, y] != 2327 && TileTypes[x, y] != 2832 && TileTypes[x, y] != 2261 && TileTypes[x, y] != 2311
                 && TileTypes[x, y] != 2262 && TileTypes[x, y] != 2295 && TileTypes[x, y] != 2792 && TileTypes[x, y] != 2263
                     && (TileZones[x, y] != 0 && TileZones[x, y] != 5) && !HasLink(x, y)
-                    && GetCollider(x, y) <= 0 && TileHeight[x, y] <= 0;
+                    && GetCollider(x, y) <= 0;
         }
 
         public bool IsPc(int x, int y)

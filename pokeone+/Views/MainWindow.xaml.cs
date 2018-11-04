@@ -530,7 +530,7 @@ namespace pokeone_plus
         {
             Dispatcher.InvokeAsync(delegate
             {
-                LogMessage($"You've received a {box.Type}!", Brushes.Tomato);
+                LogMessage($"You've received a {box.Type} Loot Box!", Brushes.Tomato);
             });
         }
 
@@ -774,13 +774,9 @@ namespace pokeone_plus
 
         private void LogMessage(string message, Brush color)
         {
-            var test = new TextRange(MessageTextBox.Document.ContentEnd, MessageTextBox.Document.ContentEnd);
-            test.Text = "[" + DateTime.Now.ToLongTimeString() + "] " + message + '\r';
-
-            // Coloring there.
-            test.ApplyPropertyValue(TextElement.ForegroundProperty, color);
-            FileLog.Append(test.Text);
-            CleanRichtTextBox(MessageTextBox);
+            var text = "[" + DateTime.Now.ToLongTimeString() + "] " + message;
+            AppendLineToRichTextBox(MessageTextBox, text, color);
+            FileLog.Append(text);
         }
         private void LogMessage(string message)
         {
@@ -1007,7 +1003,7 @@ namespace pokeone_plus
             await LoadScript(Bot.Settings.LastScript);
         }
 
-        public static void AppendLineToRichTextBox(RichTextBox richTextBox, string message)
+        public static void AppendLineToRichTextBox(RichTextBox richTextBox, string message, Brush color = null)
         {
             Paragraph para;
             TextRange r = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
@@ -1026,15 +1022,20 @@ namespace pokeone_plus
                 para.LineHeight = 10;
             }
 
-            para.Inlines.Add(new Run(message));
+            if (color != null)
+            {
+                para.Inlines.Add(new Run(message)
+                {
+                    Foreground = color
+                });
+            }
+            else
+            {
+                para.Inlines.Add(new Run(message));
+            }
 
             richTextBox.Document.Blocks.Add(para);
 
-            CleanRichtTextBox(richTextBox);
-        }
-
-        public static void CleanRichtTextBox(RichTextBox richTextBox)
-        {
             TextRange range = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
             if (range.Text.Length > 12000)
             {
@@ -1045,7 +1046,7 @@ namespace pokeone_plus
                 {
                     text = text.Substring(index + Environment.NewLine.Length);
                 }
-                long lines = text.Lines();
+                long lines = StringExtentions.Lines(text);
                 int ln = Convert.ToInt32(lines);
                 ln = richTextBox.Document.Blocks.Count - ln;
                 for (int i = 0; i <= richTextBox.Document.Blocks.Count - 1; i++)
