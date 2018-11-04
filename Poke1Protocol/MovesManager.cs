@@ -111,6 +111,11 @@ namespace Poke1Protocol
                     if (_idsToMoves[i].Name.ToLowerInvariant() == moveName.ToLowerInvariant())
                         return _idsToMoves[i];
                 }
+                for (int i = 0; i < MovesCount; i++)
+                {
+                    if (Moves[i].BattleID.ToLowerInvariant() == moveName.ToLowerInvariant())
+                        return Moves[i];
+                }
             }
             return null;
         }

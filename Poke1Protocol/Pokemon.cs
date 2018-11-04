@@ -83,7 +83,7 @@ namespace Poke1Protocol
                     var i = 0;
                     foreach(var move in data.Pokemon.Payload.Moves)
                     {
-                        Moves[i] = new PokemonMove(data.Pokemon.Payload.Moves.ToList().IndexOf(move) + 1, MovesManager.Instance.GetMoveId(move.Move.ToString()), move.MaxPP, move.PP);
+                        Moves[i] = new PokemonMove(i + 1, MovesManager.Instance.GetMoveId(move.Move.ToString()), move.MaxPP, move.PP);
                         i++;
                     }
                 }
@@ -132,7 +132,7 @@ namespace Poke1Protocol
                     var i = 0;
                     foreach (var move in data.Pokemon.Payload.Moves)
                     {
-                        Moves[i] = new PokemonMove(data.Pokemon.Payload.Moves.ToList().IndexOf(move) + 1, MovesManager.Instance.GetMoveId(move.Move.ToString()), move.MaxPP, move.PP);
+                        Moves[i] = new PokemonMove(i + 1, MovesManager.Instance.GetMoveId(move.Move.ToString()), move.MaxPP, move.PP);
                         i++;
                     }
                 }

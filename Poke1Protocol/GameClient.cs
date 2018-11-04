@@ -1218,6 +1218,9 @@ namespace Poke1Protocol
                         case PSXAPI.Response.Level lvl:
                             OnLevel(lvl);
                             break;
+                        case PSXAPI.Response.Learn learn:
+                            OnLearn(learn);
+                            break;
                         case PSXAPI.Response.LoginQueue queue:
                             SystemMessage?.Invoke("Login Queue: Average Wait-Time: " + queue.EstimatedTime.FormatTimeString());
                             break;
@@ -1331,6 +1334,16 @@ namespace Poke1Protocol
                     Console.WriteLine(proto._Name);
 #endif
                 }
+            }
+        }
+
+        private void OnLearn(Learn learn)
+        {
+            if (learn.Result == LearnResult.Success)
+            {
+                var getMove = MovesManager.Instance.GetMoveNameFromEnum(learn.Move);
+                var poke = PokemonManager.Instance.GetNameFromEnum(learn.Pokemon.Pokemon.Payload.PokemonID);
+                SystemMessage?.Invoke($"{poke} learned the move {getMove}!");
             }
         }
 
@@ -1638,6 +1651,8 @@ namespace Poke1Protocol
         private void SortTeam()
         {
             Team = Team.OrderBy(poke => poke.Uid).ToList();
+            CheckEvolving();
+            CheckLearningMove();
         }
 
         private void OnBattle(PSXAPI.Response.Battle battle)
@@ -1662,7 +1677,35 @@ namespace Poke1Protocol
                 // encounter message coz the server doesn't send it.
                 _fishingTimeout.Cancel();
                 _needToSendSync = true;
-                var firstEncounterMessage = ActiveBattle.IsWild ? ActiveBattle.IsShiny ?
+                var firstEncounterMessage = "";
+                if (ActiveBattle.OpponentActivePokemon != null && ActiveBattle.OpponentActivePokemon.Count > 1)
+                {
+                    if (ActiveBattle.OpponentActivePokemon.Count == 2)
+                    {
+                        var pok = ActiveBattle.OpponentActivePokemon[0];
+                        var afterPok = ActiveBattle.OpponentActivePokemon[1];
+                        firstEncounterMessage = ActiveBattle.IsWild ? pok.Shiny ? $"Wild shiny {PokemonManager.Instance.Names[pok.ID]} and " : $"Wild {PokemonManager.Instance.Names[pok.ID]} and "
+                            + (afterPok.Shiny ? $"shiny {PokemonManager.Instance.Names[pok.ID]} has appeared!" : $"{PokemonManager.Instance.Names[pok.ID]} has appeared!") 
+                            :
+                            pok.Shiny ? $"Opponents sent out shiny {PokemonManager.Instance.Names[pok.ID]} and " : $"Opponents sent out {PokemonManager.Instance.Names[pok.ID]} and "
+                            + (afterPok.Shiny ? $"shiny {PokemonManager.Instance.Names[pok.ID]}!" : $"{PokemonManager.Instance.Names[pok.ID]}!");
+                    }
+                    else if (ActiveBattle.OpponentActivePokemon.Count == 3)
+                    {
+                        var pok = ActiveBattle.OpponentActivePokemon[0];
+                        var afterPok = ActiveBattle.OpponentActivePokemon[1];
+                        var thridPoke = ActiveBattle.OpponentActivePokemon[2];
+                        firstEncounterMessage = ActiveBattle.IsWild ? pok.Shiny ? $"Wild shiny {PokemonManager.Instance.Names[pok.ID]}, " : $"Wild {PokemonManager.Instance.Names[pok.ID]}, "
+                            + (afterPok.Shiny ? $"shiny {PokemonManager.Instance.Names[afterPok.ID]} and " : $"{PokemonManager.Instance.Names[afterPok.ID]} and ") +
+                            (thridPoke.Shiny ? $"shiny {PokemonManager.Instance.Names[thridPoke.ID]} has appeared!" : $"{PokemonManager.Instance.Names[thridPoke.ID]} has appeared!") 
+                            :
+                            pok.Shiny ? $"Opponents sent out shiny {PokemonManager.Instance.Names[pok.ID]}, " : $"Opponents sent out {PokemonManager.Instance.Names[pok.ID]}, "
+                            + (afterPok.Shiny ? $"shiny {PokemonManager.Instance.Names[afterPok.ID]} and " : $"{PokemonManager.Instance.Names[afterPok.ID]} and ") +
+                            (thridPoke.Shiny ? $"shiny {PokemonManager.Instance.Names[thridPoke.ID]}!" : $"{PokemonManager.Instance.Names[thridPoke.ID]}!");
+                    }
+                }
+                else
+                    firstEncounterMessage = ActiveBattle.IsWild ? ActiveBattle.IsShiny ?
                         $"A wild shiny {PokemonManager.Instance.Names[ActiveBattle.OpponentId]} has appeared!"
                         : $"A wild {PokemonManager.Instance.Names[ActiveBattle.OpponentId]} has appeared!" : ActiveBattle.IsShiny ?
                         $"Opponent sent out shiny {PokemonManager.Instance.Names[ActiveBattle.OpponentId]}!"
@@ -1931,8 +1974,8 @@ namespace Poke1Protocol
 
                         SendJoinChannel(mapChatChannel);
                     }
-                    if (MapName != movement.Map)
-                        LoadMap(movement.Map);
+                    LoadMap(movement.Map);
+
                 }
                 if (sync)
                     Resync(MapName == movement.Map);
@@ -1959,12 +2002,10 @@ namespace Poke1Protocol
                             CloseChannel(Channels["Map"].ChannelName);
                         SendJoinChannel(mapChatChannel);
                     }
-                    if (MapName != syncP.Map)
-                        LoadMap(syncP.Map);
+                    LoadMap(syncP.Map);
                 }
                 if (sync)
                     Resync(MapName == syncP.Map);
-
             }
 
             CheckArea();
@@ -2218,9 +2259,6 @@ namespace Poke1Protocol
                     Team.Add(new Pokemon(poke));
                 }
             }
-
-            CheckEvolving();
-            CheckLearningMove();
 
             CanUseCut = HasCutAbility();
             CanUseSmashRock = HasRockSmashAbility();

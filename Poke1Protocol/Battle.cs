@@ -288,9 +288,7 @@ namespace Poke1Protocol
         {
             for (var i = 0; i < pokemon.Length; i++)
             {
-                var condition = pokemon[i].condition;
-                var details = pokemon[i].details;
-                var newPoke = GetSwitchedPokemon(details, condition);
+                var newPoke = GetSwitchedPokemon(pokemon[i]);
                 var index = _team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == pokemon[i].personality); // find the correct index...
                 if (index >= 0)
                 {
@@ -335,6 +333,10 @@ namespace Poke1Protocol
                         var newPoke = GetSwitchedPokemon(pokemons[i]);
                         PlayerAcivePokemon.Add(newPoke);
                     }
+                }
+                else if (p1.RequestInfo.forceSwitch is null)
+                {
+                    PlayerAcivePokemon = null;
                 }
             }
             else
@@ -413,8 +415,7 @@ namespace Poke1Protocol
                             break;
                         case "move":
 
-                            if (caught) break;
-
+                            
                             //Attacker
                             var attacker = info[2].Split(new string[]
                                 {
@@ -429,7 +430,8 @@ namespace Poke1Protocol
                             }, StringSplitOptions.None);
                             
 
-                            BattleMessage?.Invoke($"{attacker[1]} used {move}!");
+                            BattleMessage?.Invoke((attacker[0].Contains("p1") && PlayerSide == 1) 
+                                || (attacker[0].Contains("p2") && PlayerSide == 2) ? $"Your {attacker[1]} used {move}!" : IsWild ? $"Wild {attacker[1]} used {move}" : $"Opponent's {attacker[1]} used {move}");
                             if (info.Length > 5)
                             {
                                 var happened = info[5];
@@ -443,7 +445,8 @@ namespace Poke1Protocol
                             {
                                 ": "
                             }, StringSplitOptions.None);
-                            BattleMessage?.Invoke(!died[0].Contains("p1") ? IsWild ? $"Wild {died[1]} fainted!" : $"Opponent's {died[1]} fainted!" : $"Your {died[1]} fainted!");
+                            BattleMessage?.Invoke((died[0].Contains("p1") && PlayerSide == 2) 
+                                || (died[0].Contains("p2") && PlayerSide == 1) ? IsWild ? $"Wild {died[1]} fainted!" : $"Opponent's {died[1]} fainted!" : $"Your {died[1]} fainted!");
                             break;
                         case "--run":
                             if (info[3] == "0")

@@ -26,8 +26,11 @@ namespace Poke1Bot.Modules
             if (_learningTimeout.IsActive && !_learningTimeout.Update())
             {
                 IsLearning = false;
-                _bot.Game.LearnMove(PokemonUniqueId, LearningMoveId, MoveToForget);
-                return true;
+                if (MoveToForget > 0)
+                {
+                    _bot.Game.LearnMove(PokemonUniqueId, LearningMoveId, MoveToForget);
+                    return true;
+                }
             }
             return _learningTimeout.IsActive;
         }
@@ -51,7 +54,7 @@ namespace Poke1Bot.Modules
             MoveToForget = 0;
             _learningTimeout.Set(_bot.Rand.Next(1000, 3000));
 
-            _bot.Script.OnLearningMove(MovesManager.Instance.GetMoveNameFromEnum(moveId), pokemonUid);
+            _bot.Script?.OnLearningMove(MovesManager.Instance.GetMoveNameFromEnum(moveId), pokemonUid);
         }
     }
 }

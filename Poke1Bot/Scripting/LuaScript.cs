@@ -219,7 +219,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["hasBadgeId"] = new Func<int, bool>(HasBadgeId);
                 _lua.Globals["countBadges"] = new Func<int>(CountBadges);
 
-                _lua.Globals["getNearestMoveAbleCell"] = new Func<DynValue[], DynValue[]>(GetNearestMoveAbleCell);
+                _lua.Globals["getNearestMovableCell"] = new Func<DynValue[], DynValue[]>(GetNearestMovableCell);
 
                 // Quest conditions
                 _lua.Globals["isMainQuestId"] = new Func<string, bool>(IsMainQuestId);
@@ -2318,7 +2318,7 @@ namespace Poke1Bot.Scripting
         }
 
         // API: Gets the nearest moveable cell from specified cells.
-        private DynValue[] GetNearestMoveAbleCell(params DynValue[] values)
+        private DynValue[] GetNearestMovableCell(params DynValue[] values)
         {
             if (values.Length != 1 && values.Length != 3 ||
                 (values.Length == 1 && values[0].Type != DataType.Table) ||
@@ -2326,22 +2326,22 @@ namespace Poke1Bot.Scripting
                     && (values[0].Type != DataType.Number || values[1].Type != DataType.Number
                     || values[2].Type != DataType.Number)))
             {
-                Fatal("error: getNearestMoveAbleCell: must receive either a table or three numbers.");
+                Fatal("error: getNearestMovableCell: must receive either a table or three numbers.");
                 return null;
             }
             if (values.Length == 1)
             {
                 values = values[0].Table.Values.ToArray();
             }
-            return GetNearestMoveAbleCell((int)values[0].Number, (int)values[1].Number, (int)values[2].Number, (int)values[3].Number);
+            return GetNearestMovableCell((int)values[0].Number, (int)values[1].Number, (int)values[2].Number, (int)values[3].Number);
         }
 
         // API: Gets the nearest moveable cell from specified cells.
-        private DynValue[] GetNearestMoveAbleCell(int minX, int minY, int maxX, int maxY)
+        private DynValue[] GetNearestMovableCell(int minX, int minY, int maxX, int maxY)
         {
             if (minX > maxX || minY > maxY)
             {
-                Fatal("error: getNearestMoveAbleCell: the maximum cell cannot be less than the minimum cell.");
+                Fatal("error: getNearestMovableCell: the maximum cell cannot be less than the minimum cell.");
                 return null;
             }
             var cells = new List<Tuple<int, int>>();

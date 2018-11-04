@@ -9,8 +9,6 @@ namespace Poke1Bot.Modules
     public class AutoLootBoxOpener
     {
 
-        Poke1Protocol.LootboxHandler _lootBoxHandler;
-
         private List<PSXAPI.Response.Lootbox> lootboxes = new List<PSXAPI.Response.Lootbox>();
 
         private Poke1Protocol.ProtocolTimeout _lootBoxTimeOut = new Poke1Protocol.ProtocolTimeout();
@@ -43,7 +41,6 @@ namespace Poke1Bot.Modules
         {
             if (_bot.Game != null)
             {
-                _lootBoxHandler = _bot.Game.RecievedLootBoxes;
                 _bot.Game.ConnectionClosed += Client_ConnectionClosed;
                 _bot.Game.ConnectionFailed += Client_ConnectionClosed;
                 _bot.Game.LootBoxOpened += Game_LootBoxOpened;
@@ -58,7 +55,6 @@ namespace Poke1Bot.Modules
 
         private void Game_LootBoxOpened(PSXAPI.Response.Payload.LootboxRoll[] arg1, PSXAPI.Response.LootboxType arg2)
         {
-            _lootBoxHandler = null;
             _lootBoxTimeOut.Set();
         }
 
@@ -69,17 +65,14 @@ namespace Poke1Bot.Modules
 
             if (IsEnabled && _bot.Game.IsLoggedIn && _bot.Game.IsMapLoaded)
             {
-                if (_lootBoxHandler is null)
-                    _lootBoxHandler = _bot.Game.RecievedLootBoxes;
-
                 if (!_lootBoxTimeOut.IsActive && lootboxes.Count > 0)
                 {
                     var loot = lootboxes[0];
                     lootboxes.RemoveAt(0);
-                    if (loot.Remaining > 0 && !_bot.Game.IsInBattle)
+                    if (loot.Remaining > 0)
                     {
                         _bot.Game.OpenLootBox(Poke1Protocol.ConvertLootBoxType.FromResponseType(loot.Type));
-                        _lootBoxTimeOut.Set(lootboxes.Count > 0 ? _bot.Rand.Next(2500, 3000) :  _bot.Rand.Next(2000, 2500));
+                        _lootBoxTimeOut.Set(1500);
                     }
                 }
                 if (lootboxes.Count == 0)
@@ -89,7 +82,6 @@ namespace Poke1Bot.Modules
 
         private void Client_ConnectionClosed(Exception ex)
         {
-            _lootBoxHandler = null;
             lootboxes.Clear();
         }
     }
