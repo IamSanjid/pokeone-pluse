@@ -403,7 +403,6 @@ namespace Poke1Protocol
 
         private void CheckEvolving()
         {
-            if (IsInBattle) return;
             var evolvingPoke = Team.FirstOrDefault(pok => pok.CanEvolveTo > PSXAPI.Response.Payload.PokemonID.missingno);
 
             if (evolvingPoke != null)
@@ -414,7 +413,6 @@ namespace Poke1Protocol
 
         private void CheckLearningMove()
         {
-            if (IsInBattle) return;
             var learningPoke = Team.FirstOrDefault(pok => pok.LearnableMoves != null && pok.LearnableMoves.Length > 0);
 
             if (learningPoke != null)
@@ -1210,6 +1208,12 @@ namespace Poke1Protocol
 #if DEBUG
                             Console.WriteLine($"Server Version: {gr.ServerVersion}\nUsers Online: {gr.UsersOnline}");
 #endif
+                            break;
+                        case PSXAPI.Response.Broadcast cast:
+                            if (cast.Type == BroadcastMessageType.System)
+                                SystemMessage?.Invoke(cast.Message);
+                            else
+                                LogMessage?.Invoke($"Got a Broadcast message: {cast.Message}");
                             break;
                         case PSXAPI.Response.Request req:
                             OnRequests(req);

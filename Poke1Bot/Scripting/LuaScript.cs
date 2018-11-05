@@ -2364,13 +2364,13 @@ namespace Poke1Bot.Scripting
         // API: Gets the nearest moveable cell from specified cells.
         private DynValue[] GetNearestMovableCell(params DynValue[] values)
         {
-            if (values.Length != 1 && values.Length != 3 ||
+            if (values.Length != 1 && values.Length != 4 ||
                 (values.Length == 1 && values[0].Type != DataType.Table) ||
-                (values.Length == 3
+                (values.Length == 4
                     && (values[0].Type != DataType.Number || values[1].Type != DataType.Number
-                    || values[2].Type != DataType.Number)))
+                    || values[2].Type != DataType.Number || values[3].Type != DataType.Number)))
             {
-                Fatal("error: getNearestMovableCell: must receive either a table or three numbers.");
+                Fatal("error: getNearestMovableCell: must receive either a table or four numbers.");
                 return null;
             }
             if (values.Length == 1)

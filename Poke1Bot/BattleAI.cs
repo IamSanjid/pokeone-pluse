@@ -6,6 +6,15 @@ namespace Poke1Bot
 {
     public class BattleAI
     {
+        private enum ResultUsingMove
+        {
+            None,
+            Fainted,
+            NoLongerUsable,
+            NoUsableMove,
+            Success
+        }
+
         private const int DoubleEdge = 38;
         private const int DragonRage = 82;
         private const int DreamEater = 138;
@@ -66,76 +75,17 @@ namespace Poke1Bot
                 {
                     if (Side is null) return false;
 
+                    var results = new List<ResultUsingMove>();
                     var req = _client.ActiveBattle.PlayerRequest;
-
-                    var result = false;
-                    var fainted = false;
-
-                    if (req.forceSwitch != null && req.forceSwitch.Length > 0)
-                    {
-                        var switches = 0;
-                        for (int j = 0; j < req.forceSwitch.Length; j++)
-                        {
-                            if (j < ActivePokemons.Length)
-                            {
-                                if (!req.forceSwitch[j])
-                                {
-                                    var poke = ActivePokemons[j];
-                                    if (poke.Health > 0)
-                                        result = UseAttack(true, j);
-                                    else if (Side.pokemon.Any(p => !p.active && Battle.GetSwitchedPokemon(p).Health > 0))
-                                    {
-                                        result = false;
-                                        fainted = true;
-                                    }
-                                    else
-                                    {
-                                        _client.UseAttack(0, j + 1);
-                                        if (!fainted)
-                                            result = true;
-                                    }
-                                }
-                                else
-                                {
-                                    switches = req.forceSwitch.ToList().FindAll(x => x).Count;
-                                    if (Side.pokemon.ToList().FindAll(p => !p.active && Battle.GetSwitchedPokemon(p).Health > 0).Count >= switches)
-                                    {
-                                        fainted = true;
-                                    }
-                                    else
-                                    {
-                                        _client.UseAttack(0, j + 1);
-
-                                        result = true;
-                                    }
-                                }
-                            }
-                        }
-                        if (fainted)
-                            return false;
-                        return result;
-                    }
 
                     var i = 0;
                     foreach (var poke in ActivePokemons)
                     {
-                        if (poke.Health > 0)
-                            result = UseAttack(true, i);
-                        else if (Side.pokemon.Any(p => !p.active && Battle.GetSwitchedPokemon(p).Health > 0))
-                        {
-                            fainted = true;
-                            result = false;
-                        }
-                        else
-                        {
-                            _client.UseAttack(0, i + 1);
-                            if (!fainted)
-                                result = true;
-                        }
-
+                        var result = UseAttack(true, i);
+                        results.Add(result);
                         i++;
                     }
-                    return result;
+                    return results.All(r => r == ResultUsingMove.Success);
                 }
             }
             return false;
@@ -149,76 +99,15 @@ namespace Poke1Bot
                 {
                     if (Side is null) return false;
 
-                    var req = _client.ActiveBattle.PlayerRequest;
-
-                    var result = false;
-                    var fainted = false;
-
-                    if (req.forceSwitch != null && req.forceSwitch.Length > 0)
-                    {
-                        var switches = 0;
-                        for (int j = 0; j < req.forceSwitch.Length; j++)
-                        {
-                            if (j < ActivePokemons.Length)
-                            {
-                                if (!req.forceSwitch[j])
-                                {
-                                    var poke = ActivePokemons[j];
-                                    if (poke.Health > 0)
-                                        result = UseAttack(false, j);
-                                    else if (Side.pokemon.Any(p => !p.active && Battle.GetSwitchedPokemon(p).Health > 0))
-                                    {
-                                        result = false;
-                                        fainted = true;
-                                    }
-                                    else
-                                    {
-                                        _client.UseAttack(0, j + 1);
-                                        if (!fainted)
-                                            result = true;
-                                    }
-                                }
-                                else
-                                {
-                                    switches = req.forceSwitch.ToList().FindAll(x => x).Count;
-                                    if (Side.pokemon.ToList().FindAll(p => !p.active && Battle.GetSwitchedPokemon(p).Health > 0).Count >= switches)
-                                    {
-                                        fainted = true;
-                                    }
-                                    else
-                                    {
-                                        _client.UseAttack(0, j + 1);
-
-                                        result = true;
-                                    }
-                                }
-                            }
-                        }
-                        if (fainted)
-                            return false;
-                        return result;
-                    }
+                    var result = ResultUsingMove.None;
 
                     var i = 0;
                     foreach (var poke in ActivePokemons)
                     {
-                        if (poke.Health > 0)
-                            result = UseAttack(false, i);
-                        else if (Side.pokemon.Any(p => !p.active && Battle.GetSwitchedPokemon(p).Health > 0))
-                        {
-                            fainted = true;
-                            result = false;
-                        }
-                        else
-                        {
-                            _client.UseAttack(0, i + 1);
-                            if (!fainted)
-                                result = true;
-                        }
-
+                        result = UseAttack(false, i);
                         i++;
                     }
-                    return result;
+                    return result == ResultUsingMove.Success;
                 }
             }
             return false;
@@ -272,7 +161,10 @@ namespace Poke1Bot
                             }
                         }
                         else
+                        {
                             result = _client.ChangePokemon(i + 1, changeWith);
+                            pokemon.Sent = true;
+                        }
                     }
                 }
             }
@@ -303,7 +195,10 @@ namespace Poke1Bot
                             }
                         }
                         else
+                        {
                             result = _client.ChangePokemon(i + 1, changeWith);
+                            pokemon.Sent = true;
+                        }
                     }
                 }
             }            
@@ -326,10 +221,11 @@ namespace Poke1Bot
             moveName = moveName.ToUpperInvariant();
             for (int i = 0; i < ActivePokemon.Moves.Length; ++i)
             {
-                PokemonMove move = ActivePokemon.Moves[i];
-                if (move.CurrentPoints > 0)
+                var activePoke = ActivePokemons.FirstOrDefault(x => x.Personality == ActivePokemon.PokemonData.Pokemon.Payload.Personality);
+                var move = activePoke.Moves[i];
+                if (move.pp > 0 && !move.disabled)
                 {
-                    MovesManager.MoveData moveData = MovesManager.Instance.GetMoveData(move.Id);
+                    MovesManager.MoveData moveData = MovesManager.Instance.GetMoveData(move.id);
                     if (moveData.Name.ToUpperInvariant() == moveName)
                     {
                         _client.UseAttack(i + 1);
@@ -345,8 +241,9 @@ namespace Poke1Bot
 
             for (int i = 0; i < ActivePokemon.Moves.Length; ++i)
             {
-                PokemonMove move = ActivePokemon.Moves[i];
-                if (move.CurrentPoints > 0)
+                var activePoke = ActivePokemons.FirstOrDefault(x => x.Personality == ActivePokemon.PokemonData.Pokemon.Payload.Personality);
+                var move = activePoke.Moves[i];
+                if (move.pp > 0 && !move.disabled)
                 {
                     _client.UseAttack(i + 1);
                     return true;
@@ -398,11 +295,25 @@ namespace Poke1Bot
             return false;
         }
 
-        private bool UseAttack(bool useBestAttack, int activePoke)
+        private ResultUsingMove UseAttack(bool useBestAttack, int activePoke)
         {
-            var activePokemon = ActivePokemons[activePoke];
+            var activePokemon = Battle.GetSwitchedPokemon(Side.pokemon.FirstOrDefault(p => p.personality == ActivePokemons[activePoke].Personality));
             if (!IsPokemonUsable(activePokemon))
-                return false;
+            {
+                if (!(Side.pokemon.ToList().FindAll(x => !x.active && (IsPokemonUsable(x) || Battle.GetSwitchedPokemon(x).Health > 0)).Count > 0))
+                {
+                    if (activePokemon.Health <= 0)
+                    {
+                        _client.UseAttack(0, activePoke + 1);
+                    }
+                    else
+                    {
+                        _client.UseAttack(1, activePoke + 1, 1);
+                    }
+                    return ResultUsingMove.Success;
+                }
+                return ResultUsingMove.Fainted;
+            }
 
             PSXAPI.Response.Payload.BattleMove bestMove = null;
             int bestIndex = 0;
@@ -415,18 +326,19 @@ namespace Poke1Bot
             int opponentIndex = 0;
 
             if (activePoke < 0)
-                return false;
+                return ResultUsingMove.NoLongerUsable;
 
             for (int j = 0; j < ActiveOpponentPokemons.Length; j++)
             {
                 if (ActiveOpponentPokemons[j].Health <= 0)
                     continue;
+
                 for (int i = 0; i < activePokemon.Moves.Length; i++)
                 {
                     var move = activePokemon.Moves[i];
                     if (move is null)
                         continue;
-                    if (move.pp == 0)
+                    if (move.pp == 0 || move.disabled)
                         continue;
 
                     MovesManager.MoveData moveData = MovesManager.Instance.GetMoveData(move.id);
@@ -510,15 +422,14 @@ namespace Poke1Bot
             if (useBestAttack && bestMove != null)
             {
                 _client.UseAttack(bestIndex + 1, activePoke + 1, opponentIndex + 1);
-                return true;
+                return ResultUsingMove.Success;
             }
             if (!useBestAttack && worstMove != null)
             {
                 _client.UseAttack(worstIndex + 1, activePoke + 1, opponentIndex + 1);
-                return true;
+                return ResultUsingMove.Success;
             }
-
-            return false;
+            return ResultUsingMove.NoLongerUsable;
         }
 
         private bool UseAttack(bool useBestAttack)
