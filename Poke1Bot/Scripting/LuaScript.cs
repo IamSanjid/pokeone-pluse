@@ -286,6 +286,8 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["sortTeamRangeByLevelDescending"] = new Func<int, int, bool>(SortTeamRangeByLevelDescending);
                 _lua.Globals["buyItem"] = new Func<string, int, bool>(BuyItem);
                 _lua.Globals["closeShop"] = new Func<bool>(CloseShop);
+                _lua.Globals["giveItemToPokemon"] = new Func<string, int, bool>(GiveItemToPokemon);
+                _lua.Globals["removeHeldItemFromPokemon"] = new Func<int, bool>(RemoveHeldItemFromPokemon);
 
                 // Battle actions
                 _lua.Globals["attack"] = new Func<bool>(Attack);
@@ -1921,6 +1923,48 @@ namespace Poke1Bot.Scripting
 
             return (ExecuteAction(Bot.Game.CloseShop()));
         }
+
+        // API: Give the specified item on the specified pokemon.
+        private bool GiveItemToPokemon(string itemName, int pokemonIndex)
+        {
+            if (!ValidateAction("giveItemToPokemon", false)) return false;
+
+            if (pokemonIndex < 1 || pokemonIndex > Bot.Game.Team.Count)
+            {
+                Fatal("error: giveItemToPokemon: tried to retrieve the non-existing pokémon " + pokemonIndex + ".");
+                return false;
+            }
+
+            InventoryItem item = Bot.Game.GetItemFromName(itemName);
+            if (item == null || item.Quantity == 0)
+            {
+                Fatal("error: giveItemToPokemon: tried to give the non-existing item '" + itemName + "'.");
+                return false;
+            }
+
+            return ExecuteAction(Bot.Game.GiveItemToPokemon(pokemonIndex, item.Id));
+        }
+
+        // API: Take the held item from the specified pokemon. The item will be lost forever.
+        private bool RemoveHeldItemFromPokemon(int index)
+        {
+            if (!ValidateAction("removeHeldItemFromPokemon", false)) return false;
+
+            if (index < 1 || index > Bot.Game.Team.Count)
+            {
+                Fatal("error: removeHeldItemFromPokemon: tried to retrieve the non-existing pokemon " + index + ".");
+                return false;
+            }
+
+            if (Bot.Game.Team[index - 1].ItemHeld == string.Empty)
+            {
+                Fatal("error: removeHeldItemFromPokemon: tried to take the non-existing held item from pokémon '" + index + "'.");
+                return false;
+            }
+
+            return ExecuteAction(Bot.Game.RemoveHeldItemFromPokemon(index));
+        }
+
 
         // API: Uses the most effective offensive move available.
         private bool Attack()

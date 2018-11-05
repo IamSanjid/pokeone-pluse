@@ -188,7 +188,6 @@ namespace Poke1Protocol
         private List<Script> Scripts { get; }
         private List<Script> _cachedScripts { get; }
         private MapUsers _cachedNerbyUsers { get; set; }
-        private PSXAPI.Response.Mount _mountPacket { get; set; }
         public GameClient(GameConnection connection, MapConnection mapConnection)
         {
             _mapClient = new MapClient(mapConnection, this);
@@ -1027,6 +1026,27 @@ namespace Poke1Protocol
             });
         }
 
+        private void SendGiveItem(Guid id, int itemId)
+        {
+            SendProto(new PSXAPI.Request.HoldItem
+            {
+                Item = itemId,
+                Pokemon = id,
+                Remove = false
+            });
+        }
+
+        // The held item will be lost forever
+        private void SendRemoveHeldItem(Guid id)
+        {
+            SendProto(new PSXAPI.Request.HoldItem
+            {
+                Item = 0,
+                Pokemon = id,
+                Remove = true
+            });
+        }
+
         private void SendUseMount()
         {
             SendProto(new PSXAPI.Request.Mount());
@@ -1752,13 +1772,11 @@ namespace Poke1Protocol
             if (mtP.MountType == MountType.Bike || mtP.MountType == MountType.Pokemon)
             {
                 IsBiking = true;
-                IsOnGround = true;
                 IsSurfing = false;
             }
             else if (mtP.MountType == MountType.None)
             {
                 IsBiking = false;
-                IsOnGround = true;
                 IsSurfing = false;
             }
             else if (mtP.MountType == MountType.Surfing)
@@ -1976,6 +1994,10 @@ namespace Poke1Protocol
                     }
                     LoadMap(movement.Map);
 
+                    if (movement.Height == 1)
+                        IsOnGround = false;
+                    else
+                        IsOnGround = true;
                 }
                 if (sync)
                     Resync(MapName == movement.Map);
@@ -2003,6 +2025,10 @@ namespace Poke1Protocol
                         SendJoinChannel(mapChatChannel);
                     }
                     LoadMap(syncP.Map);
+                    if (syncP.Height == 1)
+                        IsOnGround = false;
+                    else
+                        IsOnGround = true;
                 }
                 if (sync)
                     Resync(MapName == syncP.Map);
@@ -2096,7 +2122,7 @@ namespace Poke1Protocol
                 OnLevel(login.Level);
             OnTeamUpdated(login.Inventory.ActivePokemon);
             OnInventoryUpdate(login.Inventory);
-            _mountPacket = login.Mount;
+            OnMountUpdate(login.Mount);
             OnPlayerPosition(login.Position, false);
             ToatlSteps = (int)login.TotalSteps;
 
@@ -2456,6 +2482,44 @@ namespace Poke1Protocol
             }
         }
 
+        public bool GiveItemToPokemon(int pokemonUid, int itemId)
+        {
+            if (!(pokemonUid >= 1 && pokemonUid <= Team.Count))
+            {
+                return false;
+            }
+            InventoryItem item = GetItemFromId(itemId);
+            if (item == null || item.Quantity == 0)
+            {
+                return false;
+            }
+            var pokemonGuid = Team[pokemonUid - 1].UniqueID;
+            if (!_itemUseTimeout.IsActive && !IsInBattle
+                && item.CanBeHeld)
+            {
+                SendGiveItem(pokemonGuid, itemId);
+                _itemUseTimeout.Set();
+                return true;
+            }
+            return false;
+        }
+
+        public bool RemoveHeldItemFromPokemon(int pokemonUid)
+        {
+            if (!(pokemonUid >= 1 && pokemonUid <= Team.Count))
+            {
+                return false;
+            }
+            var pokemonGuid = Team[pokemonUid - 1].UniqueID;
+            if (!_itemUseTimeout.IsActive && Team[pokemonUid - 1].ItemHeld != "")
+            {
+                SendRemoveHeldItem(pokemonGuid);
+                _itemUseTimeout.Set();
+                return true;
+            }
+            return false;
+        }
+
         public void LearnMove(Guid pokemonUniqueId, PSXAPI.Response.Payload.PokemonMoveID learningMoveId, int moveToForget)
         {
             var accept = true;
@@ -2566,7 +2630,6 @@ namespace Poke1Protocol
                 Players.Clear();
                 _removedPlayers.Clear();
                 CheckArea();
-                OnMountUpdate(_mountPacket);
                 MapLoaded?.Invoke(AreaName);
             }
 

@@ -574,7 +574,7 @@ namespace Poke1Protocol
         {
             if (!IsInCurrentArea(x, y)) return false;
             if (OriginalNpcs.Find(s => s.PositionX == x && s.PositionY == y
-                   && s.NpcName.ToLowerInvariant().StartsWith(".rocksmash") && s.Data.Settings.Sprite == 11 && s.IsVisible) != null)
+                   && (s.NpcName.ToLowerInvariant().StartsWith(".rocksmash") || s.Data.Settings.Sprite == 11) && s.IsVisible) != null)
                 return true;
             return false;
         }
@@ -583,7 +583,7 @@ namespace Poke1Protocol
         {
             if (!IsInCurrentArea(x, y)) return false;
             return OriginalNpcs.Find(s => s.PositionX == x && s.PositionY == y
-                && s.NpcName.ToLowerInvariant().StartsWith(".cut") && s.Data.Settings.Sprite == 9 && s.IsVisible) != null;
+                && (s.NpcName.ToLowerInvariant().StartsWith(".cut") || s.Data.Settings.Sprite == 9) && s.IsVisible) != null;
         }
 
         public bool IsGround(int x, int y)
