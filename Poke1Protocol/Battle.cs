@@ -60,6 +60,7 @@ namespace Poke1Protocol
         public PSXAPI.Response.Payload.BattleRequestData PlayerRequest { get; private set; }
 
         public List<SwitchedPokemon> PlayerAllPokemon { get; private set; }
+        public List<SwitchedPokemon> OpponenetAllPokemon { get; private set; }
 
         public PSXAPI.Response.Payload.BattleActive GetActivePokemon
         {
@@ -334,11 +335,11 @@ namespace Poke1Protocol
                     {
                         if (p1.RequestInfo.active[i]?.trainer?.ToLowerInvariant() != _playerName?.ToLowerInvariant())
                             continue;
-                        var newPoke = GetSwitchedPokemon(pokemons[i]);
+                        var newPoke = GetSwitchedPokemon(pokemons.FirstOrDefault(x => x.personality == p1.RequestInfo.active[i].personality));
                         PlayerAcivePokemon.Add(newPoke);
                     }
                 }
-                else if (p1.RequestInfo.forceSwitch is null)
+                else
                 {
                     PlayerAcivePokemon = null;
                 }
@@ -365,19 +366,23 @@ namespace Poke1Protocol
                 ResponseID = p2.RequestID;               
 
                 var pokemons = p2.RequestInfo.side.pokemon;
+                OpponenetAllPokemon = new List<SwitchedPokemon>();
+                foreach(var pkm in pokemons)
+                {
+                    OpponenetAllPokemon.Add(GetSwitchedPokemon(pkm));
+                }
                 if (p2.RequestInfo != null && p2.RequestInfo.active != null)
                 {
                     OpponentActivePokemon = new List<SwitchedPokemon>();
                     for (var i = 0; i < p2.RequestInfo.active.Length; i++)
                     {
-                        var newPoke = GetSwitchedPokemon(pokemons[i]);
+                        var newPoke = GetSwitchedPokemon(pokemons.FirstOrDefault(x => x.personality == p2.RequestInfo.active[i].personality));
                         OpponentActivePokemon.Add(newPoke);
                     }
                 }
                 else
                 {
-                    if (p2.RequestInfo.side.pokemon.All(p => p.condition.Contains("fnt")))
-                        OpponentActivePokemon = null;
+                    OpponentActivePokemon = null;
                 }
             }
             IsTrapped = GetActivePokemon?.maybeTrapped == true || GetActivePokemon?.maybeDisabled == true;

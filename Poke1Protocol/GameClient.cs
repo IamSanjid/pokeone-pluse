@@ -576,11 +576,11 @@ namespace Poke1Protocol
                     case ScriptRequestType.SelectItem:
                         if (_dialogResponses.Count <= 0)
                         {
-                            SendScriptResponse(script.ScriptID, "0");
+                            SendScriptResponse(script.ScriptID, "-1");
                         }
                         else
                         {
-                            SendScriptResponse(script.ScriptID, GetNextDialogResponse().ToString());
+                            SendScriptResponse(script.ScriptID, GetNextSelectionResponse() ?? "-1");
                         }
                         _dialogTimeout.Set();
                         break;
@@ -592,6 +592,16 @@ namespace Poke1Protocol
 
                 }
             }
+        }
+
+        private string GetNextSelectionResponse()
+        {
+            if (_dialogResponses.Count > 0)
+            {
+                object response = _dialogResponses.Dequeue();
+                return response.ToString() ?? null;
+            }
+            return null;
         }
 
         private int GetNextDialogResponse()

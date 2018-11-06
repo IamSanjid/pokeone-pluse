@@ -155,10 +155,13 @@ namespace Poke1Bot
                         {
                             for (int j = 0; j < req.forceSwitch.Length; j++)
                             {
-                                if (req.forceSwitch[j] && !pokemon.Sent)
+                                if (req.forceSwitch[j])
                                 {
-                                    result = _client.ChangePokemon(i + 1, j + 1);
-                                    pokemon.Sent = true;
+                                    if (!pokemon.Sent)
+                                    {
+                                        result = _client.ChangePokemon(i + 1, j + 1);
+                                        pokemon.Sent = true;
+                                    }
                                 }
                                 else if (!req.forceSwitch[j])
                                 {
@@ -194,11 +197,18 @@ namespace Poke1Bot
                         {
                             for (int j = 0; j < req.forceSwitch.Length; j++)
                             {
-                                if (req.forceSwitch[j] && !pokemon.Sent)
+                                if (req.forceSwitch[j])
                                 {
-                                    result = _client.ChangePokemon(i + 1, j + 1);
-                                    pokemon.Sent = true;
-                                    break;
+                                    if (!pokemon.Sent)
+                                    {
+                                        result = _client.ChangePokemon(i + 1, j + 1);
+                                        pokemon.Sent = true;
+                                    }
+                                }
+                                else if (!req.forceSwitch[j])
+                                {
+                                    _client.UseAttack(0, j + 1, 0);
+                                    result = true;
                                 }
                             }
                         }
