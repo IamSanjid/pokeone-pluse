@@ -565,6 +565,9 @@ namespace pokeone_plus
                         _bot.LogMessage($"Object = Name:{obj.Name} ID:{obj.ID} Tag:{obj.tag}");
                     var area = _bot.Game.Map.CheckArea(ingameX, ingameY);
                     _bot.LogMessage($"AreaName:{area?.AreaName}StartX:{area?.StartX}StartY:{area?.StartY}EndX:{area?.EndX}EndY:{area?.EndY}");
+                    var npc = _bot.Game.Map.Npcs.Find(n => n.PositionX == ingameX && n.PositionY == ingameY);
+                    if (npc != null)
+                        _bot.LogMessage($"NPC Data({ingameX},{ingameY}): SightAction:{npc.Data.Settings.SightAction} Facing:{npc.Data.Settings.Facing}");
                 }
 #endif
             }

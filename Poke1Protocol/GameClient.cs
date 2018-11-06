@@ -188,6 +188,9 @@ namespace Poke1Protocol
         private List<Script> Scripts { get; }
         private List<Script> _cachedScripts { get; }
         private MapUsers _cachedNerbyUsers { get; set; }
+
+        private Npc _npcBattler;
+
         public GameClient(GameConnection connection, MapConnection mapConnection)
         {
             _mapClient = new MapClient(mapConnection, this);
@@ -290,10 +293,21 @@ namespace Poke1Protocol
 
             UpdateScript();
             UpdatePlayers();
+            UpdateNpcBattle();
             UpdateRegularPacket();
             UpdateMovement();
             UpdateTime();
             RecievedLootBoxes.UpdateFreeLootBox();
+        }
+
+        private void UpdateNpcBattle()
+        {
+            if (_npcBattler == null) return;
+
+            if (_npcBattleTimeout.IsActive) return;
+
+            TalkToNpc(_npcBattler);
+            _npcBattler = null;
         }
 
         private void UpdateTime()
@@ -436,7 +450,7 @@ namespace Poke1Protocol
                 if (ApplyMovement(direction))
                 {
                     SendMovement(direction.ToMoveActions(), fromX, fromY); // PokeOne sends the (x,y) without applying the movement(but it checks the collisions) to the server.
-                    _movementTimeout.Set(IsBiking ? 200 : 400);
+                    _movementTimeout.Set(IsBiking ? 150 : 300);
                     if (Map.HasLink(PlayerX, PlayerY))
                     {
                         _teleportationTimeout.Set();
@@ -449,9 +463,19 @@ namespace Poke1Protocol
                             battler.CanBattle = false;
                             LogMessage?.Invoke("The NPC " + (battler.NpcName ?? battler.Id.ToString()) + " saw us, interacting...");
                             int distanceFromBattler = DistanceBetween(PlayerX, PlayerY, battler.PositionX, battler.PositionY);
-                            _npcBattleTimeout.Set(Rand.Next(1000, 2000) + distanceFromBattler);
                             ClearPath();
-                            MoveToBattleWithNpc?.Invoke(battler);
+                            if (battler.Data.Settings.SightAction.ToLowerInvariant() == "player to npc")
+                            {
+                                //npcs which will ask the player to come to them lol....
+                                _npcBattleTimeout.Set(Rand.Next(1000, 2000) + distanceFromBattler);
+                                MoveToBattleWithNpc?.Invoke(battler);
+                            }
+                            else
+                            {
+                                //npcs which going to come to the player...
+                                _npcBattleTimeout.Set(Rand.Next(1000, 2000) + distanceFromBattler * 300);
+                                _npcBattler = battler;
+                            }
                         }
                     }
                     _lootBoxTimeout.Cancel();
@@ -548,6 +572,17 @@ namespace Poke1Protocol
                     case ScriptRequestType.Shop:
                         OpenedShop = new Shop(script.Data, script.ScriptID);
                         ShopOpened?.Invoke(OpenedShop);
+                        break;
+                    case ScriptRequestType.SelectItem:
+                        if (_dialogResponses.Count <= 0)
+                        {
+                            SendScriptResponse(script.ScriptID, "0");
+                        }
+                        else
+                        {
+                            SendScriptResponse(script.ScriptID, GetNextDialogResponse().ToString());
+                        }
+                        _dialogTimeout.Set();
                         break;
                     default:
 #if DEBUG

@@ -11,7 +11,6 @@ namespace Poke1Bot
             None,
             Fainted,
             NoLongerUsable,
-            NoUsableMove,
             Success
         }
 
@@ -61,6 +60,7 @@ namespace Poke1Bot
         public SwitchedPokemon[] ActivePokemons => _client.ActiveBattle.PlayerAcivePokemon != null ? _client.ActiveBattle.PlayerAcivePokemon.ToArray() : null;
         public SwitchedPokemon[] ActiveOpponentPokemons => _client.ActiveBattle.OpponentActivePokemon != null ? _client.ActiveBattle.OpponentActivePokemon.ToArray() : null;
         public PSXAPI.Response.Payload.BattleSide Side => _client.ActiveBattle.PlayerBattleSide;
+        public List<SwitchedPokemon> Pokemons => _client.ActiveBattle.PlayerAllPokemon;
 
         public bool UseMandatoryAction()
         {
@@ -69,6 +69,9 @@ namespace Poke1Bot
 
         public bool Attack()
         {
+            var req = _client.ActiveBattle.PlayerRequest;
+            if (req.forceSwitch != null && req.forceSwitch.Length > 0 && req.forceSwitch.Any(t => t))
+                return false;
             if (ActivePokemons != null && ActiveOpponentPokemons != null)
             {
                 if (ActiveOpponentPokemons.Length > 0)
@@ -76,7 +79,6 @@ namespace Poke1Bot
                     if (Side is null) return false;
 
                     var results = new List<ResultUsingMove>();
-                    var req = _client.ActiveBattle.PlayerRequest;
 
                     var i = 0;
                     foreach (var poke in ActivePokemons)
@@ -158,6 +160,11 @@ namespace Poke1Bot
                                     result = _client.ChangePokemon(i + 1, j + 1);
                                     pokemon.Sent = true;
                                 }
+                                else if (!req.forceSwitch[j])
+                                {
+                                    _client.UseAttack(0, j + 1, 0);
+                                    result = true;
+                                }
                             }
                         }
                         else
@@ -191,6 +198,7 @@ namespace Poke1Bot
                                 {
                                     result = _client.ChangePokemon(i + 1, j + 1);
                                     pokemon.Sent = true;
+                                    break;
                                 }
                             }
                         }
@@ -297,10 +305,10 @@ namespace Poke1Bot
 
         private ResultUsingMove UseAttack(bool useBestAttack, int activePoke)
         {
-            var activePokemon = Battle.GetSwitchedPokemon(Side.pokemon.FirstOrDefault(p => p.personality == ActivePokemons[activePoke].Personality));
+            var activePokemon = ActivePokemons[activePoke];
             if (!IsPokemonUsable(activePokemon))
             {
-                if (!(Side.pokemon.ToList().FindAll(x => !x.active && (IsPokemonUsable(x) || Battle.GetSwitchedPokemon(x).Health > 0)).Count > 0))
+                if (Pokemons.FindAll(x => !x.Sent && (IsPokemonUsable(x) || x.Health > 0)).Count <= 0)
                 {
                     if (activePokemon.Health <= 0)
                     {

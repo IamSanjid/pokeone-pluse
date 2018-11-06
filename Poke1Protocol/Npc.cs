@@ -17,7 +17,7 @@ namespace Poke1Protocol
         public string NpcName { get; }
         public int LosLength { get; private set; }
         public Direction Direction { get; }
-        public bool IsMoving => _path.Length > 0 || Data.Settings.LookRandomly;
+        public bool IsMoving => _path.Length > 0;
         public NPCData Data { get; }
         public bool IsBattler { get; private set; }
         public bool CanBattle { get; set; }

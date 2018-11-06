@@ -59,6 +59,8 @@ namespace Poke1Protocol
 
         public PSXAPI.Response.Payload.BattleRequestData PlayerRequest { get; private set; }
 
+        public List<SwitchedPokemon> PlayerAllPokemon { get; private set; }
+
         public PSXAPI.Response.Payload.BattleActive GetActivePokemon
         {
             get
@@ -286,9 +288,11 @@ namespace Poke1Protocol
 
         private void UpdateBattlePokemon(PSXAPI.Response.Payload.BattlePokemon[] pokemon)
         {
+            PlayerAllPokemon = new List<SwitchedPokemon>();
             for (var i = 0; i < pokemon.Length; i++)
             {
                 var newPoke = GetSwitchedPokemon(pokemon[i]);
+                PlayerAllPokemon.Add(newPoke);
                 var index = _team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == pokemon[i].personality); // find the correct index...
                 if (index >= 0)
                 {
@@ -328,7 +332,7 @@ namespace Poke1Protocol
                     PlayerAcivePokemon = new List<SwitchedPokemon>();
                     for (var i = 0; i < p1.RequestInfo.active.Length; i++)
                     {
-                        if (p1.RequestInfo.active[i].trainer.ToLowerInvariant() != _playerName.ToLowerInvariant())
+                        if (p1.RequestInfo.active[i]?.trainer?.ToLowerInvariant() != _playerName?.ToLowerInvariant())
                             continue;
                         var newPoke = GetSwitchedPokemon(pokemons[i]);
                         PlayerAcivePokemon.Add(newPoke);
@@ -445,6 +449,8 @@ namespace Poke1Protocol
                             {
                                 ": "
                             }, StringSplitOptions.None);
+                            if (died[1] == "MissingNo.")
+                                break;
                             BattleMessage?.Invoke((died[0].Contains("p1") && PlayerSide == 2) 
                                 || (died[0].Contains("p2") && PlayerSide == 1) ? IsWild ? $"Wild {died[1]} fainted!" : $"Opponent's {died[1]} fainted!" : $"Your {died[1]} fainted!");
                             break;
@@ -649,5 +655,7 @@ namespace Poke1Protocol
         public int Personality = -1;
 
         public bool Sent = false;
+
+        public bool WillSent = false;
     }
 }

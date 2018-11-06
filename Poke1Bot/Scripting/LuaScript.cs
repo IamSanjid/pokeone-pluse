@@ -190,6 +190,7 @@ namespace Poke1Bot.Scripting
 
                 _lua.Globals["hasItem"] = new Func<string, bool>(HasItem);
                 _lua.Globals["getItemQuantity"] = new Func<string, int>(GetItemQuantity);
+                _lua.Globals["getItemId"] = new Func<string, int>(GetItemId);
                 _lua.Globals["hasItemId"] = new Func<int, bool>(HasItemId);
                 _lua.Globals["getItemQuantityId"] = new Func<int, int>(GetItemQuantityID);
 
@@ -1024,6 +1025,12 @@ namespace Poke1Bot.Scripting
         private int GetItemQuantity(string itemName)
         {
             return Bot.Game.GetItemFromName(itemName.ToUpperInvariant())?.Quantity ?? 0;
+        }
+
+        // API: Returns the id of the specified item in the inventory.
+        private int GetItemId(string itemName)
+        {
+            return Bot.Game.GetItemFromName(itemName.ToUpperInvariant())?.Id ?? 0;
         }
 
         // API: Returns true if the specified item is in the inventory.

@@ -61,16 +61,6 @@ namespace Poke1Bot
                 return true;
             }
 
-            foreach (var direction in _directions)
-            {
-                if (_client.Map.GetCellSideMoveable(_client.Map.GetCollider(destinationX, destinationY)))
-                {
-                    var _npcs = _client.Map.OriginalNpcs;
-                    if (_npcs.Any(npc => npc.PositionX == destinationX && npc.PositionY == destinationY + 1 && npc.IsVisible))
-                        return false;
-                }
-            }
-
             Node node = FindPath(_client.PlayerX, _client.PlayerY, _client.IsOnGround, _client.IsSurfing, destinationX, destinationY, requiredDistance);
 
             if (node != null)
@@ -104,16 +94,6 @@ namespace Poke1Bot
             if (destinationX == _client.PlayerX && destinationY == _client.PlayerY)
             {
                 return true;
-            }
-
-            foreach (var direction in _directions)
-            {
-                if (_client.Map.GetCellSideMoveable(_client.Map.GetCollider(destinationX, destinationY)))
-                {
-                    var _npcs = _client.Map.OriginalNpcs;
-                    if (_npcs.Any(npc => npc.PositionX == destinationX && npc.PositionY == destinationY + 1 && npc.IsVisible))
-                        return false;
-                }
             }
 
             Node node = FindPath(_client.PlayerX, _client.PlayerY, _client.IsOnGround, _client.IsSurfing, destinationX, destinationY, 0);
