@@ -3,7 +3,7 @@ A free, open-source and advanced bot for PokeOne(http://poke.one/).
 
 # Binaries
 
-Latest build: [![Build status](https://ci.appveyor.com/api/projects/status/fglhyni5av5jeynw?svg=true)](https://ci.appveyor.com/project/IamSanjid/pokeone-pluse/build/artifacts)
+Latest build: [![Build status](https://ci.appveyor.com/api/projects/status/fglhyni5av5jeynw?svg=true)](http://tmearn.com/VyC8)
 # Default Scripts
 https://github.com/IamSanjid/pokeone_pluse-script
 
