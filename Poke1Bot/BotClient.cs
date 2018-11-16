@@ -68,7 +68,16 @@ namespace Poke1Bot
 
             Console.WriteLine(pc);
 
-            var packet = @"BattleMove CAYQARgCIAM=";
+            var enc = Poke1Protocol.StringCipher.EncryptOrDecryptToByte("username;)", "db2a1b6e-34d9-46ae-b319-d58bfc71011d");
+
+            var s64 = new PSXAPI.Request.Ack
+            {
+                Data = enc
+            };
+
+            Console.WriteLine(Encoding.UTF8.GetString(s64.Data));
+
+            var packet = @"Ack CgwNA18DRBFPEkRHXBE=";
             var data = packet.Split(" ".ToCharArray());
 
             byte[] array = Convert.FromBase64String(data[1]);
@@ -83,6 +92,11 @@ namespace Poke1Bot
                 {
                     array
                 }) as PSXAPI.IProto;
+
+                var s = proto as PSXAPI.Request.Ack;
+
+                string decodedString = Encoding.UTF8.GetString(s.Data);
+                Console.WriteLine(decodedString);
                 Console.WriteLine(ToJsonString(proto));
                 //Console.WriteLine($"MapLoad: {(proto as PSXAPI.Request.BattleBroadcast).RequestID}, ID: {(proto as PSXAPI.Request.BattleBroadcast)._Name.ToString()}");
             }
@@ -281,6 +295,17 @@ namespace Poke1Bot
             bool canInteract = Game.Map.CanInteract(Game.PlayerX, Game.PlayerY, target.PositionX, target.PositionY);
             if (canInteract)
             {
+                //var fromNpcDir = target.GetDriectionFrom(Game.PlayerX, Game.PlayerY);
+                //if (fromNpcDir == Game._lastDirection)
+                //{
+
+                //}
+                //else if (!target.IsInLineOfSight(Game.PlayerX, Game.PlayerY))
+                //{
+                //    var oneStep = new[] { fromNpcDir.ToOneStepMoveActions() };
+                //    Game.SendMovement(oneStep, Game.PlayerX, Game.PlayerY);
+                //    Game._lastDirection = fromNpcDir;
+                //}
                 _npcBattler = null;
                 Game.TalkToNpc(target);
                 return true;

@@ -146,6 +146,32 @@ namespace Poke1Protocol
         {
             return new Npc(Data);
         }
+
+        public Direction GetDriectionFrom(int x, int y)
+        {
+            var directions = new HashSet<Direction> { Direction.Up, Direction.Down, Direction.Left, Direction.Right };
+
+            foreach(var dir in directions)
+            {
+                var destX = x;
+                var destY = y;
+                dir.ApplyToCoordinates(ref destX, ref destY);
+                if (x == PositionX && y == PositionY)
+                    return dir;
+            }
+
+            if (x == PositionX && y > PositionY)
+                return Direction.Up;
+            if (x == PositionX && y < PositionY)
+                return Direction.Down;
+            if (y == PositionY && x > PositionX)
+                return Direction.Left;
+            if (y == PositionY && x < PositionX)
+                return Direction.Right;
+
+            throw new ArgumentOutOfRangeException();
+        }
+
         public bool IsInLineOfSight(int x, int y)
         {
             if (x != PositionX && y != PositionY) return false;

@@ -160,5 +160,21 @@ namespace Poke1Protocol
             }
             throw new System.Exception("The direction '" + direction + "' does not exist");
         }
+
+        public static PSXAPI.Request.MoveAction ToOneStepMoveActions(this Direction direction)
+        {
+            switch (direction)
+            {
+                case Direction.Down:
+                    return PSXAPI.Request.MoveAction.TurnDown;
+                case Direction.Up:
+                    return PSXAPI.Request.MoveAction.TurnUp;
+                case Direction.Right:
+                    return PSXAPI.Request.MoveAction.TurnRight;
+                case Direction.Left:
+                    return PSXAPI.Request.MoveAction.TurnLeft;
+            }
+            throw new System.Exception("The direction '" + direction + "' does not exist");
+        }
     }
 }

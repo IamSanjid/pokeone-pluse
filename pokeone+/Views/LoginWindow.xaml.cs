@@ -24,7 +24,8 @@ namespace pokeone_plus
         #region DRAG_MOVE
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            DragMove();
+            if (e.LeftButton == MouseButtonState.Pressed)
+                DragMove();
         }
         #endregion
 

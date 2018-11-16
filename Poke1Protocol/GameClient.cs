@@ -64,8 +64,11 @@ namespace Poke1Protocol
         private double _lastSentMovement;
         private DateTime _lastGameTime;
         private bool _needToSendSync = false;
-
+        private bool _needToSendAck = false;
         private bool _isLoggedIn = false;
+        public Direction _lastDirection;
+        private bool _wasLoggedIn = false;
+        private Guid _logidId;
 
         public double RunningForSeconds => GetRunningTimeInSeconds();
 
@@ -91,7 +94,7 @@ namespace Poke1Protocol
         //&& !_refreshingPCBox.IsActive
         //&& !_moveRelearnerTimeout.IsActive
 
-        public const string Version = "0.60";
+        public const string Version = "0.62";
 
         private GameConnection _connection;
 
@@ -449,8 +452,9 @@ namespace Poke1Protocol
                 int fromY = PlayerY;
                 if (ApplyMovement(direction))
                 {
-                    SendMovement(direction.ToMoveActions(), fromX, fromY); // PokeOne sends the (x,y) without applying the movement(but it checks the collisions) to the server.
-                    _movementTimeout.Set(IsBiking ? 150 : 300);
+                    _lastDirection = direction;
+                    _movementTimeout.Set(IsBiking ? 180 : 330);
+                    var actions = direction.ToMoveActions().ToList();
                     if (Map.HasLink(PlayerX, PlayerY))
                     {
                         _teleportationTimeout.Set();
@@ -460,6 +464,9 @@ namespace Poke1Protocol
                         Npc battler = Map.Npcs.FirstOrDefault(npc => npc.CanBattle && npc.IsInLineOfSight(PlayerX, PlayerY));
                         if (battler != null)
                         {
+                            var fromNpcDir = battler.GetDriectionFrom(PlayerX, PlayerY);
+                            if (_lastDirection != fromNpcDir)
+                                actions.Add(fromNpcDir.ToOneStepMoveActions());
                             battler.CanBattle = false;
                             LogMessage?.Invoke("The NPC " + (battler.NpcName ?? battler.Id.ToString()) + " saw us, interacting...");
                             int distanceFromBattler = DistanceBetween(PlayerX, PlayerY, battler.PositionX, battler.PositionY);
@@ -478,6 +485,7 @@ namespace Poke1Protocol
                             }
                         }
                     }
+                    SendMovement(actions.ToArray(), fromX, fromY); // PokeOne sends the (x,y) without applying the movement(but it checks the collisions) to the server.
                     _lootBoxTimeout.Cancel();
                 }
                 if (_movements.Count == 0 && _surfAfterMovement)
@@ -745,6 +753,17 @@ namespace Poke1Protocol
             }
         }
 
+        private void SendAck()
+        {
+            _needToSendAck = false;
+            
+            var s = new PSXAPI.Request.Ack
+            {
+                Data = StringCipher.EncryptOrDecryptToByte(PlayerName, _logidId.ToString())
+            };
+            SendProto(s);
+        }
+
         private void SendSwapPokemons(int poke1, int poke2)
         {
             PSXAPI.Request.Reorder packet = new PSXAPI.Request.Reorder
@@ -856,7 +875,7 @@ namespace Poke1Protocol
             }
         }
 
-        private void SendMovement(PSXAPI.Request.MoveAction[] actions, int fromX, int fromY)
+        public void SendMovement(PSXAPI.Request.MoveAction[] actions, int fromX, int fromY)
         {
             OpenedShop = null;
             PlayerStats = null;
@@ -1244,6 +1263,10 @@ namespace Poke1Protocol
                     ping = (int)(DateTime.UtcNow - ((PSXAPI.Response.Ping)proto).DateTimeUtc).TotalMilliseconds;
                     lastPingResponseUtc = DateTime.UtcNow;
                     receivedPing = true;
+                    if (_needToSendAck)
+                    {
+                        SendAck();
+                    }
                 }
                 else
                 {
@@ -2047,6 +2070,7 @@ namespace Poke1Protocol
                         IsOnGround = false;
                     else
                         IsOnGround = true;
+                    _lastDirection = DirectionExtensions.FromPlayerDirectionResponse(movement.Direction);
                 }
                 if (sync)
                     Resync(MapName == movement.Map);
@@ -2149,8 +2173,10 @@ namespace Poke1Protocol
             _isLoggedIn = true;
             PlayerName = login.Username;
 
-            Console.WriteLine("[Login] Authenticated successfully");
+            Console.WriteLine($"[Login] [ID={login.LoginID}] Authenticated successfully");
+            _logidId = login.LoginID;
             LoggedIn?.Invoke();
+            AddDefaultChannels();
 
             if (_currentScript != null)
             {
@@ -2214,8 +2240,6 @@ namespace Poke1Protocol
             {
                 OnGuild(login.Guild);
             }
-
-            AddDefaultChannels();
         }
 
         private void OnQuest(Quest[] quests)
@@ -2689,6 +2713,11 @@ namespace Poke1Protocol
 
             CanUseCut = HasCutAbility();
             CanUseSmashRock = HasRockSmashAbility();
+            if (!_wasLoggedIn)
+            {
+                _wasLoggedIn = true;
+                _needToSendAck = true;
+            }
 #if DEBUG
 
             if (Map.MapDump.Areas != null && Map.MapDump.Areas.Count > 0)
@@ -2995,4 +3024,5 @@ namespace Poke1Protocol
             return result.ToString();
         }
     }
+
 }

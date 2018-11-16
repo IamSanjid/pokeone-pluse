@@ -16,8 +16,7 @@ namespace Poke1Protocol
         private int _socksPort;
         private string _socksUser;
         private string _socksPass;
-
-        private const string _host = "95.183.48.120";
+        private string _host => new Random().Next(1, 2) == 1 ? "95.183.48.120" : "95.183.48.68";
         public GameConnection()
             : base(new ANetwork())
         {

@@ -69,15 +69,14 @@ namespace Poke1Bot
 
         public bool Attack()
         {
+            if (Side is null) return false;
             var req = _client.ActiveBattle.PlayerRequest;
-            if (req.forceSwitch != null && req.forceSwitch.Length > 0 && req.forceSwitch.Any(t => t))
+            if (req.forceSwitch != null && req.forceSwitch.Length > 0)
                 return false;
             if (ActivePokemons != null && ActiveOpponentPokemons != null)
             {
                 if (ActiveOpponentPokemons.Length > 0)
                 {
-                    if (Side is null) return false;
-
                     var results = new List<ResultUsingMove>();
 
                     var i = 0;
@@ -95,21 +94,24 @@ namespace Poke1Bot
 
         public bool WeakAttack()
         {
+            if (Side is null) return false;
+            var req = _client.ActiveBattle.PlayerRequest;
+            if (req.forceSwitch != null && req.forceSwitch.Length > 0)
+                return false;
             if (ActivePokemons != null && ActiveOpponentPokemons != null)
             {
                 if (ActiveOpponentPokemons.Length > 0)
                 {
-                    if (Side is null) return false;
-
-                    var result = ResultUsingMove.None;
+                    var results = new List<ResultUsingMove>();
 
                     var i = 0;
                     foreach (var poke in ActivePokemons)
                     {
-                        result = UseAttack(false, i);
+                        var result = UseAttack(false, i);
+                        results.Add(result);
                         i++;
                     }
-                    return result == ResultUsingMove.Success;
+                    return results.All(r => r == ResultUsingMove.Success);
                 }
             }
             return false;
@@ -144,40 +146,45 @@ namespace Poke1Bot
 
             var req = _client.ActiveBattle.PlayerRequest;
             var result = false;
-            if (Side != null)
+
+            if (req != null && req.forceSwitch != null && req.forceSwitch.Length > 0)
+            {
+                for (int j = 0; j < req.forceSwitch.Length; j++)
+                {
+                    if (req.forceSwitch[j])
+                    {
+                        for (int i = 0; i < Side.pokemon.Length; ++i)
+                        {
+                            var pokemon = Battle.GetSwitchedPokemon(Side.pokemon[i]);
+                            if (!pokemon.Sent && IsPokemonUsable(pokemon))
+                            {
+                                result = _client.ChangePokemon(i + 1, j + 1);
+                                pokemon.Sent = true;
+                                break;
+                            }
+                        }
+                    }
+                    else if (!req.forceSwitch[j])
+                    {
+                        _client.UseAttack(0, j + 1, 0);
+                        result = true;
+                    }
+                }
+            }
+            else
             {
                 for (int i = 0; i < Side.pokemon.Length; ++i)
                 {
                     var pokemon = Battle.GetSwitchedPokemon(Side.pokemon[i]);
-                    if (IsPokemonUsable(pokemon) && !Side.pokemon[i].active)
+                    if (!pokemon.Sent && IsPokemonUsable(pokemon))
                     {
-                        if (req != null && req.forceSwitch != null && req.forceSwitch.Length > 0)
-                        {
-                            for (int j = 0; j < req.forceSwitch.Length; j++)
-                            {
-                                if (req.forceSwitch[j])
-                                {
-                                    if (!pokemon.Sent)
-                                    {
-                                        result = _client.ChangePokemon(i + 1, j + 1);
-                                        pokemon.Sent = true;
-                                    }
-                                }
-                                else if (!req.forceSwitch[j])
-                                {
-                                    _client.UseAttack(0, j + 1, 0);
-                                    result = true;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            result = _client.ChangePokemon(i + 1, changeWith);
-                            pokemon.Sent = true;
-                        }
+                        result = _client.ChangePokemon(i + 1, changeWith);
+                        pokemon.Sent = true;
+                        break;
                     }
                 }
             }
+
             return result;
         }
 
@@ -186,40 +193,44 @@ namespace Poke1Bot
             if (_client.ActiveBattle.IsTrapped) return false;
             var req = _client.ActiveBattle.PlayerRequest;
             var result = false;
-            if (Side != null)
+
+            if (req != null && req.forceSwitch != null && req.forceSwitch.Length > 0)
+            {
+                for (int j = 0; j < req.forceSwitch.Length; j++)
+                {
+                    if (req.forceSwitch[j])
+                    {
+                        for (int i = 0; i < Side.pokemon.Length; ++i)
+                        {
+                            var pokemon = Battle.GetSwitchedPokemon(Side.pokemon[i]);
+                            if (!pokemon.Sent && pokemon.Health > 0)
+                            {
+                                result = _client.ChangePokemon(i + 1, j + 1);
+                                pokemon.Sent = true;
+                                break;
+                            }
+                        }
+                    }
+                    else if (!req.forceSwitch[j])
+                    {
+                        _client.UseAttack(0, j + 1, 0);
+                        result = true;
+                    }
+                }
+            }
+            else
             {
                 for (int i = 0; i < Side.pokemon.Length; ++i)
                 {
                     var pokemon = Battle.GetSwitchedPokemon(Side.pokemon[i]);
-                    if (pokemon.Health > 0 && !Side.pokemon[i].active)
+                    if (!pokemon.Sent && pokemon.Health > 0)
                     {
-                        if (req != null && req.forceSwitch != null && req.forceSwitch.Length > 0)
-                        {
-                            for (int j = 0; j < req.forceSwitch.Length; j++)
-                            {
-                                if (req.forceSwitch[j])
-                                {
-                                    if (!pokemon.Sent)
-                                    {
-                                        result = _client.ChangePokemon(i + 1, j + 1);
-                                        pokemon.Sent = true;
-                                    }
-                                }
-                                else if (!req.forceSwitch[j])
-                                {
-                                    _client.UseAttack(0, j + 1, 0);
-                                    result = true;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            result = _client.ChangePokemon(i + 1, changeWith);
-                            pokemon.Sent = true;
-                        }
+                        result = _client.ChangePokemon(i + 1, changeWith);
+                        pokemon.Sent = true;
+                        break;
                     }
                 }
-            }            
+            }
             return result;
         }
 
