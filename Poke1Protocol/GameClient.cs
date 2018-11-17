@@ -35,6 +35,7 @@ namespace Poke1Protocol
         private ProtocolTimeout _itemUseTimeout = new ProtocolTimeout();
         private ProtocolTimeout _npcBattleTimeout = new ProtocolTimeout();
         private ProtocolTimeout _fishingTimeout = new ProtocolTimeout();
+        private ProtocolTimeout _refreshingPCBox = new ProtocolTimeout();
 
         private Dictionary<string, int> _guildLogos;
 
@@ -90,8 +91,8 @@ namespace Poke1Protocol
                     && !_lootBoxTimeout.IsActive
                     && !_itemUseTimeout.IsActive
                     && !_fishingTimeout.IsActive
-                    && !_npcBattleTimeout.IsActive;
-        //&& !_refreshingPCBox.IsActive
+                    && !_npcBattleTimeout.IsActive
+                    && !_refreshingPCBox.IsActive;
         //&& !_moveRelearnerTimeout.IsActive
 
         public const string Version = "0.62";
@@ -142,6 +143,9 @@ namespace Poke1Protocol
         public event Action<string> ServerCommandException;
         public event Action BattleUpdated;
         public event Action<Npc> MoveToBattleWithNpc;
+        public event Action<List<Pokemon>> PCBoxUpdated;
+
+
         public string[] DialogContent { get; private set; }
         private Queue<object> _dialogResponses = new Queue<object>();
         public bool IsScriptActive { get; private set; }
@@ -152,6 +156,7 @@ namespace Poke1Protocol
         public int PlayerX { get; private set; }
         public int PlayerY { get; private set; }
         public List<Pokemon> Team { get; private set; }
+        public List<Pokemon> CurrentPCBox { get; private set; }
         public List<PlayerQuest> Quests { get; private set; }
         public List<PlayerEffect> Effects { get; private set; }
         public List<InventoryItem> Items { get; private set; }
@@ -159,6 +164,7 @@ namespace Poke1Protocol
         public List<string> Conversations { get; }
         public Dictionary<string, PlayerInfos> Players { get; }
         private Dictionary<string, PlayerInfos> _removedPlayers { get; }
+        private List<InventoryPokemon> _cachedPokemon = new List<InventoryPokemon>();
         private DateTime _updatePlayers;
         public Random Rand { get; }
 
@@ -167,6 +173,11 @@ namespace Poke1Protocol
         public Map Map { get; private set; }
         public int Money { get; private set; }
         public int Gold { get; private set; }
+        public int CurrentPCBoxId { get; private set; }
+        public bool IsPCBoxRefreshing { get; private set; }
+        public int UsedPCBoxes { get; private set; }
+        public int PCTotalPokemon { get; private set; }
+        public PSXAPI.Response.Payload.PokeboxSummary BoxSummary { get; private set; }
         public Dictionary<int, string> Badges { get; private set; }
 
         private List<Direction> _movements;
@@ -176,6 +187,7 @@ namespace Poke1Protocol
 
         public bool IsInBattle { get; private set; }
         public bool IsOnGround { get; private set; }
+        public bool IsPCOpen { get; private set; }
         public bool IsSurfing { get; private set; }
         public bool IsBiking { get; private set; }
         public bool IsLoggedIn => _isLoggedIn && IsConnected && _connection.IsConnected;
@@ -293,6 +305,7 @@ namespace Poke1Protocol
             _fishingTimeout.Update();
             _mountingTimeout.Update();
             _npcBattleTimeout.Update();
+            _refreshingPCBox.Update();
 
             UpdateScript();
             UpdatePlayers();
@@ -300,7 +313,18 @@ namespace Poke1Protocol
             UpdateRegularPacket();
             UpdateMovement();
             UpdateTime();
+            UpdatePC();
             RecievedLootBoxes.UpdateFreeLootBox();
+        }
+
+        private void UpdatePC()
+        {
+            if (!IsPCBoxRefreshing && CurrentPCBox != null)
+            {
+                IsPCOpen = true;
+            }
+            else
+                IsPCOpen = false;
         }
 
         private void UpdateNpcBattle()
@@ -759,7 +783,7 @@ namespace Poke1Protocol
             
             var s = new PSXAPI.Request.Ack
             {
-                Data = StringCipher.EncryptOrDecryptToByte(PlayerName, _logidId.ToString())
+                Data = StringCipher.EncryptOrDecryptToBase64Byte(PlayerName, _logidId.ToString())
             };
             SendProto(s);
         }
@@ -788,6 +812,14 @@ namespace Poke1Protocol
             SendProto(new PSXAPI.Request.Talk
             {
                 NpcID = npcId
+            });
+        }
+
+        private void SendRefreshPCBox(int box)
+        {
+            SendProto(new PSXAPI.Request.Pokemon
+            {
+                Box = box
             });
         }
 
@@ -878,8 +910,7 @@ namespace Poke1Protocol
         public void SendMovement(PSXAPI.Request.MoveAction[] actions, int fromX, int fromY)
         {
             OpenedShop = null;
-            PlayerStats = null;
-
+            CurrentPCBox = null;
             ToatlSteps = ToatlSteps + actions.Length;
 
             var movePacket = new PSXAPI.Request.Move
@@ -1357,7 +1388,7 @@ namespace Poke1Protocol
                             SystemMessage?.Invoke(dMsg.Message);
                             break;
                         case PSXAPI.Response.InventoryPokemon iPoke:
-                            OnTeamUpdated(new PSXAPI.Response.InventoryPokemon[] { iPoke });
+                            OnPokemonUpdated(new PSXAPI.Response.InventoryPokemon[] { iPoke });
                             break;
                         case PSXAPI.Response.DailyLootbox dl:
                             OnLootBoxRecieved(dl);
@@ -1374,8 +1405,11 @@ namespace Poke1Protocol
                         case PSXAPI.Response.InventoryItem invItm:
                             UpdateItems(new PSXAPI.Response.InventoryItem[] { invItm });
                             break;
-                        case PSXAPI.Response.Pokemon poke:
-                            
+                        case PSXAPI.Response.Pokemon pokes:
+                            OnPcPokemon(pokes);
+                            break;
+                        case PSXAPI.Response.Transfer tr:
+                            OnTransfered(tr);
                             break;
                         case PSXAPI.Response.Script sc:
                             OnScript(sc);
@@ -1427,6 +1461,67 @@ namespace Poke1Protocol
 #endif
                 }
             }
+        }
+
+        private void OnTransfered(Transfer tr)
+        {
+            _refreshingPCBox.Cancel();
+            if (tr.Result == TransferResult.Success)
+            {
+                var cachePoke = _cachedPokemon.Find(p => p.Pokemon.UniqueID == tr.Pokemon);
+                if (cachePoke != null)
+                {
+                    cachePoke.Box = tr.Box;
+                    if (cachePoke.Box == 0)
+                    {
+                        cachePoke.Position = Team.Count + 1;
+                        OnPokemonUpdated(new[] { cachePoke });
+                    }
+                    else
+                    {
+                        var inTeam = Team.Find(t => t.UniqueID == cachePoke.Pokemon.UniqueID);
+                        if (inTeam != null)
+                            Team.Remove(inTeam);
+                    }
+                }
+                SortPokemon(Team);
+                PokemonsUpdated?.Invoke();
+            }
+        }
+
+        private void OnPcPokemon(PSXAPI.Response.Pokemon pokes)
+        {
+            _refreshingPCBox.Cancel();
+            CurrentPCBox = new List<Pokemon>();
+            if (pokes.Box == CurrentPCBoxId && pokes.All != null)
+            {
+                foreach(var poke in pokes.All)
+                {
+                    CurrentPCBox.Add(new Pokemon(poke));
+                }
+            }
+
+            if (pokes.BoxSummary != null)
+            {
+                var summ = pokes.BoxSummary;
+                var totalPok = 0;
+                if (summ.UsedBoxes != null)
+                {
+                    foreach (var used in summ.UsedBoxes)
+                    {
+                        var boxId = used.Key;
+                        var total = used.Value;
+
+                        totalPok = totalPok + total;
+                    }
+                    UsedPCBoxes = summ.UsedBoxes.Count;
+                    PCTotalPokemon = totalPok;
+                }
+                BoxSummary = summ;
+            }
+
+            IsPCBoxRefreshing = false;
+            PCBoxUpdated?.Invoke(CurrentPCBox);
         }
 
         private void OnLearn(Learn learn)
@@ -1598,7 +1693,7 @@ namespace Poke1Protocol
                 SystemMessage?.Invoke($"{PokemonManager.Instance.GetNameFromEnum(evolve.Previous)} did not evolve!");
 
             if (evolve.Pokemon != null)
-                OnTeamUpdated(new[] { evolve.Pokemon });
+                OnPokemonUpdated(new[] { evolve.Pokemon });
         }
 
         private void OnPrivateMessage(Message pm)
@@ -1726,23 +1821,38 @@ namespace Poke1Protocol
                             var poke = Team.Find(x => x.PokemonData.Pokemon.UniqueID == id);
 
                             if (i <= Team.Count - 1)
-                                poke.UpdatePosition(i + 1);
+                                poke?.UpdatePosition(i + 1);
 
                             i++;
                         }
                     }
                 }
+                SortPokemon(Team);
+                PokemonsUpdated?.Invoke();
             }
-
-            SortTeam();
-
-            PokemonsUpdated?.Invoke();
-            //else PC box..
+            else
+            {
+                // pc
+                if (IsPCOpen && reorder.Box == CurrentPCBoxId && CurrentPCBox != null)
+                {
+                    var i = 0;
+                    foreach (var id in reorder.Pokemon)
+                    {
+                        var pcPoke = CurrentPCBox.Find(p => p.UniqueID == id);
+                        pcPoke.PokemonData.Box = reorder.Box;
+                        if (i <= CurrentPCBox.Count - 1)
+                            pcPoke?.UpdatePosition(i + 1);
+                        i++;
+                    }
+                }
+                SortPokemon(CurrentPCBox);
+                PCBoxUpdated?.Invoke(CurrentPCBox);
+            }
         }
 
-        private void SortTeam()
+        private void SortPokemon(List<Pokemon> pokemons)
         {
-            Team = Team.OrderBy(poke => poke.Uid).ToList();
+            pokemons = pokemons.OrderBy(poke => poke.Uid).ToList();
             CheckEvolving();
             CheckLearningMove();
         }
@@ -1751,7 +1861,6 @@ namespace Poke1Protocol
         {
             ClearPath();
             _slidingDirection = null;
-            PlayerStats = null;
 
             IsInBattle = !battle.Ended;
 
@@ -1769,6 +1878,7 @@ namespace Poke1Protocol
                 // encounter message coz the server doesn't send it.
                 _fishingTimeout.Cancel();
                 _needToSendSync = true;
+                #region INFORMATION FOR PLAYER
                 var firstEncounterMessage = "";
                 if (ActiveBattle.OpponentActivePokemon != null && ActiveBattle.OpponentActivePokemon.Count > 1)
                 {
@@ -1802,6 +1912,7 @@ namespace Poke1Protocol
                         : $"A wild {PokemonManager.Instance.Names[ActiveBattle.OpponentId]} has appeared!" : ActiveBattle.IsShiny ?
                         $"Opponent sent out shiny {PokemonManager.Instance.Names[ActiveBattle.OpponentId]}!"
                         : $"Opponent sent out {PokemonManager.Instance.Names[ActiveBattle.OpponentId]}!";
+                #endregion
                 BattleMessage?.Invoke(firstEncounterMessage);
                 _battleTimeout.Set(Rand.Next(4000, 6000));
                 BattleStarted?.Invoke();                
@@ -1995,6 +2106,18 @@ namespace Poke1Protocol
                         Map.OriginalNpcs.Find(x => x.Id == npcId).Visible(hide);
                     }
                     OnNpcs(Map.OriginalNpcs);
+                    break;
+                case "openpc":
+                    // Asking default or first Box's pokemon...
+                    if (IsPCOpen)
+                    {
+                        IsPCOpen = false;
+                        CurrentPCBox = null;
+                    }
+                    _refreshingPCBox.Set(Rand.Next(1500, 2000)); // this is the amount of time we wait for an answer
+                    SendRefreshPCBox(1);
+                    CurrentPCBoxId = 1;
+                    IsPCBoxRefreshing = true;
                     break;
             }
         }
@@ -2195,7 +2318,7 @@ namespace Poke1Protocol
             }
             if (login.Level != null)
                 OnLevel(login.Level);
-            OnTeamUpdated(login.Inventory.ActivePokemon);
+            OnPokemonUpdated(login.Inventory.ActivePokemon);
             OnInventoryUpdate(login.Inventory);
             OnMountUpdate(login.Mount);
             OnPlayerPosition(login.Position, false);
@@ -2320,7 +2443,7 @@ namespace Poke1Protocol
             }
             RefreshChannelList?.Invoke();
         }
-        private void OnTeamUpdated(PSXAPI.Response.InventoryPokemon[] pokemons)
+        private void OnPokemonUpdated(PSXAPI.Response.InventoryPokemon[] pokemons)
         {
             if (pokemons is null) return;
             if (pokemons.Length <= 1)
@@ -2331,8 +2454,24 @@ namespace Poke1Protocol
                 if (Team.Count > 0)
                 {
                     var poke = new Pokemon(pokemons[0]);
+
+                    if (poke.PokemonData.Box > 0 && poke.PokemonData.Box == CurrentPCBoxId)
+                    {
+                        // This pokemon data is received when the player transfer a pokemon to the box
+
+                        if (CurrentPCBox is null)
+                            CurrentPCBox = new List<Pokemon>();
+                        CurrentPCBox.Add(poke);
+                        IsPCOpen = true;
+                        IsPCBoxRefreshing = false;
+                    }
+                    else
+                    {
+                        _cachedPokemon.Add(pokemons[0]);
+                    }
+
                     var foundPoke = Team.Find(x => x.PokemonData.Pokemon.UniqueID == pokemons[0].Pokemon.UniqueID);
-                    if (foundPoke != null)
+                    if (foundPoke != null && foundPoke.PokemonData.Box == 0)
                     {
                         foundPoke.UpdatePokemonData(pokemons[0]);
                     }
@@ -2346,7 +2485,21 @@ namespace Poke1Protocol
                     Team.Clear();
                     foreach (var poke in pokemons)
                     {
-                        Team.Add(new Pokemon(poke));
+                        var p = new Pokemon(poke);
+                        if (poke.Box == 0)
+                            Team.Add(p);
+                        else if (p.PokemonData.Box > 0 && p.PokemonData.Box == CurrentPCBoxId)
+                        {
+                            // This pokemon data is received when the player transfer a pokemon to the box
+
+                            if (CurrentPCBox is null)
+                                CurrentPCBox = new List<Pokemon>();
+                            CurrentPCBox.Add(p);
+                            IsPCOpen = true;
+                            IsPCBoxRefreshing = false;
+                        }
+                        else
+                            _cachedPokemon.Add(poke);
                     }
                 }
             }
@@ -2355,7 +2508,21 @@ namespace Poke1Protocol
                 Team.Clear();
                 foreach (var poke in pokemons)
                 {
-                    Team.Add(new Pokemon(poke));
+                    var p = new Pokemon(poke);
+                    if (poke.Box == 0)
+                        Team.Add(p);
+                    else if (p.PokemonData.Box > 0 && p.PokemonData.Box == CurrentPCBoxId)
+                    {
+                        // This pokemon data is received when the player transfer a pokemon to the box
+
+                        if (CurrentPCBox is null)
+                            CurrentPCBox = new List<Pokemon>();
+                        CurrentPCBox.Add(p);
+                        IsPCOpen = true;
+                        IsPCBoxRefreshing = false;
+                    }
+                    else
+                        _cachedPokemon.Add(poke);
                 }
             }
 
@@ -2367,7 +2534,7 @@ namespace Poke1Protocol
                 _swapTimeout.Set(Rand.Next(500, 1000));
             }
 
-            SortTeam();
+            SortPokemon(Team);
             PokemonsUpdated?.Invoke();
         }
 
@@ -2642,6 +2809,118 @@ namespace Poke1Protocol
             _mountingTimeout.Set();
         }
 
+        public bool RefreshPCBox(int boxId)
+        {
+            if (!IsPCOpen || boxId < 1 || boxId > 67 || _refreshingPCBox.IsActive) return false;
+            CurrentPCBox = null;
+            _refreshingPCBox.Set(Rand.Next(1500, 2000)); // this is the amount of time we wait for an answer
+            CurrentPCBoxId = boxId;
+            SendRefreshPCBox(boxId);
+            return true;
+        }
+
+        public bool RefreshCurrentPCBox()
+        {
+            return RefreshPCBox(CurrentPCBoxId);
+        }
+
+        public bool DepositPokemonToPC(int pokemonUid)
+        {
+            if (!IsPCOpen || pokemonUid < 1 || pokemonUid > 6 || Team.Count < pokemonUid)
+            {
+                return false;
+            }
+            var pokeGuid = Team[pokemonUid - 1].UniqueID;
+            SendMovePokemonToPC(pokeGuid);
+            return true;
+        }
+
+        public bool WithdrawPokemonFromPC(int boxId, int boxPokemonId)
+        {
+            if (!IsPCOpen || IsPCBoxRefreshing || Team.Count >= 6 
+                || boxPokemonId < 1 || boxPokemonId > CurrentPCBox.Count)
+            {
+                return false;
+            }
+            var pokemonGuid = CurrentPCBox[boxPokemonId - 1].UniqueID;
+            SendMovePokemonFromPC(pokemonGuid);
+            return true;
+        }
+
+        public bool SwapPokemonFromPC(int boxPokemonId, int teamPokemonUid)
+        {
+            if (!IsPCOpen || IsPCBoxRefreshing || boxPokemonId < 1 || boxPokemonId > CurrentPCBox.Count ||
+                teamPokemonUid < 1 || teamPokemonUid > 6 || Team.Count < teamPokemonUid)
+            {
+                return false;
+            }
+            var boxPokemonGuid = CurrentPCBox[boxPokemonId - 1].UniqueID;
+            var teamPokemonGuid = Team[teamPokemonUid - 1].UniqueID;
+            SendPCSwapPokemon(boxPokemonGuid, teamPokemonGuid);
+            return true;
+        }
+
+        public bool ReleasePokemonFromTeam(int pokemonUid)
+        {
+            if (!IsPCOpen || IsPCBoxRefreshing
+                || pokemonUid < 1 || pokemonUid > 6 || pokemonUid > Team.Count)
+            {
+                return false;
+            }
+            _refreshingPCBox.Set(Rand.Next(1500, 2000));
+            var pokemonGuid = Team[pokemonUid - 1].UniqueID;
+            SendReleasePokemon(pokemonGuid);
+            return true;
+        }
+
+        public bool ReleasePokemonFromPC(int boxUid)
+        {
+            if (!IsPCOpen || IsPCBoxRefreshing
+                || boxUid < 1 || boxUid > CurrentPCBox.Count)
+            {
+                return false;
+            }
+            _refreshingPCBox.Set(Rand.Next(1500, 2000));
+            var pokemonGuid = CurrentPCBox[boxUid - 1].UniqueID;
+            SendReleasePokemon(pokemonGuid);
+            return true;
+        }
+
+        private void SendReleasePokemon(Guid pokemonGuid)
+        {
+            SendProto(new PSXAPI.Request.Release
+            {
+                Pokemon = pokemonGuid
+            });
+        }
+
+        private void SendPCSwapPokemon(Guid boxPokemonGuid, Guid teamPokemonGuid)
+        {
+            SendProto(new PSXAPI.Request.Swap
+            {
+                Pokemon1 = boxPokemonGuid,
+                Pokemon2 = teamPokemonGuid
+            });
+        }
+
+        private void SendMovePokemonFromPC(Guid pokemonGuid)
+        {
+            SendProto(new PSXAPI.Request.Transfer
+            {
+                Box = 0,
+                Pokemon = pokemonGuid
+            });
+        }
+
+        private void SendMovePokemonToPC(Guid pokemonUid)
+        {
+            SendProto(new PSXAPI.Request.Transfer
+            {
+                Box = CurrentPCBoxId,
+                Pokemon = pokemonUid
+            });
+        }
+
         public int DistanceTo(int cellX, int cellY)
         {
             return Math.Abs(PlayerX - cellX) + Math.Abs(PlayerY - cellY);
@@ -2662,6 +2941,7 @@ namespace Poke1Protocol
             OpenedShop = null;
             PlayerStats = null;
             _surfAfterMovement = false;
+            CurrentPCBox = null;
             _slidingDirection = null;
             _dialogResponses.Clear();
             _movementTimeout.Cancel();

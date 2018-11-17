@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Poke1Protocol
 {
@@ -33,7 +28,7 @@ namespace Poke1Protocol
             return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
         }
 
-        public static byte[] EncryptOrDecryptToByte(string plainText, string passPhrase)
+        public static byte[] EncryptOrDecryptToBase64Byte(string plainText, string passPhrase)
         {
             var v = EncryptOrDecrypt(plainText, passPhrase);
             var s64 = Base64Encode(v);

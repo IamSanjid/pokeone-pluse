@@ -222,6 +222,43 @@ namespace Poke1Bot.Scripting
 
                 _lua.Globals["getNearestMovableCell"] = new Func<DynValue[], DynValue[]>(GetNearestMovableCell);
 
+                _lua.Globals["isCurrentPCBoxRefreshed"] = new Func<bool>(IsCurrentPCBoxRefreshed);
+                _lua.Globals["getCurrentPCBoxId"] = new Func<int>(GetCurrentPCBoxId);
+                _lua.Globals["isPCOpen"] = new Func<bool>(IsPCOpen);
+                _lua.Globals["getCurrentPCBoxSize"] = new Func<int>(GetCurrentPCBoxSize);
+                _lua.Globals["getPCBoxCount"] = new Func<int>(GetPCBoxCount);
+                _lua.Globals["getCurrentBoxPokemonCount"] = new Func<int>(GetCurrentBoxPokemonCount);
+                _lua.Globals["getPCPokemonCount"] = new Func<int>(GetPCPokemonCount);
+
+                _lua.Globals["getPokemonIdFromPC"] = new Func<int, int, int>(GetPokemonIdFromPC);
+                _lua.Globals["getPokemonNameFromPC"] = new Func<int, int, string>(GetPokemonNameFromPC);
+                _lua.Globals["getPokemonHealthFromPC"] = new Func<int, int, int>(GetPokemonHealthFromPC);
+                _lua.Globals["getPokemonHealthPercentFromPC"] = new Func<int, int, int>(GetPokemonHealthPercentFromPC);
+                _lua.Globals["getPokemonMaxHealthFromPC"] = new Func<int, int, int>(GetPokemonMaxHealthFromPC);
+                _lua.Globals["getPokemonLevelFromPC"] = new Func<int, int, int>(GetPokemonLevelFromPC);
+                _lua.Globals["getPokemonTotalExperienceFromPC"] = new Func<int, int, int>(GetPokemonTotalExperienceFromPC);
+                _lua.Globals["getPokemonRemainingExperienceFromPC"] = new Func<int, int, int>(GetPokemonRemainingExperienceFromPC);
+                _lua.Globals["getPokemonStatusFromPC"] = new Func<int, int, string>(GetPokemonStatusFromPC);
+                _lua.Globals["getPokemonTypeFromPC"] = new Func<int, int, string[]>(GetPokemonTypeFromPC);
+                _lua.Globals["getPokemonHeldItemFromPC"] = new Func<int, int, string>(GetPokemonHeldItemFromPC);
+                _lua.Globals["getPokemonRemainingPowerPointsFromPC"] = new Func<int, int, int, int>(GetPokemonRemainingPowerPointsFromPC);
+                _lua.Globals["getPokemonMaxPowerPointsFromPC"] = new Func<int, int, int, int>(GetPokemonMaxPowerPointsFromPC);
+                _lua.Globals["isPokemonFromPCShiny"] = new Func<int, int, bool>(IsPokemonFromPCShiny);
+                _lua.Globals["getPokemonMoveNameFromPC"] = new Func<int, int, int, string>(GetPokemonMoveNameFromPC);
+                _lua.Globals["getPokemonMoveAccuracyFromPC"] = new Func<int, int, int, int>(GetPokemonMoveAccuracyFromPC);
+                _lua.Globals["getPokemonMovePowerFromPC"] = new Func<int, int, int, int>(GetPokemonMovePowerFromPC);
+                _lua.Globals["getPokemonMoveTypeFromPC"] = new Func<int, int, int, string>(GetPokemonMoveTypeFromPC);
+                _lua.Globals["getPokemonMoveDamageTypeFromPC"] = new Func<int, int, int, string>(GetPokemonMoveDamageTypeFromPC);
+                _lua.Globals["getPokemonMoveStatusFromPC"] = new Func<int, int, int, bool>(GetPokemonMoveStatusFromPC);
+                _lua.Globals["getPokemonNatureFromPC"] = new Func<int, int, string>(GetPokemonNatureFromPC);
+                _lua.Globals["getPokemonAbilityFromPC"] = new Func<int, int, string>(GetPokemonAbilityFromPC);
+                _lua.Globals["getPokemonStatFromPC"] = new Func<int, int, string, int>(GetPokemonStatFromPC);
+                _lua.Globals["getPokemonEffortValueFromPC"] = new Func<int, int, string, int>(GetPokemonEffortValueFromPC);
+                _lua.Globals["getPokemonIndividualValueFromPC"] = new Func<int, int, string, int>(GetPokemonIndividualValueFromPC);
+                _lua.Globals["getPokemonHappinessFromPC"] = new Func<int, int, int>(GetPokemonHappinessFromPC);
+                _lua.Globals["getPokemonOriginalTrainerFromPC"] = new Func<int, int, string>(GetPokemonOriginalTrainerFromPC);
+                _lua.Globals["getPokemonGenderFromPC"] = new Func<int, int, string>(GetPokemonGenderFromPC);
+
                 // Quest conditions
                 _lua.Globals["isMainQuestId"] = new Func<string, bool>(IsMainQuestId);
                 _lua.Globals["isMainQuest"] = new Func<string, bool>(IsMainQuest);
@@ -289,6 +326,14 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["closeShop"] = new Func<bool>(CloseShop);
                 _lua.Globals["giveItemToPokemon"] = new Func<string, int, bool>(GiveItemToPokemon);
                 _lua.Globals["removeHeldItemFromPokemon"] = new Func<int, bool>(RemoveHeldItemFromPokemon);
+                _lua.Globals["usePC"] = new Func<bool>(UsePC);
+                _lua.Globals["openPCBox"] = new Func<int, bool>(OpenPCBox);
+                _lua.Globals["depositPokemonToPC"] = new Func<int, bool>(DepositPokemonToPC);
+                _lua.Globals["withdrawPokemonFromPC"] = new Func<int, int, bool>(WithdrawPokemonFromPC);
+                _lua.Globals["swapPokemonFromPC"] = new Func<int, int, int, bool>(SwapPokemonFromPC);
+                _lua.Globals["giveItemToPokemon"] = new Func<string, int, bool>(GiveItemToPokemon);
+                _lua.Globals["releasePokemonFromTeam"] = new Func<int, bool>(ReleasePokemonFromTeam);
+                _lua.Globals["releasePokemonFromPC"] = new Func<int, int, bool>(ReleasePokemonFromPC);
 
                 // Battle actions
                 _lua.Globals["attack"] = new Func<bool>(Attack);
@@ -1185,6 +1230,547 @@ namespace Poke1Bot.Scripting
         private bool IsOutside()
         {
             return Bot.Game.Map.IsOutside;
+        }
+
+        // API: Check if the PC is open. Moving close the PC, usePC() opens it.
+        private bool IsPCOpen()
+        {
+            return Bot.Game.IsPCOpen;
+        }
+
+        // API: Move to the PC and opens it, refreshing the first box.
+        private bool UsePC()
+        {
+            if (!ValidateAction("usePc", false)) return false;
+
+            return ExecuteAction(Bot.OpenPC());
+        }
+
+        // API: Open box from the PC.
+        private bool OpenPCBox(int boxId)
+        {
+            if (!ValidateAction("openPCBox", false)) return false;
+
+            if (!Bot.Game.IsPCOpen)
+            {
+                Fatal("error: openPCBox: tried to open box #" + boxId + " while the PC is closed.");
+            }
+            return ExecuteAction(Bot.Game.RefreshPCBox(boxId));
+        }
+
+        // API: Withdraw a pokemon from a known box.
+        private bool WithdrawPokemonFromPC(int boxId, int boxPokemonId)
+        {
+            if (!ValidateAction("withdrawPokemonFromPC", false)) return false;
+
+            if (!IsPCAccessValid("withdrawPokemonFromPC", boxId, boxPokemonId))
+            {
+                return false;
+            }
+
+            if (Bot.Game.WithdrawPokemonFromPC(boxId, boxPokemonId))
+            {
+                return ExecuteAction(Bot.Game.RefreshPCBox(boxId));
+            }
+            return false;
+        }
+
+        // API: Deposit a pokemon to the pc.
+        private bool DepositPokemonToPC(int pokemonUid)
+        {
+            if (!ValidateAction("depositPokemonToPC", false)) return false;
+
+            if (Bot.Game.DepositPokemonToPC(pokemonUid))
+            {
+                return ExecuteAction(Bot.Game.RefreshCurrentPCBox());
+            }
+            return false;
+        }
+
+        // API: Swap a pokemon from the team with a pokemon from the pc.
+        private bool SwapPokemonFromPC(int boxId, int boxPokemonId, int pokemonUid)
+        {
+            if (!ValidateAction("swapPokemonFromPC", false)) return false;
+
+            if (!IsPCAccessValid("swapPokemonFromPC", boxId, boxPokemonId))
+            {
+                return false;
+            }
+
+            if (Bot.Game.SwapPokemonFromPC(boxPokemonId, pokemonUid))
+            {
+                return ExecuteAction(Bot.Game.RefreshCurrentPCBox());
+            }
+            return false;
+        }
+
+        private bool IsPCAccessValid(string functionName, int boxId, int boxPokemonId)
+        {
+            if (!Bot.Game.IsPCOpen)
+            {
+                Fatal("error: " + functionName + ": tried to access box #" + boxId + " while the PC is closed.");
+                return false;
+            }
+            if (Bot.Game.IsPCBoxRefreshing)
+            {
+                Fatal("error: " + functionName + ": tried to access box #" + boxId + " while the box is refreshing.");
+                return false;
+            }
+            if (boxId != Bot.Game.CurrentPCBoxId)
+            {
+                Fatal("error: " + functionName + ": tried to access box #" + boxId + " different from the currently loaded box.");
+                return false;
+            }
+            if (boxPokemonId < 1 || boxPokemonId > Bot.Game.CurrentPCBox.Count)
+            {
+                Fatal("error: " + functionName + ": tried to access the unknown pokemon #" + boxPokemonId + " of the box #" + boxId + ".");
+                return false;
+            }
+            return true;
+        }
+
+        // API: Return the number of pokemon in the current box
+        private int GetCurrentBoxPokemonCount()
+        {
+            if (!Bot.Game.IsPCOpen || Bot.Game.UsedPCBoxes == -1 || Bot.Game.BoxSummary is null 
+                || Bot.Game.BoxSummary?.UsedBoxes is null || Bot.Game.IsPCBoxRefreshing)
+            {
+                return -1;
+            }
+            return Bot.Game.BoxSummary.UsedBoxes[GetCurrentPCBoxId()];
+        }
+
+        // API: Return the number of non-empty boxes in the PC
+        private int GetPCBoxCount()
+        {
+            if (!Bot.Game.IsPCOpen || Bot.Game.UsedPCBoxes == -1 || Bot.Game.IsPCBoxRefreshing)
+            {
+                return -1;
+            }
+            return Bot.Game.UsedPCBoxes;
+        }
+
+        // API: Return the number of pokemon in the PC
+        private int GetPCPokemonCount()
+        {
+            if (!Bot.Game.IsPCOpen || Bot.Game.PCTotalPokemon == -1 || Bot.Game.IsPCBoxRefreshing)
+            {
+                return -1;
+            }
+            return Bot.Game.PCTotalPokemon;
+        }
+
+        // API: Get the active PC Box.
+        private int GetCurrentPCBoxId()
+        {
+            if (!Bot.Game.IsPCOpen)
+            {
+                return -1;
+            }
+            return Bot.Game.CurrentPCBoxId;
+        }
+
+        // API: Is the currentPcBox refreshed yet?
+        private bool IsCurrentPCBoxRefreshed()
+        {
+            if (!Bot.Game.IsPCOpen || Bot.Game.IsPCBoxRefreshing)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        // API: Current box size.
+        private int GetCurrentPCBoxSize()
+        {
+            if (!Bot.Game.IsPCOpen || Bot.Game.IsPCBoxRefreshing)
+            {
+                return -1;
+            }
+            return Bot.Game.CurrentPCBox.Count;
+        }
+
+        // API: Name of the pokemon of the current box matching the ID.
+        private string GetPokemonNameFromPC(int boxId, int boxPokemonId)
+        {
+            if (!IsPCAccessValid("getPokemonNameFromPC", boxId, boxPokemonId))
+            {
+                return null;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Name;
+        }
+
+        // API: Pokedex ID of the pokemon of the current box matching the ID.
+        private int GetPokemonIdFromPC(int boxId, int boxPokemonId)
+        {
+            if (!IsPCAccessValid("getPokemonNationalIdFromPC", boxId, boxPokemonId))
+            {
+                return -1;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Id;
+        }
+
+        // API: Current HP of the pokemon of the current box matching the ID.
+        private int GetPokemonHealthFromPC(int boxId, int boxPokemonId)
+        {
+            if (!IsPCAccessValid("getPokemonCurrentHealthFromPC", boxId, boxPokemonId))
+            {
+                return -1;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].CurrentHealth;
+        }
+
+        // API: Returns the percentage of remaining health of the specified pokémon in the team.
+        private int GetPokemonHealthPercentFromPC(int boxId, int boxPokemonId)
+        {
+            if (!IsPCAccessValid("getPokemonCurrentHealthPercentFromPC", boxId, boxPokemonId))
+            {
+                return -1;
+            }
+            Pokemon pokemon = Bot.Game.CurrentPCBox[boxPokemonId - 1];
+            return pokemon.CurrentHealth * 100 / pokemon.MaxHealth;
+        }
+
+        // API: Max HP of the pokemon of the current box matching the ID.
+        private int GetPokemonMaxHealthFromPC(int boxId, int boxPokemonId)
+        {
+            if (!IsPCAccessValid("getPokemonMaxHealthFromPC", boxId, boxPokemonId))
+            {
+                return -1;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].MaxHealth;
+        }
+
+        // API: Level of the pokemon of the current box matching the ID.
+        private int GetPokemonLevelFromPC(int boxId, int boxPokemonId)
+        {
+            if (!IsPCAccessValid("getPokemonMaxHealthFromPC", boxId, boxPokemonId))
+            {
+                return -1;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Level;
+        }
+
+        // API: Total of experience cost of a level for the pokemon of the current box matching the ID.
+        private int GetPokemonTotalExperienceFromPC(int boxId, int boxPokemonId)
+        {
+            if (!IsPCAccessValid("getPokemonTotalXPFromPC", boxId, boxPokemonId))
+            {
+                return -1;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Experience.NextExperience;
+        }
+
+        // API: Remaining experience before the next level of the pokemon of the current box matching the ID.
+        private int GetPokemonRemainingExperienceFromPC(int boxId, int boxPokemonId)
+        {
+            if (!IsPCAccessValid("getPokemonRemainingXPFromPC", boxId, boxPokemonId))
+            {
+                return -1;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Experience.RemainingExperience;
+        }
+
+        // API: Shyniness of the pokemon of the current box matching the ID.
+        private bool IsPokemonFromPCShiny(int boxId, int boxPokemonId)
+        {
+            if (!IsPCAccessValid("isPokemonFromPCShiny", boxId, boxPokemonId))
+            {
+                return false;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].IsShiny;
+        }
+
+        // API: Move of the pokemon of the current box matching the ID.
+        private string GetPokemonMoveNameFromPC(int boxId, int boxPokemonId, int moveId)
+        {
+            if (!IsPCAccessValid("getPokemonMoveNameFromPC", boxId, boxPokemonId))
+            {
+                return null;
+            }
+            if (moveId < 1 || moveId > 4)
+            {
+                Fatal("error: getPokemonMoveNameFromPC: tried to access an impossible move #" + moveId + ".");
+                return null;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Moves[moveId - 1].Name;
+        }
+
+        // API: Returns the move accuracy of the specified pokémon in the box at the specified index.
+        private int GetPokemonMoveAccuracyFromPC(int boxId, int boxPokemonId, int moveId)
+        {
+            if (!IsPCAccessValid("getPokemonMoveAccuracyFromPC", boxId, boxPokemonId))
+            {
+                return -1;
+            }
+            if (moveId < 1 || moveId > 4)
+            {
+                Fatal("error: getPokemonMoveAccuracyFromPC: tried to access an impossible move #" + moveId + ".");
+                return -1;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Moves[moveId - 1].Data.Accuracy;
+        }
+
+        // API: Returns the move power of the specified pokémon in the box at the specified index.
+        private int GetPokemonMovePowerFromPC(int boxId, int boxPokemonId, int moveId)
+        {
+            if (!IsPCAccessValid("getPokemonMovePowerFromPC", boxId, boxPokemonId))
+            {
+                return -1;
+            }
+            if (moveId < 1 || moveId > 4)
+            {
+                Fatal("error: getPokemonMovePowerFromPC: tried to access an impossible move #" + moveId + ".");
+                return -1;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Moves[moveId - 1].Data.RealPower;
+        }
+
+        // API: Returns the move type of the specified pokémon in the box at the specified index.
+        private string GetPokemonMoveTypeFromPC(int boxId, int boxPokemonId, int moveId)
+        {
+            if (!IsPCAccessValid("getPokemonMoveTypeFromPC", boxId, boxPokemonId))
+            {
+                return null;
+            }
+            if (moveId < 1 || moveId > 4)
+            {
+                Fatal("error: getPokemonMoveTypeFromPC: tried to access an impossible move #" + moveId + ".");
+                return null;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Moves[moveId - 1].Data.Type.ToString();
+        }
+
+        // API: Returns the move damage type of the specified pokémon in the box at the specified index.
+        private string GetPokemonMoveDamageTypeFromPC(int boxId, int boxPokemonId, int moveId)
+        {
+            if (!IsPCAccessValid("getPokemonMoveDamageTypeFromPC", boxId, boxPokemonId))
+            {
+                return null;
+            }
+            if (moveId < 1 || moveId > 4)
+            {
+                Fatal("error: getPokemonMoveDamageTypeFromPC: tried to access an impossible move #" + moveId + ".");
+                return null;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Moves[moveId - 1].Data.DamageType.ToString();
+        }
+
+        // API: Returns true if the move of the specified pokémon in the box at the specified index can apply a status .
+        private bool GetPokemonMoveStatusFromPC(int boxId, int boxPokemonId, int moveId)
+        {
+            if (!IsPCAccessValid("getPokemonMoveStatusTypeFromPC", boxId, boxPokemonId))
+            {
+                return false;
+            }
+            if (moveId < 1 || moveId > 4)
+            {
+                Fatal("error: getPokemonMoveStatusTypeFromPC: tried to access an impossible move #" + moveId + ".");
+                return false;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Moves[moveId - 1].Data.Status;
+        }
+
+        // API: Current move PP of the pokemon of the current box matching the ID.
+        private int GetPokemonRemainingPowerPointsFromPC(int boxId, int boxPokemonId, int moveId)
+        {
+            if (!IsPCAccessValid("getPokemonMoveCurrentPPFromPC", boxId, boxPokemonId))
+            {
+                return -1;
+            }
+            if (moveId < 1 || moveId > 4)
+            {
+                Fatal("error: getPokemonMoveCurrentPPFromPC: tried to access an impossible move #" + moveId + ".");
+                return -1;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Moves[moveId - 1].CurrentPoints;
+        }
+
+        // API: Max move PP of the pokemon of the current box matching the ID.
+        private int GetPokemonMaxPowerPointsFromPC(int boxId, int boxPokemonId, int moveId)
+        {
+            if (!IsPCAccessValid("getPokemonMoveMaxPPFromPC", boxId, boxPokemonId))
+            {
+                return -1;
+            }
+            if (moveId < 1 || moveId > 4)
+            {
+                Fatal("error: getPokemonMoveMaxPPFromPC: tried to access an impossible move #" + moveId + ".");
+                return -1;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Moves[moveId - 1].MaxPoints;
+        }
+
+        // API: Nature of the pokemon of the current box matching the ID.
+        private string GetPokemonNatureFromPC(int boxId, int boxPokemonId)
+        {
+            if (!IsPCAccessValid("getPokemonNatureFromPC", boxId, boxPokemonId))
+            {
+                return null;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Nature;
+        }
+
+        // API: Ability of the pokemon of the current box matching the ID.
+        private string GetPokemonAbilityFromPC(int boxId, int boxPokemonId)
+        {
+            if (!IsPCAccessValid("getPokemonAbilityFromPC", boxId, boxPokemonId))
+            {
+                return null;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Ability.Name;
+        }
+
+        // API: Returns the value for the specified stat of the specified pokémon in the PC.
+        private int GetPokemonStatFromPC(int boxId, int boxPokemonId, string statType)
+        {
+            if (!IsPCAccessValid("getPokemonStatFromPC", boxId, boxPokemonId))
+            {
+                return -1;
+            }
+
+            if (!_stats.ContainsKey(statType.ToUpperInvariant()))
+            {
+                Fatal("error: getPokemonStatFromPC: the stat '" + statType + "' does not exist.");
+                return 0;
+            }
+
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Stats.GetStat(_stats[statType.ToUpperInvariant()]);
+        }
+
+        // API: Returns the effort value for the specified stat of the specified pokémon in the PC.
+        private int GetPokemonEffortValueFromPC(int boxId, int boxPokemonId, string statType)
+        {
+            if (!IsPCAccessValid("getPokemonEffortValueFromPC", boxId, boxPokemonId))
+            {
+                return -1;
+            }
+
+            if (!_stats.ContainsKey(statType.ToUpperInvariant()))
+            {
+                Fatal("error: getPokemonEffortValueFromPC: the stat '" + statType + "' does not exist.");
+                return 0;
+            }
+
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].EV.GetStat(_stats[statType.ToUpperInvariant()]);
+        }
+
+        // API: Returns the individual value for the specified stat of the specified pokémon in the PC.
+        private int GetPokemonIndividualValueFromPC(int boxId, int boxPokemonId, string statType)
+        {
+            if (!IsPCAccessValid("getPokemonIndividualValueFromPC", boxId, boxPokemonId))
+            {
+                return -1;
+            }
+
+            if (!_stats.ContainsKey(statType.ToUpperInvariant()))
+            {
+                Fatal("error: getPokemonIndividualValueFromPC: the stat '" + statType + "' does not exist.");
+                return 0;
+            }
+
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].IV.GetStat(_stats[statType.ToUpperInvariant()]);
+        }
+
+        // API: Happiness of the pokemon of the current box matching the ID.
+        private int GetPokemonHappinessFromPC(int boxId, int boxPokemonId)
+        {
+            if (!IsPCAccessValid("getPokemonHappinessFromPC", boxId, boxPokemonId))
+            {
+                return -1;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Happiness;
+        }
+
+        // API: Original trainer of the pokemon of the current box matching the ID.
+        private string GetPokemonOriginalTrainerFromPC(int boxId, int boxPokemonId)
+        {
+            if (!IsPCAccessValid("getPokemonOriginalTrainerFromPC", boxId, boxPokemonId))
+            {
+                return null;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].OriginalTrainer;
+        }
+
+        // API: Gender of the pokemon of the current box matching the ID.
+        private string GetPokemonGenderFromPC(int boxId, int boxPokemonId)
+        {
+            if (!IsPCAccessValid("getPokemonHappinessFromPC", boxId, boxPokemonId))
+            {
+                return null;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Gender;
+        }
+
+        // API: Status of the pokemon of the current box matching the ID.
+        private string GetPokemonStatusFromPC(int boxId, int boxPokemonId)
+        {
+            if (!IsPCAccessValid("getPokemonStatusFromPC", boxId, boxPokemonId))
+            {
+                return null;
+            }
+            return Bot.Game.CurrentPCBox[boxPokemonId - 1].Status;
+        }
+
+        // API: Type of the pokemon of the current box matching the ID as an array of length 2.
+        private string[] GetPokemonTypeFromPC(int boxId, int boxPokemonId)
+        {
+            if (!IsPCAccessValid("getPokemonTypeFromPC", boxId, boxPokemonId))
+            {
+                return null;
+            }
+
+            int id = Bot.Game.CurrentPCBox[boxPokemonId - 1].Id;
+
+            if (id <= 0 || id >= TypesManager.Instance.Type1.Count())
+            {
+                return new string[] { "Unknown", "Unknown" };
+            }
+
+            return new string[] { TypesManager.Instance.Type1[id].ToString(), TypesManager.Instance.Type2[id].ToString() };
+        }
+
+        // API: Returns the item held by the specified pokemon in the PC, null if empty.
+        private string GetPokemonHeldItemFromPC(int boxId, int boxPokemonId)
+        {
+            if (!IsPCAccessValid("getPokemonHeldItemFromPC", boxId, boxPokemonId))
+            {
+                return null;
+            }
+            string itemHeld = Bot.Game.CurrentPCBox[boxPokemonId - 1].ItemHeld;
+            return itemHeld == string.Empty ? null : itemHeld;
+        }
+
+        // API: Releases the specified pokemon in the team.
+        private bool ReleasePokemonFromTeam(int pokemonUid)
+        {
+            if (pokemonUid < 1 || pokemonUid > 6 || pokemonUid > Bot.Game.Team.Count)
+            {
+                Fatal("error: releasePokemonFromTeam: pokemonUid is out of range: " + pokemonUid
+                    + " (team size: " + Bot.Game.Team.Count.ToString() + ").");
+                return false;
+            }
+            if (!Bot.Game.IsPCOpen)
+            {
+                Fatal("error: releasePokemonFromTeam: cannot release a pokemon while the PC is closed: #" + pokemonUid + " (" + Bot.Game.Team[pokemonUid].Name + ").");
+                return false;
+            }
+            if (Bot.Game.IsPCBoxRefreshing)
+            {
+                Fatal("error: releasePokemonFromTeam: cannot release a pokemon while the PC box is refreshing: #" + pokemonUid + " (" + Bot.Game.Team[pokemonUid].Name + ").");
+                return false;
+            }
+            return ExecuteAction(Bot.Game.ReleasePokemonFromTeam(pokemonUid));
+        }
+
+        // API: Releases the specified pokemon in the PC.
+        private bool ReleasePokemonFromPC(int boxId, int boxPokemonId)
+        {
+            if (!IsPCAccessValid("releasePokemonFromPC", boxId, boxPokemonId))
+            {
+                return false;
+            }
+            return ExecuteAction(Bot.Game.ReleasePokemonFromPC(boxPokemonId));
         }
 
         // API: 

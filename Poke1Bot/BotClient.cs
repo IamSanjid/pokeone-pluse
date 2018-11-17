@@ -68,7 +68,7 @@ namespace Poke1Bot
 
             Console.WriteLine(pc);
 
-            var enc = Poke1Protocol.StringCipher.EncryptOrDecryptToByte("username;)", "db2a1b6e-34d9-46ae-b319-d58bfc71011d");
+            var enc = Poke1Protocol.StringCipher.EncryptOrDecryptToBase64Byte("username;)", "db2a1b6e-34d9-46ae-b319-d58bfc71011d");
 
             var s64 = new PSXAPI.Request.Ack
             {
@@ -77,12 +77,17 @@ namespace Poke1Bot
 
             Console.WriteLine(Encoding.UTF8.GetString(s64.Data));
 
-            var packet = @"Ack CgwNA18DRBFPEkRHXBE=";
+            //var packet = @"InventoryPokemon CtEBChIJ8TZvO060XkYRhk8er86fOWQSjgEIowEQCxjPCyAkKgYIXRAZGBkqBggtECgYKCoGCCEQIxgjKgYIXxAUGBQwAjhoQAtSDAgTEAQYHyAJKAEwDloAYAJqEgm/i6xDrmcMTxGCrF/kjgIhyXISCb+LrEOuZwxPEYKsX+SOAiHJgAEEkAHDruOwAaIBBhACIAEwBqoBCwi+8s/AlfvlNhAFsAEDGgwIJBAMGBAgCygRMBEiBXhjb2RlKgV4Y29kZTIIS2VlbiBFeWU4swpAwA0Q////////////ARj///////////8BIP///////////wE=";
+            //var packet = @"Transfer CAESEgnxNm87TrReRhGGTx6vzp85ZA==";
+            //var packet = @"Reorder ChIJ8TZvO060XkYRhk8er86fOWQKEgkmzfVu9CvLSRGQRb3nB/7fDAoSCfYOcUXnX0tPEaMc+TIXvZ2yChIJYRN0DkiWxU0RgB2UOdBYu10KEgnc3Xc6Zt6VQRG0ts8aa5F9XQ==";
+            var packet = @"Pokemon CAES4gEK0AEKEgmn3GyhV0HQRxGixEpRipBI1hKLAQg0EBAYgCMgKioGCAoQIxgjKgYILBAZGBkqBwj8ARAKGAoqBwiaARAPGA8wAjg6QBVSDAgZEBUYHSAIKAUwBloAYAJqEgm/i6xDrmcMTxGCrF/kjgIhyXISCb+LrEOuZwxPEYKsX+SOAiHJgAEEkAHD/KyvBqIBAjAMqgELCN7Hv5XEjeY2EAWwAQ4aDAgqEBYYFCAUKBAwIiIFeGNvZGUqBXhjb2RlMgpUZWNobmljaWFuOIAgQLEmEAEYASD///////////8BEuMBCtEBChIJ8TZvO060XkYRhk8er86fOWQSjgEIowEQCxjPCyAkKgYIXRAZGBkqBggtECgYKCoGCCEQIxgjKgYIXxAUGBQwAjhoQAtSDAgTEAQYHyAJKAEwDloAYAJqEgm/i6xDrmcMTxGCrF/kjgIhyXISCb+LrEOuZwxPEYKsX+SOAiHJgAEEkAHDruOwAaIBBhACIAEwBqoBCwi+8s/AlfvlNhAFsAEDGgwIJBAMGBAgCygRMBEiBXhjb2RlKgV4Y29kZTIIS2VlbiBFeWU4swpAwA0QAhgBIP///////////wEaFggKEBQYkE4g6AcqBAgBEAIqBAgCEAE=";
+
+
             var data = packet.Split(" ".ToCharArray());
 
             byte[] array = Convert.FromBase64String(data[1]);
             var type = Type.GetType($"PSXAPI.Request.{data[0]}, PSXAPI");
-
+            goto RESP;
             if (type != null)
             {
                 var proto = typeof(PSXAPI.Proto).GetMethod("Deserialize").MakeGenericMethod(new Type[]
@@ -93,28 +98,30 @@ namespace Poke1Bot
                     array
                 }) as PSXAPI.IProto;
 
-                var s = proto as PSXAPI.Request.Ack;
+                //var s = proto as PSXAPI.Request.Ack;
 
-                string decodedString = Encoding.UTF8.GetString(s.Data);
-                Console.WriteLine(decodedString);
+                //string decodedString = Encoding.UTF8.GetString(s.Data);
+                //Console.WriteLine(decodedString);
+                //if (proto is null)
+                //    goto RESP;
+
                 Console.WriteLine(ToJsonString(proto));
+                return;
                 //Console.WriteLine($"MapLoad: {(proto as PSXAPI.Request.BattleBroadcast).RequestID}, ID: {(proto as PSXAPI.Request.BattleBroadcast)._Name.ToString()}");
             }
-            else
+            RESP:
+            type = Type.GetType($"PSXAPI.Response.{data[0]}, PSXAPI");
+            if (type != null)
             {
-                type = Type.GetType($"PSXAPI.Response.{data[0]}, PSXAPI");
-                if (type != null)
+                var proto = typeof(PSXAPI.Proto).GetMethod("Deserialize").MakeGenericMethod(new Type[]
                 {
-                    var proto = typeof(PSXAPI.Proto).GetMethod("Deserialize").MakeGenericMethod(new Type[]
-                    {
                         type
-                    }).Invoke(null, new object[]
-                    {
+                }).Invoke(null, new object[]
+                {
                         array
-                    }) as PSXAPI.IProto;
-                    Console.WriteLine(ToJsonString(proto));
-                    // Console.WriteLine($"MapLoad: {(proto as PSXAPI.Request.BattleBroadcast).RequestID}, ID: {(proto as PSXAPI.Request.BattleBroadcast)._Name.ToString()}");
-                }
+                }) as PSXAPI.IProto;
+                Console.WriteLine(ToJsonString(proto));
+                // Console.WriteLine($"MapLoad: {(proto as PSXAPI.Request.BattleBroadcast).RequestID}, ID: {(proto as PSXAPI.Request.BattleBroadcast)._Name.ToString()}");
             }
 #endif
         }
@@ -288,6 +295,18 @@ namespace Poke1Bot
                 Script = null;
                 throw;
             }
+        }
+
+        public bool OpenPC()
+        {
+            var pcNpcs = Game.Map.Npcs.FindAll(npc => Game.Map.IsPc(npc.PositionX, npc.PositionY)).OrderBy(npc => Game.DistanceTo(npc.PositionX, npc.PositionY)).ToList();
+            if (pcNpcs is null || pcNpcs.Count <= 0)
+                return false;
+            var pcNpc = pcNpcs.FirstOrDefault();
+            if (pcNpc is null)
+                return false;
+
+            return TalkToNpc(pcNpc);
         }
 
         public bool TalkToNpc(Npc target)
