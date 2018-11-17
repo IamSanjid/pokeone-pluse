@@ -30,14 +30,11 @@ namespace Poke1Protocol
         {
             var en = data.Settings.Enabled;
             Data = data;
-            LosLength = data.Settings.LOS;
             PositionX = data.x;
             PositionY = -data.z;
             Id = data.ID;
             _path = data.Settings.Path;
-            IsBattler = LosLength > 0 && (data.Settings.SightAction == "Move To Player"
-                || data.Settings.SightAction == "Player To NPC");
-            CanBattle = IsBattler;
+            UpdateLos(data.Settings.LOS);
             CanBlockPlayer = en;
             IsVisible = en;
 #if DEBUG

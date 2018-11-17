@@ -87,7 +87,7 @@ namespace Poke1Bot
 
             byte[] array = Convert.FromBase64String(data[1]);
             var type = Type.GetType($"PSXAPI.Request.{data[0]}, PSXAPI");
-            goto RESP;
+            //goto RESP;
             if (type != null)
             {
                 var proto = typeof(PSXAPI.Proto).GetMethod("Deserialize").MakeGenericMethod(new Type[]
@@ -102,8 +102,8 @@ namespace Poke1Bot
 
                 //string decodedString = Encoding.UTF8.GetString(s.Data);
                 //Console.WriteLine(decodedString);
-                //if (proto is null)
-                //    goto RESP;
+                if (proto is null)
+                    goto RESP;
 
                 Console.WriteLine(ToJsonString(proto));
                 return;
@@ -314,22 +314,26 @@ namespace Poke1Bot
             bool canInteract = Game.Map.CanInteract(Game.PlayerX, Game.PlayerY, target.PositionX, target.PositionY);
             if (canInteract)
             {
-                //var fromNpcDir = target.GetDriectionFrom(Game.PlayerX, Game.PlayerY);
-                //if (fromNpcDir == Game._lastDirection)
-                //{
-
-                //}
-                //else if (!target.IsInLineOfSight(Game.PlayerX, Game.PlayerY))
-                //{
-                //    var oneStep = new[] { fromNpcDir.ToOneStepMoveActions() };
-                //    Game.SendMovement(oneStep, Game.PlayerX, Game.PlayerY);
-                //    Game._lastDirection = fromNpcDir;
-                //}
-                _npcBattler = null;
-                Game.TalkToNpc(target);
+                var fromNpcDir = target.GetDriectionFrom(Game.PlayerX, Game.PlayerY);
+                if (fromNpcDir == Game._lastDirection)
+                {
+                    _npcBattler = null;
+                    Game.TalkToNpc(target);
+                }
+                else if (!target.IsInLineOfSight(Game.PlayerX, Game.PlayerY))
+                {
+                    var oneStep = new[] { fromNpcDir.ToOneStepMoveActions() };
+                    Game.SendMovement(oneStep, Game.PlayerX, Game.PlayerY);
+                    Game._lastDirection = fromNpcDir;
+                }
                 return true;
             }
-            return MoveToCell(target.PositionX, target.PositionY, 1);
+            var result = MoveToCell(target.PositionX, target.PositionY, 1);
+
+            if (!result)
+                _npcBattler = null;
+
+            return result;
         }
 
         public bool MoveToCell(int x, int y, int requiredDistance = 0)

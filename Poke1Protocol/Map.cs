@@ -759,9 +759,6 @@ namespace Poke1Protocol
 
         private bool IsMovementValid(Direction direction, int collider, bool isOnGround, bool isSurfing, bool canUseCut, bool canUseSmashRock, int destx, int desty)
         {
-            if (collider < 0 && destx >= 0 && desty >= 0)
-                collider = Colliders[destx, desty];
-
             if (collider == 1)
             {
                 return false;
