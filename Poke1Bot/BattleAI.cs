@@ -153,14 +153,16 @@ namespace Poke1Bot
                 {
                     if (req.forceSwitch[j])
                     {
+                        var sent = new List<SwitchedPokemon>();
                         for (int i = 0; i < Side.pokemon.Length; ++i)
                         {
                             var pokemon = Battle.GetSwitchedPokemon(Side.pokemon[i]);
-                            if (!pokemon.Sent && IsPokemonUsable(pokemon))
+
+                            if (!pokemon.Sent && IsPokemonUsable(pokemon) && !sent.Contains(pokemon))
                             {
                                 result = _client.ChangePokemon(i + 1, j + 1);
                                 pokemon.Sent = true;
-                                break;
+                                sent.Add(pokemon);
                             }
                         }
                     }
@@ -176,11 +178,14 @@ namespace Poke1Bot
                 for (int i = 0; i < Side.pokemon.Length; ++i)
                 {
                     var pokemon = Battle.GetSwitchedPokemon(Side.pokemon[i]);
+                    if (changeWith == 0 && ActivePokemons.Length > 1)
+                    {
+                        changeWith = ActivePokemons.ToList().FindLastIndex(p => !IsPokemonUsable(p)) + 1;
+                    }
                     if (!pokemon.Sent && IsPokemonUsable(pokemon))
                     {
                         result = _client.ChangePokemon(i + 1, changeWith);
                         pokemon.Sent = true;
-                        break;
                     }
                 }
             }
@@ -200,14 +205,15 @@ namespace Poke1Bot
                 {
                     if (req.forceSwitch[j])
                     {
+                        var sent = new List<SwitchedPokemon>();
                         for (int i = 0; i < Side.pokemon.Length; ++i)
                         {
                             var pokemon = Battle.GetSwitchedPokemon(Side.pokemon[i]);
-                            if (!pokemon.Sent && pokemon.Health > 0)
+                            if (!pokemon.Sent && pokemon.Health > 0 && !sent.Contains(pokemon))
                             {
                                 result = _client.ChangePokemon(i + 1, j + 1);
                                 pokemon.Sent = true;
-                                break;
+                                sent.Add(pokemon);
                             }
                         }
                     }
@@ -223,11 +229,14 @@ namespace Poke1Bot
                 for (int i = 0; i < Side.pokemon.Length; ++i)
                 {
                     var pokemon = Battle.GetSwitchedPokemon(Side.pokemon[i]);
+                    if (changeWith == 0 && ActivePokemons.Length > 1)
+                    {
+                        changeWith = ActivePokemons.ToList().FindLastIndex(p => !IsPokemonUsable(p)) + 1;
+                    }
                     if (!pokemon.Sent && pokemon.Health > 0)
                     {
                         result = _client.ChangePokemon(i + 1, changeWith);
                         pokemon.Sent = true;
-                        break;
                     }
                 }
             }

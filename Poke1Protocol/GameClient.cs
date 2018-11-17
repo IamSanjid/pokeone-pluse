@@ -477,7 +477,7 @@ namespace Poke1Protocol
                 if (ApplyMovement(direction))
                 {
                     _lastDirection = direction;
-                    _movementTimeout.Set(IsBiking ? 180 : 330);
+                    _movementTimeout.Set(IsBiking ? 150 : 300);
                     var actions = direction.ToMoveActions().ToList();
                     if (Map.HasLink(PlayerX, PlayerY))
                     {
@@ -1110,7 +1110,7 @@ namespace Poke1Protocol
 
         private void SendUseItem(int id, int pokemonUid = 0, int moveId = 0)
         {
-            var foundPoke = Team.Find(poke => poke.Uid == pokemonUid);
+            var foundPoke = Team[pokemonUid - 1];
             SendProto(new PSXAPI.Request.UseItem
             {
                 Item = id,
@@ -1815,16 +1815,16 @@ namespace Poke1Protocol
                 {
                     if (reorder.Pokemon.Length > 0)
                     {
+                        var tempTeam = new List<Pokemon>();
                         var i = 0;
                         foreach (var id in reorder.Pokemon)
                         {
                             var poke = Team.Find(x => x.PokemonData.Pokemon.UniqueID == id);
-
-                            if (i <= Team.Count - 1)
-                                poke?.UpdatePosition(i + 1);
-
+                            poke.UpdatePosition(i + 1);
+                            tempTeam.Add(poke);
                             i++;
                         }
+                        Team = tempTeam;
                     }
                 }
                 SortPokemon(Team);
@@ -1840,8 +1840,8 @@ namespace Poke1Protocol
                     {
                         var pcPoke = CurrentPCBox.Find(p => p.UniqueID == id);
                         pcPoke.PokemonData.Box = reorder.Box;
-                        if (i <= CurrentPCBox.Count - 1)
-                            pcPoke?.UpdatePosition(i + 1);
+
+                        pcPoke?.UpdatePosition(i + 1);
                         i++;
                     }
                 }
@@ -1885,24 +1885,24 @@ namespace Poke1Protocol
                     if (ActiveBattle.OpponentActivePokemon.Count == 2)
                     {
                         var pok = ActiveBattle.OpponentActivePokemon[0];
-                        var afterPok = ActiveBattle.OpponentActivePokemon[1];
+                        var secondPok = ActiveBattle.OpponentActivePokemon[1];
                         firstEncounterMessage = ActiveBattle.IsWild ? pok.Shiny ? $"Wild shiny {PokemonManager.Instance.Names[pok.ID]} and " : $"Wild {PokemonManager.Instance.Names[pok.ID]} and "
-                            + (afterPok.Shiny ? $"shiny {PokemonManager.Instance.Names[pok.ID]} has appeared!" : $"{PokemonManager.Instance.Names[pok.ID]} has appeared!") 
+                            + (secondPok.Shiny ? $"shiny {PokemonManager.Instance.Names[secondPok.ID]} has appeared!" : $"{PokemonManager.Instance.Names[secondPok.ID]} has appeared!") 
                             :
-                            pok.Shiny ? $"Opponents sent out shiny {PokemonManager.Instance.Names[pok.ID]} and " : $"Opponents sent out {PokemonManager.Instance.Names[pok.ID]} and "
-                            + (afterPok.Shiny ? $"shiny {PokemonManager.Instance.Names[pok.ID]}!" : $"{PokemonManager.Instance.Names[pok.ID]}!");
+                            pok.Shiny ? $"Opponents sent out shiny {PokemonManager.Instance.Names[pok.ID]} and " : $"Opponents sent out {PokemonManager.Instance.Names[secondPok.ID]} and "
+                            + (secondPok.Shiny ? $"shiny {PokemonManager.Instance.Names[secondPok.ID]}!" : $"{PokemonManager.Instance.Names[secondPok.ID]}!");
                     }
                     else if (ActiveBattle.OpponentActivePokemon.Count == 3)
                     {
                         var pok = ActiveBattle.OpponentActivePokemon[0];
-                        var afterPok = ActiveBattle.OpponentActivePokemon[1];
+                        var secondPok = ActiveBattle.OpponentActivePokemon[1];
                         var thridPoke = ActiveBattle.OpponentActivePokemon[2];
                         firstEncounterMessage = ActiveBattle.IsWild ? pok.Shiny ? $"Wild shiny {PokemonManager.Instance.Names[pok.ID]}, " : $"Wild {PokemonManager.Instance.Names[pok.ID]}, "
-                            + (afterPok.Shiny ? $"shiny {PokemonManager.Instance.Names[afterPok.ID]} and " : $"{PokemonManager.Instance.Names[afterPok.ID]} and ") +
+                            + (secondPok.Shiny ? $"shiny {PokemonManager.Instance.Names[secondPok.ID]} and " : $"{PokemonManager.Instance.Names[secondPok.ID]} and ") +
                             (thridPoke.Shiny ? $"shiny {PokemonManager.Instance.Names[thridPoke.ID]} has appeared!" : $"{PokemonManager.Instance.Names[thridPoke.ID]} has appeared!") 
                             :
                             pok.Shiny ? $"Opponents sent out shiny {PokemonManager.Instance.Names[pok.ID]}, " : $"Opponents sent out {PokemonManager.Instance.Names[pok.ID]}, "
-                            + (afterPok.Shiny ? $"shiny {PokemonManager.Instance.Names[afterPok.ID]} and " : $"{PokemonManager.Instance.Names[afterPok.ID]} and ") +
+                            + (secondPok.Shiny ? $"shiny {PokemonManager.Instance.Names[secondPok.ID]} and " : $"{PokemonManager.Instance.Names[secondPok.ID]} and ") +
                             (thridPoke.Shiny ? $"shiny {PokemonManager.Instance.Names[thridPoke.ID]}!" : $"{PokemonManager.Instance.Names[thridPoke.ID]}!");
                     }
                 }
@@ -2455,7 +2455,7 @@ namespace Poke1Protocol
                 {
                     var poke = new Pokemon(pokemons[0]);
 
-                    if (poke.PokemonData.Box > 0 && poke.PokemonData.Box == CurrentPCBoxId)
+                    if (poke.PokemonData.Box == CurrentPCBoxId)
                     {
                         // This pokemon data is received when the player transfer a pokemon to the box
 
@@ -2471,7 +2471,7 @@ namespace Poke1Protocol
                     }
 
                     var foundPoke = Team.Find(x => x.PokemonData.Pokemon.UniqueID == pokemons[0].Pokemon.UniqueID);
-                    if (foundPoke != null && foundPoke.PokemonData.Box == 0)
+                    if (foundPoke != null)
                     {
                         foundPoke.UpdatePokemonData(pokemons[0]);
                     }
