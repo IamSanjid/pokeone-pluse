@@ -315,17 +315,14 @@ namespace Poke1Bot
             if (canInteract)
             {
                 var fromNpcDir = target.GetDriectionFrom(Game.PlayerX, Game.PlayerY);
-                if (fromNpcDir == Game._lastDirection)
-                {
-                    _npcBattler = null;
-                    Game.TalkToNpc(target);
-                }
-                else if (!target.IsInLineOfSight(Game.PlayerX, Game.PlayerY))
+                if (fromNpcDir != Game._lastDirection && !target.IsInLineOfSight(Game.PlayerX, Game.PlayerY))
                 {
                     var oneStep = new[] { fromNpcDir.ToOneStepMoveActions() };
                     Game.SendMovement(oneStep, Game.PlayerX, Game.PlayerY);
                     Game._lastDirection = fromNpcDir;
                 }
+                _npcBattler = null;
+                Game.TalkToNpc(target);
                 return true;
             }
             var result = MoveToCell(target.PositionX, target.PositionY, 1);
@@ -361,7 +358,8 @@ namespace Poke1Bot
 
         public bool MoveToNearestLink()
         {
-            var links = Game.Map.Links.OrderBy(link => GameClient.DistanceBetween(Game.PlayerX, Game.PlayerY, link.x, -link.z));
+            var links = Game.Map.Links.FindAll(link => link.DestinationID != Guid.Empty).
+                OrderBy(link => GameClient.DistanceBetween(Game.PlayerX, Game.PlayerY, link.x, -link.z));
             foreach (var link in links)
                 if (MoveToCell(link.x, -link.z))
                     return true;

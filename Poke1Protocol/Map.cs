@@ -601,18 +601,18 @@ namespace Poke1Protocol
                 return MoveResult.Fail;
             }
 
-            if (OriginalNpcs.Any(npc => npc.PositionX == destinationX && npc.PositionY == destinationY && 
-            !IsCutTree(npc.PositionX, npc.PositionY) && !IsRockSmash(npc.PositionX, npc.PositionY) && !npc.IsMoving 
+            if (OriginalNpcs.Any(npc => npc.PositionX == destinationX && npc.PositionY == destinationY && !npc.IsMoving
+            && !IsCutTree(destinationX, destinationY) && !IsRockSmash(destinationX, destinationY)
             && npc.CanBlockPlayer && npc.IsVisible))
                 return MoveResult.Fail;
 
-            if (direction != Direction.Down && GetCollider(destinationX, destinationY) == 4)
-            {
-                return MoveResult.Fail;
-            }
+            //if (direction != Direction.Down && GetCollider(destinationX, destinationY) == 4)
+            //{
+            //    return MoveResult.Fail;
+            //}
 
-            if (IsUnmoveableCellSide(direction, destinationX, destinationY))
-                return MoveResult.Fail;
+            //if (IsUnmoveableCellSide(direction, destinationX, destinationY))
+            //    return MoveResult.Fail;
 
 
             int collider = GetCollider(destinationX, destinationY);

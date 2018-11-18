@@ -5,6 +5,12 @@ using System.Threading;
 
 namespace Poke1Bot
 {
+    public enum MovementResult
+    {
+        Success,
+        NeedToCutOrSmash,
+        Failed
+    }
     public class Pathfinding
     {
         private static Direction[] _directions = new[] { Direction.Up, Direction.Down, Direction.Left, Direction.Right };
@@ -77,6 +83,12 @@ namespace Poke1Bot
                     {
                         directions.Push(node.FromDirection);
                     }
+                    if ((_client.Map.IsCutTree(node.X, node.Y) && _client.CanUseCut) 
+                        || (_client.CanUseSmashRock && _client.Map.IsRockSmash(node.X, node.Y)))
+                    {
+                        _client.UseRockSmashOrCut(node.X, node.Y);
+                        return true;
+                    }
                     node = node.Parent;
                 }
 
@@ -89,14 +101,14 @@ namespace Poke1Bot
             return false;
         }
 
-        public bool CanMoveTo(int destinationX, int destinationY)
+        public bool CanMoveTo(int destinationX, int destinationY, int requiredDistance = 0)
         {
             if (destinationX == _client.PlayerX && destinationY == _client.PlayerY)
             {
                 return true;
             }
 
-            Node node = FindPath(_client.PlayerX, _client.PlayerY, _client.IsOnGround, _client.IsSurfing, destinationX, destinationY, 0);
+            Node node = FindPath(_client.PlayerX, _client.PlayerY, _client.IsOnGround, _client.IsSurfing, destinationX, destinationY, requiredDistance);
             return node != null;
         }
 
@@ -119,6 +131,7 @@ namespace Poke1Bot
             }
             return false;
         }
+
         private Node FindPath(int fromX, int fromY, bool isOnGround, bool isSurfing, int toX, int toY, int requiredDistance)
         {
             Dictionary<uint, Node> openList = new Dictionary<uint, Node>();
@@ -150,7 +163,7 @@ namespace Poke1Bot
                 {
                     if (closedList.Contains(node.Hash))
                         continue;
-                    if (_client.Map.HasLink(node.X, node.Y) && node.X != toX && node.Y != toY)
+                    if (_client.Map.HasLink(node.X, node.Y) && (node.X != toX || node.Y != toY))
                         continue;
 
                     node.Parent = current;
@@ -179,17 +192,7 @@ namespace Poke1Bot
                     }
                 }
             }
-
             return null;
-        }
-
-        private bool IsCutTree(int x, int y)
-        {
-            return _client.Map.IsCutTree(x, y) && _client.CanUseCut;
-        }
-        private bool IsRockSmash(int x, int y)
-        {
-            return _client.Map.IsRockSmash(x, y) && _client.CanUseSmashRock;
         }
 
         private List<Node> GetNeighbors(Node node)

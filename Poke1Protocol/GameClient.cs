@@ -2799,6 +2799,12 @@ namespace Poke1Protocol
             _surfAfterMovement = true;
         }
 
+        public void UseRockSmashOrCut(int x, int y)
+        {
+            var findNpc = Map.Npcs.Find(npc => npc.PositionX == x && npc.PositionY == y);
+            MoveToBattleWithNpc?.Invoke(findNpc);
+        }
+
         public void UseSurf()
         {
             SendProto(new PSXAPI.Request.Effect
