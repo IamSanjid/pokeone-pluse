@@ -48,7 +48,7 @@ namespace Poke1Protocol
 
         private byte _guildEmbedId;
 
-        public int ToatlSteps { get; private set; }
+        public int TotalSteps { get; private set; }
 
         public string MapName { get; private set; } = "";
         public string AreaName { get; private set; } = "";
@@ -823,6 +823,47 @@ namespace Poke1Protocol
             });
         }
 
+        private void SendReleasePokemon(Guid pokemonGuid)
+        {
+            SendProto(new PSXAPI.Request.Release
+            {
+                Pokemon = pokemonGuid
+            });
+        }
+
+        private void SendPCSwapPokemon(Guid boxPokemonGuid, Guid teamPokemonGuid)
+        {
+            SendProto(new PSXAPI.Request.Swap
+            {
+                Pokemon1 = boxPokemonGuid,
+                Pokemon2 = teamPokemonGuid
+            });
+        }
+
+        private void SendMovePokemonFromPC(Guid pokemonGuid)
+        {
+            SendProto(new PSXAPI.Request.Transfer
+            {
+                Box = 0,
+                Pokemon = pokemonGuid
+            });
+        }
+
+        private void SendMovePokemonToPC(Guid pokemonUid)
+        {
+            SendProto(new PSXAPI.Request.Transfer
+            {
+                Box = CurrentPCBoxId,
+                Pokemon = pokemonUid
+            });
+        }
+
+        private void SendSetCollectedEvs(Guid pokemonGuid, string statType, PokemonStats evs, int amount)
+        {
+            var packet = EffortValuesManager.GetEvsSetPacket(statType, pokemonGuid, evs, amount);
+            SendProto(packet);
+        }
+
         public void SendProto(PSXAPI.IProto proto)
         {
             var array = Proto.Serialize(proto);
@@ -911,7 +952,9 @@ namespace Poke1Protocol
         {
             OpenedShop = null;
             CurrentPCBox = null;
-            ToatlSteps = ToatlSteps + actions.Length;
+            TotalSteps = TotalSteps + actions.Count(m =>
+                m != PSXAPI.Request.MoveAction.TurnDown && m != PSXAPI.Request.MoveAction.TurnLeft 
+                && m != PSXAPI.Request.MoveAction.TurnRight && m != PSXAPI.Request.MoveAction.TurnUp);
 
             var movePacket = new PSXAPI.Request.Move
             {
@@ -1110,7 +1153,9 @@ namespace Poke1Protocol
 
         private void SendUseItem(int id, int pokemonUid = 0, int moveId = 0)
         {
-            var foundPoke = Team[pokemonUid - 1];
+            Pokemon foundPoke = null;
+            if (pokemonUid > 0)
+                foundPoke = Team[pokemonUid - 1];
             SendProto(new PSXAPI.Request.UseItem
             {
                 Item = id,
@@ -1426,6 +1471,9 @@ namespace Poke1Protocol
                         case PSXAPI.Response.Evolve evolve:
                             OnEvolved(evolve);
                             break;
+                        case PSXAPI.Response.Evs evs:
+                            OnEvs(evs);
+                            break;
                         case PSXAPI.Response.Effect effect:
                             OnEffects(effect);
                             break;
@@ -1461,6 +1509,18 @@ namespace Poke1Protocol
 #endif
                 }
             }
+        }
+
+        private void OnEvs(Evs evs)
+        {
+            if (evs.Result != EvsResult.Failed)
+            {
+                var poke = Team.Find(p => p.UniqueID == evs.PokemonUID);
+                if (poke != null)
+                    poke.UpdatePokemonData(evs.Pokemon);
+            }
+            SortPokemon(Team);
+            PokemonsUpdated?.Invoke();
         }
 
         private void OnTransfered(Transfer tr)
@@ -1541,7 +1601,7 @@ namespace Poke1Protocol
             {
                 PlayerStats = playerStats;
                 Badges.Clear();
-                ToatlSteps = (int)stats.Data.StepsTaken;
+                TotalSteps = (int)stats.Data.StepsTaken;
                 foreach (var id in PlayerStats.Badges)
                     Badges.Add(id, BadgeFromID(id));
             }
@@ -2322,7 +2382,7 @@ namespace Poke1Protocol
             OnInventoryUpdate(login.Inventory);
             OnMountUpdate(login.Mount);
             OnPlayerPosition(login.Position, false);
-            ToatlSteps = (int)login.TotalSteps;
+            TotalSteps = (int)login.TotalSteps;
 
             if (login.Pokedex != null)
             {
@@ -2892,39 +2952,16 @@ namespace Poke1Protocol
             return true;
         }
 
-        private void SendReleasePokemon(Guid pokemonGuid)
+        public bool SetCollectedEvs(int pokemonUid, string statType, int amount)
         {
-            SendProto(new PSXAPI.Request.Release
-            {
-                Pokemon = pokemonGuid
-            });
-        }
-
-        private void SendPCSwapPokemon(Guid boxPokemonGuid, Guid teamPokemonGuid)
-        {
-            SendProto(new PSXAPI.Request.Swap
-            {
-                Pokemon1 = boxPokemonGuid,
-                Pokemon2 = teamPokemonGuid
-            });
-        }
-
-        private void SendMovePokemonFromPC(Guid pokemonGuid)
-        {
-            SendProto(new PSXAPI.Request.Transfer
-            {
-                Box = 0,
-                Pokemon = pokemonGuid
-            });
-        }
-
-        private void SendMovePokemonToPC(Guid pokemonUid)
-        {
-            SendProto(new PSXAPI.Request.Transfer
-            {
-                Box = CurrentPCBoxId,
-                Pokemon = pokemonUid
-            });
+            if (pokemonUid < 1 || pokemonUid > Team.Count)
+                return false;
+            var poke = Team[pokemonUid - 1];
+            var totalCollected = poke.EVsCollected.GetStat(EffortValuesManager.Stats[statType.ToUpperInvariant()]);
+            if (amount > totalCollected)
+                return false;
+            SendSetCollectedEvs(poke.UniqueID, statType, poke.EV, amount);
+            return true;
         }
 
         public int DistanceTo(int cellX, int cellY)
@@ -2945,7 +2982,6 @@ namespace Poke1Protocol
 
             ClearPath();
             OpenedShop = null;
-            PlayerStats = null;
             _surfAfterMovement = false;
             CurrentPCBox = null;
             _slidingDirection = null;

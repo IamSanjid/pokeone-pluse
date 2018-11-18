@@ -849,5 +849,88 @@ namespace Poke1Protocol
                 BattleValues.Add(id, new PokemonStats { Health = hp, Attack = atk, Defence = def, SpAttack = spatk, SpDefence = spdef, Speed = speed });
             }
         }
+
+        public static Dictionary<string, StatType> Stats = new Dictionary<string, StatType>()
+        {
+            { "HP", StatType.Health },
+            { "HEALTH", StatType.Health },
+            { "ATK", StatType.Attack },
+            { "ATTACK", StatType.Attack },
+            { "DEF", StatType.Defence },
+            { "DEFENCE", StatType.Defence },
+            { "DEFENSE", StatType.Defence },
+            { "SPATK", StatType.SpAttack },
+            { "SPATTACK", StatType.SpAttack },
+            { "SPDEF", StatType.SpDefence },
+            { "SPDEFENCE", StatType.SpDefence },
+            { "SPDEFENSE", StatType.SpDefence },
+            { "SPD", StatType.Speed },
+            { "SPEED", StatType.Speed }
+        };
+
+        public static PSXAPI.Request.Evs GetEvsSetPacket(string stat, System.Guid pokemonGuid, PokemonStats evs, int amount)
+        {
+            if (Stats.ContainsKey(stat.ToUpperInvariant()))
+            {
+                var packet = new PSXAPI.Request.Evs
+                {
+                    Action = PSXAPI.Request.EvsAction.Skill,
+                    Pokemon = pokemonGuid
+                };
+                switch(Stats[stat.ToUpperInvariant()])
+                {
+                    case StatType.Attack:
+                        packet.Atk = amount;
+                        packet.Def = evs.GetStat(StatType.Defence);
+                        packet.Hp = evs.GetStat(StatType.Health);
+                        packet.SpAtk = evs.GetStat(StatType.SpAttack);
+                        packet.SpDef = evs.GetStat(StatType.SpDefence);
+                        packet.Speed = evs.GetStat(StatType.Speed);
+                        break;
+                    case StatType.Health:
+                        packet.Atk = evs.GetStat(StatType.Attack);
+                        packet.Def = evs.GetStat(StatType.Defence);
+                        packet.Hp = amount;
+                        packet.SpAtk = evs.GetStat(StatType.SpAttack);
+                        packet.SpDef = evs.GetStat(StatType.SpDefence);
+                        packet.Speed = evs.GetStat(StatType.Speed);
+                        break;
+                    case StatType.SpAttack:
+                        packet.Atk = evs.GetStat(StatType.Attack);
+                        packet.Def = evs.GetStat(StatType.Defence);
+                        packet.Hp = evs.GetStat(StatType.Health);
+                        packet.SpAtk = amount;
+                        packet.SpDef = evs.GetStat(StatType.SpDefence);
+                        packet.Speed = evs.GetStat(StatType.Speed);
+                        break;
+                    case StatType.SpDefence:
+                        packet.Atk = evs.GetStat(StatType.Attack);
+                        packet.Def = evs.GetStat(StatType.Defence);
+                        packet.Hp = evs.GetStat(StatType.Health);
+                        packet.SpAtk = evs.GetStat(StatType.SpAttack);
+                        packet.SpDef = amount;
+                        packet.Speed = evs.GetStat(StatType.Speed);
+                        break;
+                    case StatType.Speed:
+                        packet.Atk = evs.GetStat(StatType.Attack);
+                        packet.Def = evs.GetStat(StatType.Defence);
+                        packet.Hp = evs.GetStat(StatType.Health);
+                        packet.SpAtk = evs.GetStat(StatType.SpAttack);
+                        packet.SpDef = evs.GetStat(StatType.SpDefence);
+                        packet.Speed = amount;
+                        break;
+                    case StatType.Defence:
+                        packet.Atk = evs.GetStat(StatType.Attack);
+                        packet.Def = amount;
+                        packet.Hp = evs.GetStat(StatType.Health);
+                        packet.SpAtk = evs.GetStat(StatType.SpAttack);
+                        packet.SpDef = evs.GetStat(StatType.SpDefence);
+                        packet.Speed = evs.GetStat(StatType.Speed);
+                        break;
+                }
+                return packet;
+            }
+            return null;
+        }
     }
 }

@@ -178,6 +178,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["getPokemonAbility"] = new Func<int, string>(GetPokemonAbility);
                 _lua.Globals["getPokemonStat"] = new Func<int, string, int>(GetPokemonStat);
                 _lua.Globals["getPokemonEffortValue"] = new Func<int, string, int>(GetPokemonEffortValue);
+                _lua.Globals["getPokemonCollectedEffortValue"] = new Func<int, string, int>(GetPokemonCollectedEfforValue);
                 _lua.Globals["getPokemonIndividualValue"] = new Func<int, string, int>(GetPokemonIndividualValue);
                 _lua.Globals["getPokemonHappiness"] = new Func<int, int>(GetPokemonHappiness);
                 _lua.Globals["getPokemonOriginalTrainer"] = new Func<int, string>(GetPokemonOriginalTrainer);
@@ -358,6 +359,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["useItemOnPokemon"] = new Func<string, int, bool>(UseItemOnPokemon);
                 _lua.Globals["useItemOnMove"] = new Func<string, string, int, bool>(UseItemOnMove);
                 _lua.Globals["useEquippedMount"] = new Func<bool>(UseEquippedMount);
+                _lua.Globals["setCollectedEfforValue"] = new Func<int, string, int, bool>(SetCollectedEfforValue);
 
                 // File editing actions
                 _lua.Globals["logToFile"] = new Action<string, DynValue, bool>(LogToFile);
@@ -571,7 +573,7 @@ namespace Poke1Bot.Scripting
         // API: Returns total steps taken by the account.
         private int GetTotalSteps()
         {
-            return Bot.Game.ToatlSteps;
+            return Bot.Game.TotalSteps;
         }
 
         // API: Returns the ID of the specified pokémon in the team.
@@ -1022,6 +1024,24 @@ namespace Poke1Bot.Scripting
             }
 
             return Bot.Game.Team[pokemonIndex - 1].EV.GetStat(_stats[statType.ToUpperInvariant()]);
+        }
+
+        // API: Returns the collected effort value for the specified stat of the specified pokémon in the team.
+        private int GetPokemonCollectedEfforValue(int pokemonIndex, string statType)
+        {
+            if (pokemonIndex < 1 || pokemonIndex > Bot.Game.Team.Count)
+            {
+                Fatal("error: getPokemonCollectedEfforValue: tried to retrieve the non-existing pokémon " + pokemonIndex + ".");
+                return 0;
+            }
+
+            if (!_stats.ContainsKey(statType.ToUpperInvariant()))
+            {
+                Fatal("error: getPokemonCollectedEfforValue: the stat '" + statType + "' does not exist.");
+                return 0;
+            }
+
+            return Bot.Game.Team[pokemonIndex - 1].EVsCollected.GetStat(_stats[statType.ToUpperInvariant()]);
         }
 
         private static Dictionary<string, StatType> _stats = new Dictionary<string, StatType>()
@@ -3005,6 +3025,32 @@ namespace Poke1Bot.Scripting
             return ExecuteAction(Bot.Game.UseMount());
         }
 
+        // API: Sets specific amount of collected evs to the specified Pokemon
+        private bool SetCollectedEfforValue(int pokemonIndex, string statType, int evsAmmount)
+        {
+            if (pokemonIndex < 1 || pokemonIndex > Bot.Game.Team.Count)
+            {
+                Fatal("error: setCollectedEfforValue: tried to set evs to the non-existing pokémon " + pokemonIndex + ".");
+                return false;
+            }
+
+            if (!_stats.ContainsKey(statType.ToUpperInvariant()))
+            {
+                Fatal("error: setCollectedEfforValue: the stat '" + statType + "' does not exist.");
+                return false;
+            }
+
+            var totalEVsCollected = Bot.Game.Team[pokemonIndex - 1].EVsCollected.GetStat(_stats[statType.ToUpperInvariant()]);
+            if (totalEVsCollected < evsAmmount)
+            {
+                Fatal("error: setCollectedEfforValue: the stat '" + statType + "' doesn't have " + evsAmmount + " this much ev collected.");
+                return false;
+            }
+
+            return ExecuteAction(Bot.Game.SetCollectedEvs(pokemonIndex, statType, evsAmmount));
+
+        }
+
         // API: Counts received badges.
 
         private int CountBadges()
@@ -3064,7 +3110,7 @@ namespace Poke1Bot.Scripting
         // API: Asks for trainer info.
         private bool AskForTrainerInfo()
         {
-            if (!ValidateAction("askForTrainerInfo", false)) return false;
+           // if (!ValidateAction("askForTrainerInfo", false)) return false;
             return ExecuteAction(Bot.Game.AskForPlayerStats());
         }
 

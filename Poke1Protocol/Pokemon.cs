@@ -170,6 +170,11 @@ namespace Poke1Protocol
             }
         }
 
+        public void UpdateEvs()
+        {
+
+        }
+
         public void UpdateMovePoints(int moveId, int currnetpp, int maxPP)
         {
             Moves[moveId].CurrentPoints = currnetpp;

@@ -550,8 +550,8 @@ namespace Poke1Protocol
                 && TileTypes[x, y] != 1998 && TileTypes[x, y] != 2800 && TileTypes[x, y] != 2816
                 && TileTypes[x, y] != 2327 && TileTypes[x, y] != 2832 && TileTypes[x, y] != 2261 && TileTypes[x, y] != 2311
                 && TileTypes[x, y] != 2262 && TileTypes[x, y] != 2295 && TileTypes[x, y] != 2792 && TileTypes[x, y] != 2263
-                    && (TileZones[x, y] != 0 && TileZones[x, y] != 5) && !HasLink(x, y)
-                    && GetCollider(x, y) <= 0;
+                    && (TileZones[x, y] != 0 && !IsWater(x, y) && !HasLink(x, y)
+                    && GetCollider(x, y) <= 0);
         }
 
         public bool IsPc(int x, int y)
@@ -602,8 +602,8 @@ namespace Poke1Protocol
             }
 
             if (OriginalNpcs.Any(npc => npc.PositionX == destinationX && npc.PositionY == destinationY && !npc.IsMoving
-            && !IsCutTree(destinationX, destinationY) && !IsRockSmash(destinationX, destinationY)
-            && npc.CanBlockPlayer && npc.IsVisible))
+                && !IsCutTree(destinationX, destinationY) && !IsRockSmash(destinationX, destinationY)
+                    && npc.CanBlockPlayer && npc.IsVisible))
                 return MoveResult.Fail;
 
             //if (direction != Direction.Down && GetCollider(destinationX, destinationY) == 4)
@@ -835,7 +835,7 @@ namespace Poke1Protocol
                             return false;
                         if (collider == 15 || collider == 0 || collider == 7 || collider == 13
                             || collider == 8 || collider == 9 || collider == 25 || collider == 22 ||
-                            collider == 5 || collider == 12 || collider == 11 || collider == 19 || IsGoingToSlide(collider))
+                            collider == 5 || collider == 12 || collider == 11 || IsGoingToSlide(collider))
                         {
                             return true;
                         }
@@ -857,7 +857,7 @@ namespace Poke1Protocol
                             return false;
                         if (collider == 15 || collider == 0 || collider == 25 || collider == 13 ||
                             collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 22 ||
-                            collider == 3 || collider == 12 || collider == 11 || collider == 20 || IsGoingToSlide(collider))
+                            collider == 3 || collider == 12 || collider == 11 || IsGoingToSlide(collider))
                         {
                             return true;
                         }

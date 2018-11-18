@@ -122,62 +122,62 @@ namespace Poke1Protocol
                 HandleBattleRequest(data.Request2, PlayerSide == 2);
             }
 
-            if (data.Log != null && data.Log.Length > 0)
-            {
-                var switchTxt = data.Log.ToList().Find(m => m.Contains("switch") && m.Split('|')[1] == "switch");
-                if (!string.IsNullOrEmpty(switchTxt))
-                {
-                    string[] array = switchTxt.Split(new char[]
-                    {
-                        '|'
-                    });
-                    if (array.Length > 1)
-                    {
-                        SwitchedPokemon pokemon = null;
-                        var pokeName = "";
-                        var side = Convert.ToInt32(array[2].Substring(0, 2).Replace("p", "").Replace("a", "").Replace("b", "").Replace("c", ""));
-                        var personality = 0;
-                        if (array.Length >= 7)
-                        {
-                            pokemon = GetSwitchedPokemon(array[3], array[4]);
-                            pokeName = array[5];
-                            int.TryParse(array[6], out personality);
-                        }
-                        else
-                        {
-                            pokemon = GetSwitchedPokemon(array[3], string.Empty);
-                            pokeName = array[4];
-                            int.TryParse(array[5], out personality);
-                        }
+            //if (data.Log != null && data.Log.Length > 0)
+            //{
+            //    var switchTxt = data.Log.ToList().Find(m => m.Contains("switch") && m.Split('|')[1] == "switch");
+            //    if (!string.IsNullOrEmpty(switchTxt))
+            //    {
+            //        string[] array = switchTxt.Split(new char[]
+            //        {
+            //            '|'
+            //        });
+            //        if (array.Length > 1)
+            //        {
+            //            SwitchedPokemon pokemon = null;
+            //            var pokeName = "";
+            //            var side = Convert.ToInt32(array[2].Substring(0, 2).Replace("p", "").Replace("a", "").Replace("b", "").Replace("c", ""));
+            //            var personality = 0;
+            //            if (array.Length >= 7)
+            //            {
+            //                pokemon = GetSwitchedPokemon(array[3], array[4]);
+            //                pokeName = array[5];
+            //                int.TryParse(array[6], out personality);
+            //            }
+            //            else
+            //            {
+            //                pokemon = GetSwitchedPokemon(array[3], string.Empty);
+            //                pokeName = array[4];
+            //                int.TryParse(array[5], out personality);
+            //            }
 
-                        if (pokemon is null) return;
+            //            if (pokemon is null) return;
 
-                        //if (side == PlayerSide)
-                        //{
-                        //    //player
-                        //    var req = PlayerSide == 1 ? Data.Request1 : Data.Request2;
-                        //    var index = PlayerBattleSide.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
-                        //    SelectedPokemonIndex = index < 0 ? SelectedPokemonIndex : index;
-                        //    team[index].UpdateHealth(pokemon.Health, pokemon.MaxHealth);
-                        //}
-                        //else
-                        //{
-                        //    //oppoenent
-                        //    var req = PlayerSide == 1 ? Data.Request2 : Data.Request1;
-                        //    var index = req.RequestInfo.side.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
-                        //    CurrentHealth = pokemon.Health;
-                        //    OpponentHealth = pokemon.MaxHealth;
-                        //    OpponentGender = pokemon.Gender;
-                        //    OpponentId = pokemon.ID;
-                        //    OpponentLevel = pokemon.Level;
-                        //    OpponentStatus = pokemon.Status;
-                        //    IsShiny = pokemon.Shiny;
-                        //    if (index >= 0)
-                        //        OpponentStats = new PokemonStats(req.RequestInfo.side.pokemon[index].stats, pokemon.MaxHealth);
-                        //}
-                    }
-                }
-            }
+            //            //if (side == PlayerSide)
+            //            //{
+            //            //    //player
+            //            //    var req = PlayerSide == 1 ? Data.Request1 : Data.Request2;
+            //            //    var index = PlayerBattleSide.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
+            //            //    SelectedPokemonIndex = index < 0 ? SelectedPokemonIndex : index;
+            //            //    team[index].UpdateHealth(pokemon.Health, pokemon.MaxHealth);
+            //            //}
+            //            //else
+            //            //{
+            //            //    //oppoenent
+            //            //    var req = PlayerSide == 1 ? Data.Request2 : Data.Request1;
+            //            //    var index = req.RequestInfo.side.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
+            //            //    CurrentHealth = pokemon.Health;
+            //            //    OpponentHealth = pokemon.MaxHealth;
+            //            //    OpponentGender = pokemon.Gender;
+            //            //    OpponentId = pokemon.ID;
+            //            //    OpponentLevel = pokemon.Level;
+            //            //    OpponentStatus = pokemon.Status;
+            //            //    IsShiny = pokemon.Shiny;
+            //            //    if (index >= 0)
+            //            //        OpponentStats = new PokemonStats(req.RequestInfo.side.pokemon[index].stats, pokemon.MaxHealth);
+            //            //}
+            //        }
+            //    }
+            //}
 
         }
 
@@ -216,62 +216,62 @@ namespace Poke1Protocol
                 HandleBattleRequest(data.Request2, PlayerSide == 2);
             }
 
-            if (data.Log != null && data.Log.Length > 0)
-            {
-                var switchTxt = data.Log.ToList().Find(m => m.Contains("switch") && m.Split('|')[1] == "switch");
-                if (!string.IsNullOrEmpty(switchTxt))
-                {
-                    string[] array = switchTxt.Split(new char[]
-                    {
-                        '|'
-                    });
-                    if (array.Length > 1)
-                    {
-                        SwitchedPokemon pokemon = null;
-                        var pokeName = "";
-                        var side = Convert.ToInt32(array[2].Substring(0, 2).Replace("p", "").Replace("a", "").Replace("b", "").Replace("c", ""));
-                        var personality = 0;
-                        if (array.Length >= 7)
-                        {
-                            pokemon = GetSwitchedPokemon(array[3], array[4]);
-                            pokeName = array[5];
-                            int.TryParse(array[6], out personality);
-                        }
-                        else
-                        {
-                            pokemon = GetSwitchedPokemon(array[3], string.Empty);
-                            pokeName = array[4];
-                            int.TryParse(array[5], out personality);
-                        }
+            //if (data.Log != null && data.Log.Length > 0)
+            //{
+            //    var switchTxt = data.Log.ToList().Find(m => m.Contains("switch") && m.Split('|')[1] == "switch");
+            //    if (!string.IsNullOrEmpty(switchTxt))
+            //    {
+            //        string[] array = switchTxt.Split(new char[]
+            //        {
+            //            '|'
+            //        });
+            //        if (array.Length > 1)
+            //        {
+            //            SwitchedPokemon pokemon = null;
+            //            var pokeName = "";
+            //            var side = Convert.ToInt32(array[2].Substring(0, 2).Replace("p", "").Replace("a", "").Replace("b", "").Replace("c", ""));
+            //            var personality = 0;
+            //            if (array.Length >= 7)
+            //            {
+            //                pokemon = GetSwitchedPokemon(array[3], array[4]);
+            //                pokeName = array[5];
+            //                int.TryParse(array[6], out personality);
+            //            }
+            //            else
+            //            {
+            //                pokemon = GetSwitchedPokemon(array[3], string.Empty);
+            //                pokeName = array[4];
+            //                int.TryParse(array[5], out personality);
+            //            }
 
-                        if (pokemon is null) return;
+            //            if (pokemon is null) return;
 
-                        //if (side == PlayerSide)
-                        //{
-                        //    //player
-                        //    var req = PlayerSide == 1 ? Data.Request1 : Data.Request2;
-                        //    var index = PlayerBattleSide.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
-                        //    SelectedPokemonIndex = index < 0 ? SelectedPokemonIndex : index;
-                        //    team[index].UpdateHealth(pokemon.Health, pokemon.MaxHealth);
-                        //}
-                        //else
-                        //{
-                        //    //oppoenent
-                        //    var req = PlayerSide == 1 ? Data.Request2 : Data.Request1;
-                        //    var index = req.RequestInfo.side.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
-                        //    CurrentHealth = pokemon.Health;
-                        //    OpponentHealth = pokemon.MaxHealth;
-                        //    OpponentGender = pokemon.Gender;
-                        //    OpponentId = pokemon.ID;
-                        //    OpponentLevel = pokemon.Level;
-                        //    OpponentStatus = pokemon.Status;
-                        //    IsShiny = pokemon.Shiny;
-                        //    if (index >= 0)
-                        //        OpponentStats = new PokemonStats(req.RequestInfo.side.pokemon[index].stats, pokemon.MaxHealth);
-                        //}
-                    }
-                }
-            }
+            //            //if (side == PlayerSide)
+            //            //{
+            //            //    //player
+            //            //    var req = PlayerSide == 1 ? Data.Request1 : Data.Request2;
+            //            //    var index = PlayerBattleSide.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
+            //            //    SelectedPokemonIndex = index < 0 ? SelectedPokemonIndex : index;
+            //            //    team[index].UpdateHealth(pokemon.Health, pokemon.MaxHealth);
+            //            //}
+            //            //else
+            //            //{
+            //            //    //oppoenent
+            //            //    var req = PlayerSide == 1 ? Data.Request2 : Data.Request1;
+            //            //    var index = req.RequestInfo.side.pokemon.ToList().IndexOf(req.RequestInfo.side.pokemon.FirstOrDefault(x => x.personality == personality));
+            //            //    CurrentHealth = pokemon.Health;
+            //            //    OpponentHealth = pokemon.MaxHealth;
+            //            //    OpponentGender = pokemon.Gender;
+            //            //    OpponentId = pokemon.ID;
+            //            //    OpponentLevel = pokemon.Level;
+            //            //    OpponentStatus = pokemon.Status;
+            //            //    IsShiny = pokemon.Shiny;
+            //            //    if (index >= 0)
+            //            //        OpponentStats = new PokemonStats(req.RequestInfo.side.pokemon[index].stats, pokemon.MaxHealth);
+            //            //}
+            //        }
+            //    }
+            //}
         }
 
         public void UpdateSelectedPokemon() // While switching to another Pokemon.
@@ -632,35 +632,5 @@ namespace Poke1Protocol
             switchedPoke.Sent = side.active;
             return switchedPoke;
         }
-    }
-    public class SwitchedPokemon
-    {
-        public string Species = "";
-
-        public bool Shiny = false;
-
-        public int Level = 0;
-
-        public string Gender = "";
-
-        public int Health = 1;
-
-        public int MaxHealth = 1;
-
-        public string Status;
-
-        public int ID;
-
-        public string Forme = null;
-
-        public PSXAPI.Response.Payload.BattleMove[] Moves = null;
-
-        public string Trainer = null;
-
-        public int Personality = -1;
-
-        public bool Sent = false;
-
-        public bool WillSent = false;
     }
 }

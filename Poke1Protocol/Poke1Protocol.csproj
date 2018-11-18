@@ -90,6 +90,7 @@
     <Compile Include="Shop.cs" />
     <Compile Include="ShopItem.cs" />
     <Compile Include="StatType.cs" />
+    <Compile Include="SwitchedPokemon.cs" />
     <Compile Include="TypesManager.cs" />
   </ItemGroup>
   <ItemGroup>
