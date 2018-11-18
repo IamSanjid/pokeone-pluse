@@ -359,7 +359,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["useItemOnPokemon"] = new Func<string, int, bool>(UseItemOnPokemon);
                 _lua.Globals["useItemOnMove"] = new Func<string, string, int, bool>(UseItemOnMove);
                 _lua.Globals["useEquippedMount"] = new Func<bool>(UseEquippedMount);
-                _lua.Globals["setCollectedEfforValue"] = new Func<int, string, int, bool>(SetCollectedEfforValue);
+                _lua.Globals["setCollectedEffortValue"] = new Func<int, string, int, bool>(SetCollectedEffortValue);
 
                 // File editing actions
                 _lua.Globals["logToFile"] = new Action<string, DynValue, bool>(LogToFile);
@@ -3026,24 +3026,24 @@ namespace Poke1Bot.Scripting
         }
 
         // API: Sets specific amount of collected evs to the specified Pokemon
-        private bool SetCollectedEfforValue(int pokemonIndex, string statType, int evsAmmount)
+        private bool SetCollectedEffortValue(int pokemonIndex, string statType, int evsAmmount)
         {
             if (pokemonIndex < 1 || pokemonIndex > Bot.Game.Team.Count)
             {
-                Fatal("error: setCollectedEfforValue: tried to set evs to the non-existing pokémon " + pokemonIndex + ".");
+                Fatal("error: setCollectedEffortValue: tried to set evs to the non-existing pokémon " + pokemonIndex + ".");
                 return false;
             }
 
             if (!_stats.ContainsKey(statType.ToUpperInvariant()))
             {
-                Fatal("error: setCollectedEfforValue: the stat '" + statType + "' does not exist.");
+                Fatal("error: setCollectedEffortValue: the stat '" + statType + "' does not exist.");
                 return false;
             }
 
             var totalEVsCollected = Bot.Game.Team[pokemonIndex - 1].EVsCollected.GetStat(_stats[statType.ToUpperInvariant()]);
             if (totalEVsCollected < evsAmmount)
             {
-                Fatal("error: setCollectedEfforValue: the stat '" + statType + "' doesn't have " + evsAmmount + " this much ev collected.");
+                Fatal("error: setCollectedEffortValue: the stat '" + statType + "' doesn't have " + evsAmmount + " this much ev collected.");
                 return false;
             }
 
