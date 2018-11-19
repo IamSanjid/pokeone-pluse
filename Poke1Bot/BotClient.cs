@@ -314,11 +314,11 @@ namespace Poke1Bot
             if (canInteract)
             {
                 var fromNpcDir = target.GetDriectionFrom(Game.PlayerX, Game.PlayerY);
-                if (fromNpcDir != Game._lastDirection && !target.IsInLineOfSight(Game.PlayerX, Game.PlayerY))
+                if (fromNpcDir != Game.LastDirection && !target.IsInLineOfSight(Game.PlayerX, Game.PlayerY))
                 {
                     var oneStep = new[] { fromNpcDir.ToOneStepMoveActions() };
                     Game.SendMovement(oneStep, Game.PlayerX, Game.PlayerY);
-                    Game._lastDirection = fromNpcDir;
+                    Game.LastDirection = fromNpcDir;
                 }
                 _npcBattler = null;
                 Game.TalkToNpc(target);

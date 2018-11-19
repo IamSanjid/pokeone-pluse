@@ -155,6 +155,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["getPokedexOwned"] = new Func<int>(GetPokedexOwned);
                 _lua.Globals["getPokedexSeen"] = new Func<int>(GetPokedexSeen);
                 _lua.Globals["getTotalSteps"] = new Func<int>(GetTotalSteps);
+                _lua.Globals["getLastDirection"] = new Func<string>(GetLastDirection);
 
                 _lua.Globals["getPokemonId"] = new Func<int, int>(GetPokemonId);
                 _lua.Globals["getPokemonName"] = new Func<int, string>(GetPokemonName);
@@ -212,6 +213,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["isEvening"] = new Func<bool>(IsEvening);
                 _lua.Globals["isNight"] = new Func<bool>(IsNight);
                 _lua.Globals["isOutside"] = new Func<bool>(IsOutside);
+                _lua.Globals["isPlayerFacingWater"] = new Func<bool>(IsPlayerFacingWater);
                 _lua.Globals["getDestinationId"] = new Func<int, int, string>(GetDestinationId);
                 _lua.Globals["isTrainerInfoReceived"] = new Func<bool>(IsTrainerInfoReceived);
                 _lua.Globals["askForTrainerInfo"] = new Func<bool>(AskForTrainerInfo);
@@ -317,6 +319,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["moveToWater"] = new Func<bool>(MoveToWater);
                 _lua.Globals["talkToNpc"] = new Func<string, bool>(TalkToNpc);
                 _lua.Globals["talkToNpcOnCell"] = new Func<int, int, bool>(TalkToNpcOnCell);
+                _lua.Globals["turnCharacter"] = new Func<string, bool>(TurnCharacter);
                 _lua.Globals["usePokecenter"] = new Func<bool>(UsePokecenter);
                 _lua.Globals["swapPokemon"] = new Func<int, int, bool>(SwapPokemon);
                 _lua.Globals["sortTeamByLevelAscending"] = new Func<bool>(SortTeamByLevelAscending);
@@ -574,6 +577,12 @@ namespace Poke1Bot.Scripting
         private int GetTotalSteps()
         {
             return Bot.Game.TotalSteps;
+        }
+
+        // API: Returns last direction of ther player.
+        private string GetLastDirection()
+        {
+            return Bot.Game.LastDirection.ToString();
         }
 
         // API: Returns the ID of the specified pokémon in the team.
@@ -1250,6 +1259,12 @@ namespace Poke1Bot.Scripting
         private bool IsOutside()
         {
             return Bot.Game.Map.IsOutside;
+        }
+
+        // API: Returns tru if the character is facing water around it.
+        private bool IsPlayerFacingWater()
+        {
+            return Bot.Game.Map.GetWaterDirectionFrom(Bot.Game.PlayerX, Bot.Game.PlayerY) == Bot.Game.LastDirection;
         }
 
         // API: Check if the PC is open. Moving close the PC, usePC() opens it.
@@ -2305,6 +2320,13 @@ namespace Poke1Bot.Scripting
             }
 
             return ExecuteAction(Bot.TalkToNpc(target));
+        }
+
+        // API: Turns the character to specefied direction.
+        private bool TurnCharacter(string dir)
+        {
+            if (!ValidateAction("turnCharacter", false)) return false;
+            return ExecuteAction(Bot.Game.TurnCharacter(dir));
         }
 
         // API: Moves to the Nurse Joy then talk to the cell below her.

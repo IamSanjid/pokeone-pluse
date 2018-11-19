@@ -474,7 +474,6 @@ namespace Poke1Protocol
         public bool CanSurf(int positionX, int positionY, bool isOnGround)
         {
             int collider = GetCollider(positionX, positionY - 1);
-            int zone = TileZones[positionX, positionY - 1];
 
             if ((collider == 2 || collider == 15 ) && isOnGround)
             {
@@ -482,7 +481,6 @@ namespace Poke1Protocol
             }
 
             collider = GetCollider(positionX, positionY + 1);
-            zone = TileZones[positionX, positionY + 1];
 
             if ((collider == 2 || collider == 15 ) && isOnGround)
             {
@@ -490,15 +488,15 @@ namespace Poke1Protocol
             }
 
             collider = GetCollider(positionX - 1, positionY);
-            zone = TileZones[positionX - 1, positionY];
+
             if ((collider == 2 || collider == 15 ) && isOnGround)
             {
                 return true;
             }
 
             collider = GetCollider(positionX + 1, positionY);
-            zone = TileZones[positionX + 1, positionY];
-            if ((collider == 2 || collider == 15 || zone == 5) && isOnGround)
+
+            if ((collider == 2 || collider == 15) && isOnGround)
             {
                 return true;
             }
@@ -584,6 +582,39 @@ namespace Poke1Protocol
             if (!IsInCurrentArea(x, y)) return false;
             return OriginalNpcs.Find(s => s.PositionX == x && s.PositionY == y
                 && (s.NpcName.ToLowerInvariant().StartsWith(".cut") || s.Data.Settings.Sprite == 9) && s.IsVisible) != null;
+        }
+
+        public Direction GetWaterDirectionFrom(int positionX, int positionY)
+        {
+            int collider = GetCollider(positionX, positionY - 1);
+
+            if (collider == 2 || collider == 15)
+            {
+                return Direction.Up;
+            }
+
+            collider = GetCollider(positionX, positionY + 1);
+
+            if (collider == 2 || collider == 15)
+            {
+                return Direction.Down;
+            }
+
+            collider = GetCollider(positionX - 1, positionY);
+
+            if (collider == 2 || collider == 15)
+            {
+                return Direction.Left;
+            }
+
+            collider = GetCollider(positionX + 1, positionY);
+
+            if (collider == 2 || collider == 15)
+            {
+                return Direction.Right;
+            }
+
+            return Direction.None;
         }
 
         public bool IsGround(int x, int y)
@@ -775,8 +806,8 @@ namespace Poke1Protocol
             if (collider == 2 && !isSurfing)
                 return false;
 
-            if (HasLink(destx, desty) && !(direction == Direction.Up && collider == 22))
-                return true;
+            //if (HasLink(destx, desty) && !(direction == Direction.Up && collider == 22))
+            //    return true;
 
             var collPre = 0;
 

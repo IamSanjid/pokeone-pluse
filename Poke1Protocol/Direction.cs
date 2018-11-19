@@ -7,7 +7,8 @@ namespace Poke1Protocol
         Up,
         Down,
         Left,
-        Right
+        Right,
+        None
     }
     public static class DirectionExtensions
     {

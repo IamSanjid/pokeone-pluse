@@ -67,7 +67,7 @@ namespace Poke1Protocol
         private bool _needToSendSync = false;
         private bool _needToSendAck = false;
         private bool _isLoggedIn = false;
-        public Direction _lastDirection;
+        public Direction LastDirection;
         private bool _wasLoggedIn = false;
         private Guid _logidId;
 
@@ -476,7 +476,7 @@ namespace Poke1Protocol
                 int fromY = PlayerY;
                 if (ApplyMovement(direction))
                 {
-                    _lastDirection = direction;
+                    LastDirection = direction;
                     _movementTimeout.Set(IsBiking ? 150 : 300);
                     var actions = direction.ToMoveActions().ToList();
                     if (Map.HasLink(PlayerX, PlayerY))
@@ -489,7 +489,7 @@ namespace Poke1Protocol
                         if (battler != null)
                         {
                             var fromNpcDir = battler.GetDriectionFrom(PlayerX, PlayerY);
-                            if (_lastDirection != fromNpcDir)
+                            if (LastDirection != fromNpcDir)
                                 actions.Add(fromNpcDir.ToOneStepMoveActions());
                             battler.CanBattle = false;
                             LogMessage?.Invoke("The NPC " + (battler.NpcName ?? battler.Id.ToString()) + " saw us, interacting...");
@@ -514,6 +514,13 @@ namespace Poke1Protocol
                 }
                 if (_movements.Count == 0 && _surfAfterMovement)
                 {
+                    var waterDir = Map.GetWaterDirectionFrom(PlayerX, PlayerY);
+                    if (waterDir != LastDirection && waterDir != Direction.None)
+                    {
+                        // Facing to the water....
+                        SendMovement(new[] { waterDir.ToOneStepMoveActions() }, PlayerX, PlayerY);
+                        LastDirection = waterDir;
+                    }
                     _movementTimeout.Set(Rand.Next(750, 2000));
                 }
             }
@@ -2257,7 +2264,7 @@ namespace Poke1Protocol
                         IsOnGround = false;
                     else
                         IsOnGround = true;
-                    _lastDirection = DirectionExtensions.FromPlayerDirectionResponse(movement.Direction);
+                    LastDirection = DirectionExtensions.FromPlayerDirectionResponse(movement.Direction);
                 }
                 if (sync)
                     Resync(MapName == movement.Map);
@@ -2962,6 +2969,14 @@ namespace Poke1Protocol
             if (amount > totalCollected)
                 return false;
             SendSetCollectedEvs(poke.UniqueID, statType, poke.EV, amount);
+            return true;
+        }
+
+        public bool TurnCharacter(string dir)
+        {
+            var toDir = DirectionExtensions.FromChar(dir.ToLowerInvariant()[0]);
+            LastDirection = toDir;
+            SendMovement(new[] { toDir.ToOneStepMoveActions() }, PlayerX, PlayerY);
             return true;
         }
 
