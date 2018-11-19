@@ -102,6 +102,9 @@ namespace pokeone_plus
 
             _lastColumn = column;
             _lastDirection = direction;
+
+            //PlayerListView.Items.Refresh();
+            MainWindow.UpdateColumnWidths(PlayerListView.View as GridView);
         }
     }
 }

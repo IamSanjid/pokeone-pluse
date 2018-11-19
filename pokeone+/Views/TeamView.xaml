@@ -388,13 +388,41 @@
                 </ListView.ItemContainerStyle>
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="Id" DisplayMemberBinding="{Binding Id}" Width="Auto"/>
-                        <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}"/>
-                        <GridViewColumn Header="Level" DisplayMemberBinding="{Binding Experience.CurrentLevel}" Width="Auto"/>
-                        <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}" Width="Auto"/>
-                        <GridViewColumn Header="HP" DisplayMemberBinding="{Binding Health}" Width="Auto"/>
-                        <GridViewColumn Header="Remaining Exp" DisplayMemberBinding="{Binding Experience.RemainingExperience}" Width="Auto"/>
-                        <GridViewColumn Header="Item" DisplayMemberBinding="{Binding ItemHeld}" Width="Auto"/>
+                        <GridViewColumn DisplayMemberBinding="{Binding Id}" Width="Auto">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader Content="Id" Click="GridViewColumnHeader_Click"/>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                        <GridViewColumn DisplayMemberBinding="{Binding Name}" Width="Auto">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader Content="Name" Click="GridViewColumnHeader_Click"/>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                        <GridViewColumn DisplayMemberBinding="{Binding Experience.CurrentLevel}" Width="Auto">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader Content="Level" Click="GridViewColumnHeader_Click"/>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                        <GridViewColumn DisplayMemberBinding="{Binding Status}" Width="Auto">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader Content="Status" Click="GridViewColumnHeader_Click"/>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                        <GridViewColumn DisplayMemberBinding="{Binding Health}" Width="Auto">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader Content="HP" Click="GridViewColumnHeader_Click"/>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                        <GridViewColumn DisplayMemberBinding="{Binding Experience.RemainingExperience}" Width="Auto">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader Content="Remaining Exp" Click="GridViewColumnHeader_Click"/>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                        <GridViewColumn DisplayMemberBinding="{Binding ItemHeld}" Width="Auto">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader Content="Item" Click="GridViewColumnHeader_Click"/>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
                     </GridView>
                 </ListView.View>
             </ListView>

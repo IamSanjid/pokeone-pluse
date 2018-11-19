@@ -521,7 +521,7 @@ namespace Poke1Protocol
                         SendMovement(new[] { waterDir.ToOneStepMoveActions() }, PlayerX, PlayerY);
                         LastDirection = waterDir;
                     }
-                    _movementTimeout.Set(Rand.Next(750, 2000));
+                    _movementTimeout.Set(Rand.Next(750, 900));
                 }
             }
 

@@ -32,7 +32,8 @@ namespace pokeone_plus
 
         private void GridViewColumnHeader_Click(object sender, RoutedEventArgs e)
         {
-
+            ItemsListView.Items.Refresh();
+            MainWindow.UpdateColumnWidths(ItemsListView.View as GridView);
         }
 
         private void ItemsListView_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)

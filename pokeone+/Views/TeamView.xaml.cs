@@ -128,5 +128,11 @@ namespace pokeone_plus
                 e.Effects = DragDropEffects.None;
             }
         }
+
+        private void GridViewColumnHeader_Click(object sender, RoutedEventArgs e)
+        {
+            PokemonsListView.Items.Refresh();
+            MainWindow.UpdateColumnWidths(PokemonsListView.View as GridView);
+        }
     }
 }

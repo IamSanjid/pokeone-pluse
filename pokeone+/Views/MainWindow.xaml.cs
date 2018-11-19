@@ -1003,6 +1003,22 @@ namespace pokeone_plus
             await LoadScript(Bot.Settings.LastScript);
         }
 
+        // Technique for updating column widths of a ListView's GridView manually
+        public static void UpdateColumnWidths(GridView gridView)
+        {
+            // For each column...
+            foreach (var column in gridView.Columns)
+            {
+                // If this is an "auto width" column...
+                if (double.IsNaN(column.Width))
+                {
+                    // Set its Width back to NaN to auto-size again
+                    column.Width = 0;
+                    column.Width = double.NaN;
+                }
+            }
+        }
+
         public static void AppendLineToRichTextBox(RichTextBox richTextBox, string message, Brush color = null)
         {
             Paragraph para;

@@ -555,9 +555,9 @@ namespace Poke1Protocol
         public bool IsPc(int x, int y)
         {
             if (!IsInCurrentArea(x, y)) return false;
-            return (Objects.Any(ob => ob.x == x && ob.z == -y && ob.Name.StartsWith("PCComputer"))
+            return (Objects.Any(ob => ob != null && ob.x == x && ob.z == -y && ob.Name.StartsWith("PC") && !string.IsNullOrEmpty(ob.Name))
                     && OriginalNpcs.Any(n => n.PositionX == x && n.PositionY == y
-                    && n.NpcName.ToLowerInvariant().StartsWith("new")));
+                    && n.NpcName.ToLowerInvariant().StartsWith("new") && n.Data.Settings.Sprite == 0));
         }
 
         public bool IsNormalGround(int x, int y)
@@ -842,7 +842,7 @@ namespace Poke1Protocol
                     {                       
                         if (collPre == 22 || collPre == 21 || collPre == 23)
                             return false;
-                        if (collider == 0 || collider == 15 || collider == 11 || collider == 13 ||
+                        if (collider == 0 || collider == 15 || collider == 11 || collider == 13 || collider == 24 ||
                             collider == 4  || collider == 25 || collider == 21 || collider == 22 ||
                             collider == 12 || collider == 20 || collider == 19 || IsGoingToSlide(collider))
                         {
@@ -864,7 +864,7 @@ namespace Poke1Protocol
                     {
                         if (collPre == 19 || collPre == 16 || collPre == 21)
                             return false;
-                        if (collider == 15 || collider == 0 || collider == 7 || collider == 13
+                        if (collider == 15 || collider == 0 || collider == 7 || collider == 13 || collider == 24
                             || collider == 8 || collider == 9 || collider == 25 || collider == 22 ||
                             collider == 5 || collider == 12 || collider == 11 || IsGoingToSlide(collider))
                         {
@@ -886,7 +886,7 @@ namespace Poke1Protocol
                     {
                         if (collPre == 20 || collPre == 23 || collPre == 18)
                             return false;
-                        if (collider == 15 || collider == 0 || collider == 25 || collider == 13 ||
+                        if (collider == 15 || collider == 0 || collider == 25 || collider == 13 || collider == 24 ||
                             collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 22 ||
                             collider == 3 || collider == 12 || collider == 11 || IsGoingToSlide(collider))
                         {
