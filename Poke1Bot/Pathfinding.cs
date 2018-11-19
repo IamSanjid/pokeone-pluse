@@ -86,8 +86,8 @@ namespace Poke1Bot
                     if ((_client.Map.IsCutTree(node.X, node.Y) && _client.CanUseCut) 
                         || (_client.CanUseSmashRock && _client.Map.IsRockSmash(node.X, node.Y)))
                     {
+                        directions.Clear();
                         _client.UseRockSmashOrCut(node.X, node.Y);
-                        return true;
                     }
                     node = node.Parent;
                 }

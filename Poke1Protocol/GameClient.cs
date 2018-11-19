@@ -205,6 +205,7 @@ namespace Poke1Protocol
         private MapUsers _cachedNerbyUsers { get; set; }
 
         private Npc _npcBattler;
+        private Npc _cutOrRockSmashNpc;
 
         public GameClient(GameConnection connection, MapConnection mapConnection)
         {
@@ -523,12 +524,28 @@ namespace Poke1Protocol
                     }
                     _movementTimeout.Set(Rand.Next(750, 900));
                 }
+                if (_movements.Count == 0 && _cutOrRockSmashNpc != null)
+                {
+                    var npcDir = _cutOrRockSmashNpc.GetDriectionFrom(PlayerX, PlayerY);
+                    if (npcDir != LastDirection)
+                    {
+                        // Facing to the cut or rock smash npc....
+                        SendMovement(new[] { npcDir.ToOneStepMoveActions() }, PlayerX, PlayerY);
+                        LastDirection = npcDir;
+                    }
+                }
             }
 
             if (!_movementTimeout.IsActive && _movements.Count == 0 && _surfAfterMovement)
             {
                 _surfAfterMovement = false;
                 UseSurf();
+            }
+
+            if (!_movementTimeout.IsActive && _movements.Count == 0 && _cutOrRockSmashNpc != null)
+            {
+                TalkToNpc(_cutOrRockSmashNpc);
+                _cutOrRockSmashNpc = null;
             }
         }
 
@@ -2869,8 +2886,7 @@ namespace Poke1Protocol
 
         public void UseRockSmashOrCut(int x, int y)
         {
-            var findNpc = Map.Npcs.Find(npc => npc.PositionX == x && npc.PositionY == y);
-            MoveToBattleWithNpc?.Invoke(findNpc);
+            _cutOrRockSmashNpc = Map.Npcs.Find(npc => npc.PositionX == x && npc.PositionY == y);
         }
 
         public void UseSurf()
