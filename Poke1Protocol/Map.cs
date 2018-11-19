@@ -633,7 +633,7 @@ namespace Poke1Protocol
             if (collider == 12 && !isOnGround)
                 return MoveResult.OnGround;
 
-            if (isSurfing && !IsWater(destinationX, destinationY))
+            if (isSurfing && collider != 2)
                 return MoveResult.NoLongerSurfing;
 
             return MoveResult.Success;

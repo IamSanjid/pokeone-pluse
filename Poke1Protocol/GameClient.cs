@@ -1371,13 +1371,21 @@ namespace Poke1Protocol
                             SystemMessage?.Invoke("You've started fishing!");
                             break;
                         case PSXAPI.Response.Badges bd:
+                            foreach(var badge in bd.All)
+                            {
+                                if (!Badges.ContainsKey(badge))
+                                {
+                                    Badges.Add(badge, BadgeFromID(badge));
+                                    SystemMessage?.Invoke("You've obtained " + BadgeFromID(badge) + " !");
+                                }
+                            }
                             Console.WriteLine("BADGES: " + bd.All.Length);
                             break;
                         case PSXAPI.Response.Stats stats:
                             OnPlayerStats(stats);
                             break;
                         case PSXAPI.Response.Badge badge:
-                            if (badge.Active)
+                            if (!Badges.ContainsKey(badge.Id))
                             {
                                 Badges.Add(badge.Id, BadgeFromID(badge.Id));
                                 SystemMessage?.Invoke("You've obtained " + BadgeFromID(badge.Id) + " !");
@@ -1949,7 +1957,7 @@ namespace Poke1Protocol
                         firstEncounterMessage = ActiveBattle.IsWild ? pok.Shiny ? $"Wild shiny {PokemonManager.Instance.Names[pok.ID]} and " : $"Wild {PokemonManager.Instance.Names[pok.ID]} and "
                             + (secondPok.Shiny ? $"shiny {PokemonManager.Instance.Names[secondPok.ID]} has appeared!" : $"{PokemonManager.Instance.Names[secondPok.ID]} has appeared!") 
                             :
-                            pok.Shiny ? $"Opponents sent out shiny {PokemonManager.Instance.Names[pok.ID]} and " : $"Opponents sent out {PokemonManager.Instance.Names[secondPok.ID]} and "
+                            pok.Shiny ? $"Opponents sent out shiny {PokemonManager.Instance.Names[pok.ID]} and " : $"Opponents sent out {PokemonManager.Instance.Names[pok.ID]} and "
                             + (secondPok.Shiny ? $"shiny {PokemonManager.Instance.Names[secondPok.ID]}!" : $"{PokemonManager.Instance.Names[secondPok.ID]}!");
                     }
                     else if (ActiveBattle.OpponentActivePokemon.Count == 3)
@@ -2025,9 +2033,7 @@ namespace Poke1Protocol
             else if (mtP.MountType == MountType.Surfing)
             {
                 IsBiking = false;
-                IsOnGround = false;
                 IsSurfing = true;
-                _surfAfterMovement = false;
             }
         }
 
@@ -2230,8 +2236,6 @@ namespace Poke1Protocol
                 {
                     TeleportationOccuring?.Invoke(movement.Map, movement.X, movement.Y);
 
-                    if (IsMapLoaded)
-                        IsOnGround = Map.GetCollider(movement.X, movement.Y) != 13 && Map.GetCollider(movement.X, movement.Y) != 11;
 
                     PlayerX = movement.X;
                     PlayerY = movement.Y;
@@ -2263,9 +2267,6 @@ namespace Poke1Protocol
                 if (MapName != syncP.Map || PlayerX != syncP.PosX || PlayerY != syncP.PosY)
                 {
                     TeleportationOccuring?.Invoke(syncP.Map, syncP.PosX, syncP.PosY);
-
-                    if (IsMapLoaded)
-                        IsOnGround = Map.GetCollider(syncP.PosX, syncP.PosY) != 13 && Map.GetCollider(syncP.PosX, syncP.PosY) != 11;
 
                     PlayerX = syncP.PosX;
                     PlayerY = syncP.PosY;
