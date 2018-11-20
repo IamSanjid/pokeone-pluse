@@ -80,13 +80,13 @@ namespace Poke1Bot
             //var packet = @"InventoryPokemon CtEBChIJ8TZvO060XkYRhk8er86fOWQSjgEIowEQCxjPCyAkKgYIXRAZGBkqBggtECgYKCoGCCEQIxgjKgYIXxAUGBQwAjhoQAtSDAgTEAQYHyAJKAEwDloAYAJqEgm/i6xDrmcMTxGCrF/kjgIhyXISCb+LrEOuZwxPEYKsX+SOAiHJgAEEkAHDruOwAaIBBhACIAEwBqoBCwi+8s/AlfvlNhAFsAEDGgwIJBAMGBAgCygRMBEiBXhjb2RlKgV4Y29kZTIIS2VlbiBFeWU4swpAwA0Q////////////ARj///////////8BIP///////////wE=";
             //var packet = @"Transfer CAESEgnxNm87TrReRhGGTx6vzp85ZA==";
             //var packet = @"Reorder ChIJ8TZvO060XkYRhk8er86fOWQKEgkmzfVu9CvLSRGQRb3nB/7fDAoSCfYOcUXnX0tPEaMc+TIXvZ2yChIJYRN0DkiWxU0RgB2UOdBYu10KEgnc3Xc6Zt6VQRG0ts8aa5F9XQ==";            
-            var packet = @"BattleMove CAoQARgBIAM=";
+            var packet = @"Script ChIJwEqyE9iPLUMRiQTuSYvriVcQDRo9CidEbyB5b3UgY2FyZSBlbm91Z2ggYWJvdXQgeW91ciBQb2vDqW1vbj8SEgljSAKHbIp1SBG4F6NkbYiwkiIkODcwMjQ4NjMtOGE2Yy00ODc1LWI4MTctYTM2NDZkODhiMDkyIgJ1cw==";
 
             var data = packet.Split(" ".ToCharArray());
 
             byte[] array = Convert.FromBase64String(data[1]);
             var type = Type.GetType($"PSXAPI.Request.{data[0]}, PSXAPI");
-            //goto RESP;
+            goto RESP;
             if (type != null)
             {
                 var proto = typeof(PSXAPI.Proto).GetMethod("Deserialize").MakeGenericMethod(new Type[]

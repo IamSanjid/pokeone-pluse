@@ -9,14 +9,14 @@ namespace Poke1Protocol
 {
     public class Npc
     {
-        public int PositionX { get; }
-        public int PositionY { get; }
+        public int PositionX { get; private set; }
+        public int PositionY { get; private set; }
         public Guid Id { get; }
         public bool IsDoor => DoorNo > 0;
         public int DoorNo { get; } = 0;
         public string NpcName { get; }
         public int LosLength { get; private set; }
-        public Direction Direction { get; }
+        public Direction Direction { get; private set; }
         public bool IsMoving => _path.Length > 0;
         public NPCData Data { get; }
         public bool IsBattler { get; private set; }
@@ -175,6 +175,53 @@ namespace Poke1Protocol
                     return x > PositionX && y == PositionY;
                 default:
                     throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public void ProcessActions(string actions)
+        {
+            foreach(var action in actions.ToLowerInvariant())
+            {
+
+                switch (action)
+                {
+                    case 'u':
+                        PositionY--;
+                        break;
+                    case 'd':
+                        PositionY++;
+                        break;
+                    case 'l':
+                        PositionX--;
+                        break;
+                    case 'r':
+                        PositionX++;
+                        break;
+                    case 'n':
+                        Direction = Direction.Up;
+                        break;
+                    case 's':
+                        Direction = Direction.Down;
+                        break;
+                    case 'e':
+                        Direction = Direction.Right;
+                        break;
+                    case 'w':
+                        Direction = Direction.Left;
+                        break;
+                    case '1':
+                        Direction = Direction.Up;
+                        break;
+                    case '2':
+                        Direction = Direction.Down;
+                        break;
+                    case '3':
+                        Direction = Direction.Left;
+                        break;
+                    case '4':
+                        Direction = Direction.Right;
+                        break;
+                }
             }
         }
 

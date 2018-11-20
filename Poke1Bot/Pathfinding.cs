@@ -79,15 +79,15 @@ namespace Poke1Bot
                         directions.Clear();
                         _client.UseSurfAfterMovement();
                     }
-                    else
-                    {
-                        directions.Push(node.FromDirection);
-                    }
-                    if ((_client.Map.IsCutTree(node.X, node.Y) && _client.CanUseCut) 
-                        || (_client.CanUseSmashRock && _client.Map.IsRockSmash(node.X, node.Y)))
+                    else if ((_client.Map.IsCutTree(node.X, node.Y) && _client.CanUseCut)
+                       || (_client.CanUseSmashRock && _client.Map.IsRockSmash(node.X, node.Y)))
                     {
                         directions.Clear();
                         _client.UseRockSmashOrCut(node.X, node.Y);
+                    }
+                    else
+                    {
+                        directions.Push(node.FromDirection);
                     }
                     node = node.Parent;
                 }

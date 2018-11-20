@@ -457,6 +457,7 @@ namespace pokeone_plus
                     Bot.Game.PlayerAdded += Map.Client_PlayerEnteredMap;
                     Bot.Game.PlayerRemoved += Map.Client_PlayerLeftMap;
                     Bot.Game.PlayerUpdated += Map.Client_PlayerMoved;
+                    Bot.Game.NpcReceieved += Map.Client_NpcReceived;
                 }
             }
             Dispatcher.InvokeAsync(delegate

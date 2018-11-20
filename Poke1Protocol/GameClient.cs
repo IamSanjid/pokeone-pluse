@@ -138,12 +138,13 @@ namespace Poke1Protocol
         public event Action<PSXAPI.Response.Payload.PokemonMoveID, int, Guid> LearningMove;
         public event Action<List<PlayerQuest>> QuestsUpdated;
         public event Action<PSXAPI.Response.Path> ReceivedPath;
-        public event Action NpcReceieved;
+        public event Action<List<Npc>> NpcReceieved;
         public event Action<Shop> ShopOpened;
         public event Action<string> ServerCommandException;
         public event Action BattleUpdated;
         public event Action<Npc> MoveToBattleWithNpc;
         public event Action<List<Pokemon>> PCBoxUpdated;
+        public event Action<bool> MountUpdated;
 
 
         public string[] DialogContent { get; private set; }
@@ -519,7 +520,7 @@ namespace Poke1Protocol
                 if (_movements.Count == 0 && _surfAfterMovement)
                 {
                     var waterDir = Map.GetWaterDirectionFrom(PlayerX, PlayerY);
-                    if (waterDir != LastDirection && waterDir != Direction.None)
+                    if (waterDir != Direction.None && waterDir != LastDirection)
                     {
                         // Facing to the water....
                         SendMovement(new[] { waterDir.ToOneStepMoveActions() }, PlayerX, PlayerY);
@@ -527,17 +528,16 @@ namespace Poke1Protocol
                     }
                     _movementTimeout.Set(Rand.Next(750, 900));
                 }
-                if (_movements.Count == 0 && _cutOrRockSmashNpc != null && DistanceBetween(_cutOrRockSmashNpc.PositionX, _cutOrRockSmashNpc.PositionY, PlayerX, PlayerY) == 1)
+                if (_movements.Count == 0 && _cutOrRockSmashNpc != null 
+                    && DistanceBetween(_cutOrRockSmashNpc.PositionX, _cutOrRockSmashNpc.PositionY, PlayerX, PlayerY) == 1)
                 {
                     var npcDir = _cutOrRockSmashNpc.GetDriectionFrom(PlayerX, PlayerY);
-                    if (npcDir != LastDirection)
+                    if (npcDir != Direction.None && npcDir != LastDirection)
                     {
                         // Facing to the cut or rock smash npc....
                         SendMovement(new[] { npcDir.ToOneStepMoveActions() }, PlayerX, PlayerY);
                         LastDirection = npcDir;
                     }
-                    TalkToNpc(_cutOrRockSmashNpc);
-                    _cutOrRockSmashNpc = null;
                 }
             }
 
@@ -545,6 +545,30 @@ namespace Poke1Protocol
             {
                 _surfAfterMovement = false;
                 UseSurf();
+            }
+            if (!_movementTimeout.IsActive && _movements.Count == 0 && _cutOrRockSmashNpc != null 
+                && DistanceBetween(_cutOrRockSmashNpc.PositionX, _cutOrRockSmashNpc.PositionY, PlayerX, PlayerY) == 1)
+            {
+                TalkToNpc(_cutOrRockSmashNpc);
+                //Move(_cutOrRockSmashNpc.GetDriectionFrom(PlayerX, PlayerY));
+                _cutOrRockSmashNpc = null;
+                //int x = PlayerX;
+                //int y = PlayerY;
+                //foreach (var dir in new List<Direction> { Direction.Down, Direction.Up, Direction.Right, Direction.Left})
+                //{
+                //    dir.ApplyToCoordinates(ref x, ref y);
+                //    if (x == _cutOrRockSmashNpc.PositionX && y == _cutOrRockSmashNpc.PositionY)
+                //    {
+                //        Move(dir);
+                //        break;
+                //    }
+                //    else
+                //    {
+                //        x = PlayerX;
+                //        y = PlayerY;
+                //    }
+                //}
+                //_movementTimeout.Set(Rand.Next(300, 500));
             }
         }
 
@@ -596,8 +620,18 @@ namespace Poke1Protocol
                         _dialogTimeout.Set();
                         break;
                     case ScriptRequestType.WalkNpc:
+                        if (DialogContent != null && DialogContent.Length >= 2)
+                        {
+                            var walkingNpc = Map.Npcs.Find(npc => npc.Id == Guid.Parse(DialogContent[0]));
+                            if (walkingNpc != null)
+                            {
+                                walkingNpc.ProcessActions(DialogContent[1]);
+                            }
+                        }
                         SendScriptResponse(script.ScriptID, "");
                         _dialogTimeout.Set();
+                        AreNpcReceived = true;
+                        NpcReceieved?.Invoke(Map.Npcs);
                         break;
                     case ScriptRequestType.WalkUser:
                         SendScriptResponse(script.ScriptID, "");
@@ -2058,6 +2092,7 @@ namespace Poke1Protocol
                 IsBiking = false;
                 IsSurfing = true;
             }
+            MountUpdated?.Invoke(IsSurfing);
         }
 
         private void OnScript(PSXAPI.Response.Script data)
@@ -3101,7 +3136,7 @@ namespace Poke1Protocol
             }
 
             AreNpcReceived = true;
-            NpcReceieved?.Invoke();
+            NpcReceieved?.Invoke(Map.Npcs);
         }
 
         private void Map_AreaUpdated()

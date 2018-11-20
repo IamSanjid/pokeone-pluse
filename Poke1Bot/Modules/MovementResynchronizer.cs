@@ -28,9 +28,16 @@
         {
             if (_bot.Game != null)
             {
-                //_bot.Game.BattleEnded += Game_BattleEnded;
-                //_bot.Game.DialogOpened += Game_DialogOpened;
+                _bot.Game.BattleEnded += Game_BattleEnded;
+                _bot.Game.DialogOpened += Game_DialogOpened;
+                _bot.Game.MountUpdated += Game_MountUpdated;
             }
+        }
+
+        private void Game_MountUpdated(bool isSurfing)
+        {
+            if (isSurfing)
+                Reset();
         }
 
         private void Game_BattleEnded()
@@ -50,7 +57,7 @@
             {
                 if (_requestedResync)
                 {
-                    _bot.LogMessage("Bot still stuck.");
+                    _bot.LogMessage("Bot still stuck, stopping the script.");
                     _bot.Stop();
                 }
                 else
@@ -75,7 +82,6 @@
         public void Reset()
         {
             _requestedResync = false;
-            //_bot.NeedResync = false;
             _lastMovementSourceX = -1;
         }
     }
