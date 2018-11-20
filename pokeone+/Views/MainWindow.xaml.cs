@@ -1001,6 +1001,12 @@ namespace pokeone_plus
         {
             if (string.IsNullOrEmpty(Bot.Settings.LastScript))
                 return;
+            if (!File.Exists(Bot.Settings.LastScript))
+            {
+                Bot.Settings.LastScript = null;
+                return;
+            }
+
             await LoadScript(Bot.Settings.LastScript);
         }
 
@@ -1163,6 +1169,11 @@ namespace pokeone_plus
         private void About_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show(App.Name + " version " + App.Version + ", by " + App.Author + "." + Environment.NewLine + App.Description, App.Name + " - About");
+        }
+
+        private void ReloadHotKey_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            ReloadScript_Click(sender, null);
         }
     }
 }

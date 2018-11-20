@@ -367,6 +367,12 @@
             </Setter>
         </Style>
     </Window.Resources>
+    <Window.CommandBindings>
+        <CommandBinding Command="New" Executed="ReloadHotKey_Executed" />
+    </Window.CommandBindings>
+    <Window.InputBindings>
+        <KeyBinding Key="R" Modifiers="Control" Command="New"/>
+    </Window.InputBindings>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>

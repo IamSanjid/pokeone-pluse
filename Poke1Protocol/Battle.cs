@@ -438,9 +438,13 @@ namespace Poke1Protocol
                                 ": "
                             }, StringSplitOptions.None);
                             
+                            if (attacker[1] != attackTaker[1])
+                                BattleMessage?.Invoke((attacker[0].Contains("p1") && PlayerSide == 1) 
+                                    || (attacker[0].Contains("p2") && PlayerSide == 2) ? $"Your {attacker[1]} used {move} on {attackTaker[1]}" : IsWild ? $"Wild {attacker[1]} used {move} on {attackTaker[1]}" : $"Opponent's {attacker[1]} used {move} on {attackTaker[1]}" + "!");
+                            else
+                                BattleMessage?.Invoke((attacker[0].Contains("p1") && PlayerSide == 1)
+                                    || (attacker[0].Contains("p2") && PlayerSide == 2) ? $"Your {attacker[1]} used {move}" : IsWild ? $"Wild {attacker[1]} used {move}" : $"Opponent's {attacker[1]} used {move}" + "!");
 
-                            BattleMessage?.Invoke((attacker[0].Contains("p1") && PlayerSide == 1) 
-                                || (attacker[0].Contains("p2") && PlayerSide == 2) ? $"Your {attacker[1]} used {move} on {attackTaker[1]}" : IsWild ? $"Wild {attacker[1]} used {move} on {attackTaker[1]}" : $"Opponent's {attacker[1]} used {move} on {attackTaker[1]}" + "!");
                             if (info.Length > 5)
                             {
                                 var happened = info[5];
