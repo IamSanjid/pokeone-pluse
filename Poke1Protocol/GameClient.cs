@@ -45,7 +45,6 @@ namespace Poke1Protocol
         private string _partyChannel = "";
         private string _guildChannel = "";
         private string _guildName = "";
-        private bool sentAck = false;
         private byte _guildEmbedId;
 
         public int TotalSteps { get; private set; }
@@ -207,8 +206,6 @@ namespace Poke1Protocol
 
         private Npc _npcBattler;
         private Npc _cutOrRockSmashNpc;
-
-        private DateTime _requestForStatsAfterLogin;
 
         public GameClient(GameConnection connection, MapConnection mapConnection)
         {
@@ -391,12 +388,6 @@ namespace Poke1Protocol
 
             if (RunningForSeconds > _lastSentMovement + 0.6f && _movementPackets.Count > 0)
                 SendMovemnetPackets();
-
-            if (DateTime.UtcNow > _requestForStatsAfterLogin && sentAck && Badges.Count <= 0)
-            {
-                sentAck = false;
-                AskForPlayerStats();
-            }
         }
 
         // Don't ask me it is PokeOne's way lol...
@@ -833,7 +824,6 @@ namespace Poke1Protocol
                 Data = StringCipher.EncryptOrDecryptToBase64Byte(PlayerName, _logidId.ToString())
             };
             SendProto(s);
-            sentAck = true;
         }
 
         private void SendSwapPokemons(int poke1, int poke2)
@@ -2407,7 +2397,6 @@ namespace Poke1Protocol
         {
             _isLoggedIn = true;
             PlayerName = login.Username;
-            _requestForStatsAfterLogin = DateTime.UtcNow.AddSeconds(Rand.Next(5, 10));
             Console.WriteLine($"[Login] [ID={login.LoginID}] Authenticated successfully");
             _logidId = login.LoginID;
             LoggedIn?.Invoke();
@@ -2567,7 +2556,7 @@ namespace Poke1Protocol
                 {
                     var poke = new Pokemon(pokemons[0]);
 
-                    if (poke.PokemonData.Box == CurrentPCBoxId)
+                    if (poke?.PokemonData?.Box == CurrentPCBoxId)
                     {
                         // This pokemon data is received when the player transfer a pokemon to the box
 
@@ -2582,12 +2571,12 @@ namespace Poke1Protocol
                         _cachedPokemon.Add(pokemons[0]);
                     }
 
-                    var foundPoke = Team.Find(x => x.PokemonData.Pokemon.UniqueID == pokemons[0].Pokemon.UniqueID);
+                    var foundPoke = Team.Find(x => x?.PokemonData?.Pokemon?.UniqueID == pokemons[0]?.Pokemon?.UniqueID);
                     if (foundPoke != null)
                     {
                         foundPoke.UpdatePokemonData(pokemons[0]);
                     }
-                    else if (poke.PokemonData.Box == 0)
+                    else if (poke?.PokemonData?.Box == 0)
                     {
                         Team.Add(poke);
                     }
@@ -2681,6 +2670,10 @@ namespace Poke1Protocol
         {
             Money = (int)data.Money;
             Gold = (int)data.Gold;
+            foreach(var id in data.Badges)
+            {
+                Badges.Add(id, BadgeFromID(id));
+            }
             UpdateItems(data.Items);
         }
 
@@ -3207,7 +3200,7 @@ namespace Poke1Protocol
 
         public bool HasMove(string moveName)
         {
-            return Team.Any(p => p.Moves.Any(m => m.Name?.Equals(moveName, StringComparison.InvariantCultureIgnoreCase) ?? false));
+            return Team.Any(p => p.Moves != null && p.Moves.Any(m => m?.Name.Equals(moveName, StringComparison.InvariantCultureIgnoreCase) ?? false));
         }
 
         public int GetMovePosition(int pokemonUid, string moveName)

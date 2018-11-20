@@ -55,7 +55,7 @@ namespace Poke1Protocol
         public string Forme { get; private set; }
         internal Pokemon(InventoryPokemon data)
         {
-            if (data != null)
+            if (data != null && data.Pokemon != null && data.Pokemon.Payload != null)
             {
                 PokemonData = data;
                 UniqueID = data.Pokemon.UniqueID;
@@ -104,7 +104,7 @@ namespace Poke1Protocol
 
         public void UpdatePokemonData(InventoryPokemon data)
         {
-            if (data != null)
+            if (data != null && data.Pokemon != null && data.Pokemon.Payload != null)
             {
                 PokemonData = data;
                 UniqueID = data.Pokemon.UniqueID;
