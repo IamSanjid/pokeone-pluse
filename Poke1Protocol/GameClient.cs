@@ -45,7 +45,7 @@ namespace Poke1Protocol
         private string _partyChannel = "";
         private string _guildChannel = "";
         private string _guildName = "";
-
+        private bool sentAck = false;
         private byte _guildEmbedId;
 
         public int TotalSteps { get; private set; }
@@ -207,6 +207,8 @@ namespace Poke1Protocol
 
         private Npc _npcBattler;
         private Npc _cutOrRockSmashNpc;
+
+        private DateTime _requestForStatsAfterLogin;
 
         public GameClient(GameConnection connection, MapConnection mapConnection)
         {
@@ -389,6 +391,12 @@ namespace Poke1Protocol
 
             if (RunningForSeconds > _lastSentMovement + 0.6f && _movementPackets.Count > 0)
                 SendMovemnetPackets();
+
+            if (DateTime.UtcNow > _requestForStatsAfterLogin && sentAck && Badges.Count <= 0)
+            {
+                sentAck = false;
+                AskForPlayerStats();
+            }
         }
 
         // Don't ask me it is PokeOne's way lol...
@@ -550,25 +558,7 @@ namespace Poke1Protocol
                 && DistanceBetween(_cutOrRockSmashNpc.PositionX, _cutOrRockSmashNpc.PositionY, PlayerX, PlayerY) == 1)
             {
                 TalkToNpc(_cutOrRockSmashNpc);
-                //Move(_cutOrRockSmashNpc.GetDriectionFrom(PlayerX, PlayerY));
                 _cutOrRockSmashNpc = null;
-                //int x = PlayerX;
-                //int y = PlayerY;
-                //foreach (var dir in new List<Direction> { Direction.Down, Direction.Up, Direction.Right, Direction.Left})
-                //{
-                //    dir.ApplyToCoordinates(ref x, ref y);
-                //    if (x == _cutOrRockSmashNpc.PositionX && y == _cutOrRockSmashNpc.PositionY)
-                //    {
-                //        Move(dir);
-                //        break;
-                //    }
-                //    else
-                //    {
-                //        x = PlayerX;
-                //        y = PlayerY;
-                //    }
-                //}
-                //_movementTimeout.Set(Rand.Next(300, 500));
             }
         }
 
@@ -843,6 +833,7 @@ namespace Poke1Protocol
                 Data = StringCipher.EncryptOrDecryptToBase64Byte(PlayerName, _logidId.ToString())
             };
             SendProto(s);
+            sentAck = true;
         }
 
         private void SendSwapPokemons(int poke1, int poke2)
@@ -1669,6 +1660,8 @@ namespace Poke1Protocol
                 TotalSteps = (int)stats.Data.StepsTaken;
                 foreach (var id in PlayerStats.Badges)
                     Badges.Add(id, BadgeFromID(id));
+                CanUseCut = HasCutAbility();
+                CanUseSmashRock = HasRockSmashAbility();
             }
         }
 
@@ -2414,7 +2407,7 @@ namespace Poke1Protocol
         {
             _isLoggedIn = true;
             PlayerName = login.Username;
-
+            _requestForStatsAfterLogin = DateTime.UtcNow.AddSeconds(Rand.Next(5, 10));
             Console.WriteLine($"[Login] [ID={login.LoginID}] Authenticated successfully");
             _logidId = login.LoginID;
             LoggedIn?.Invoke();
@@ -3194,12 +3187,13 @@ namespace Poke1Protocol
 
         public bool HasSurfAbility()
         {
-            return HasMove("Surf") && HasEffectName("Surf");
+            return HasMove("Surf") && HasEffectName("Surf")
+                && Badges.Count > 0 && Badges.ContainsKey(5);
         }
 
         public bool HasCutAbility()
         {
-            return (HasMove("Cut"));
+            return HasMove("Cut") && Badges.Count > 0 && Badges.ContainsKey(2);
         }
         public bool HasRockSmashAbility()
         {

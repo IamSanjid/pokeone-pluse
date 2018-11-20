@@ -333,8 +333,11 @@ namespace Poke1Bot
                     }
                 }
                 // Struggle
-                _client.UseAttack(1, i + 1, ActiveOpponentPokemons.Length == 1 ? opponentIndex : opponentIndex + 1);
-                result = true;
+                if (!result)
+                {
+                    _client.UseAttack(1, i + 1, ActiveOpponentPokemons.Length == 1 ? opponentIndex : opponentIndex + 1);
+                    result = true;
+                }
             }
 
             return result;
@@ -390,12 +393,12 @@ namespace Poke1Bot
                     if (activePokemon.Health <= 0)
                     {
                         _client.UseAttack(0, activePoke + 1);
+                        return ResultUsingMove.Success;
                     }
                     else
                     {
-                        _client.UseAttack(1, activePoke + 1);
+                        return ResultUsingMove.NoLongerUsable;
                     }
-                    return ResultUsingMove.Success;
                 }
                 return ResultUsingMove.Fainted;
             }

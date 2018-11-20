@@ -645,6 +645,8 @@ namespace Poke1Protocol
             //if (IsUnmoveableCellSide(direction, destinationX, destinationY))
             //    return MoveResult.Fail;
 
+            if ((IsCutTree(destinationX, destinationY) && !canUseCut) || (IsRockSmash(destinationX, destinationY) && !canUseSmashRock))
+                return MoveResult.Fail;
 
             int collider = GetCollider(destinationX, destinationY);
 
