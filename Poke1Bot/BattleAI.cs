@@ -319,23 +319,25 @@ namespace Poke1Bot
         public bool UseAnyMove()
         {
             if (ActivePokemons is null) return false;
+            bool result = false;
             for (int i = 0; i < ActivePokemons.Length; ++i)
             {
-                var opponentIndex = _client.Rand.Next(1, ActiveOpponentPokemons.Length);
-                for (int j = 0; i < ActivePokemons[i].Moves.Length; ++j)
+                var opponentIndex = _client.Rand.Next(0, ActiveOpponentPokemons.Length - 1);
+                for (int j = 0; j < ActivePokemons[i].Moves.Length; ++j)
                 {
                     var move = ActivePokemons[i].Moves[j];
                     if (move.pp > 0 && !move.disabled)
                     {
-                        _client.UseAttack(j + 1, i, opponentIndex);
-                        return true;
+                        _client.UseAttack(j + 1, i + 1, ActiveOpponentPokemons.Length == 1 ? opponentIndex : opponentIndex + 1);
+                        result = true;
                     }
                 }
                 // Struggle
-                _client.UseAttack(1, i, opponentIndex);
+                _client.UseAttack(1, i + 1, ActiveOpponentPokemons.Length == 1 ? opponentIndex : opponentIndex + 1);
+                result = true;
             }
 
-            return true;
+            return result;
         }
         public bool UseItem(int itemId, int pokemonUid = 0)
         {
@@ -391,7 +393,7 @@ namespace Poke1Bot
                     }
                     else
                     {
-                        _client.UseAttack(1, activePoke + 1, 1);
+                        _client.UseAttack(1, activePoke + 1);
                     }
                     return ResultUsingMove.Success;
                 }
@@ -496,12 +498,12 @@ namespace Poke1Bot
 
             if (useBestAttack && bestMove != null)
             {
-                _client.UseAttack(bestIndex + 1, activePoke + 1, oppenentPoke + 1);
+                _client.UseAttack(bestIndex + 1, activePoke + 1, ActiveOpponentPokemons.Length == 1 ? oppenentPoke : oppenentPoke + 1);
                 return ResultUsingMove.Success;
             }
             if (!useBestAttack && worstMove != null)
             {
-                _client.UseAttack(worstIndex + 1, activePoke + 1, oppenentPoke + 1);
+                _client.UseAttack(worstIndex + 1, activePoke + 1, ActiveOpponentPokemons.Length == 1 ? oppenentPoke : oppenentPoke + 1);
                 return ResultUsingMove.Success;
             }
             return ResultUsingMove.NoLongerUsable;

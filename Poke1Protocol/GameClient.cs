@@ -489,9 +489,12 @@ namespace Poke1Protocol
                         Npc battler = Map.Npcs.FirstOrDefault(npc => npc.CanBattle && npc.IsInLineOfSight(PlayerX, PlayerY));
                         if (battler != null)
                         {
-                            var fromNpcDir = battler.GetDriectionFrom(PlayerX, PlayerY);
+                            var fromNpcDir = battler.Direction.GetOpposite();
                             if (LastDirection != fromNpcDir)
+                            {
                                 actions.Add(fromNpcDir.ToOneStepMoveActions());
+                                LastDirection = fromNpcDir;
+                            }
                             battler.CanBattle = false;
                             LogMessage?.Invoke("The NPC " + (battler.NpcName ?? battler.Id.ToString()) + " saw us, interacting...");
                             int distanceFromBattler = DistanceBetween(PlayerX, PlayerY, battler.PositionX, battler.PositionY);
@@ -524,7 +527,7 @@ namespace Poke1Protocol
                     }
                     _movementTimeout.Set(Rand.Next(750, 900));
                 }
-                if (_movements.Count == 0 && _cutOrRockSmashNpc != null)
+                if (_movements.Count == 0 && _cutOrRockSmashNpc != null && DistanceBetween(_cutOrRockSmashNpc.PositionX, _cutOrRockSmashNpc.PositionY, PlayerX, PlayerY) == 1)
                 {
                     var npcDir = _cutOrRockSmashNpc.GetDriectionFrom(PlayerX, PlayerY);
                     if (npcDir != LastDirection)
@@ -533,6 +536,8 @@ namespace Poke1Protocol
                         SendMovement(new[] { npcDir.ToOneStepMoveActions() }, PlayerX, PlayerY);
                         LastDirection = npcDir;
                     }
+                    TalkToNpc(_cutOrRockSmashNpc);
+                    _cutOrRockSmashNpc = null;
                 }
             }
 
@@ -540,12 +545,6 @@ namespace Poke1Protocol
             {
                 _surfAfterMovement = false;
                 UseSurf();
-            }
-
-            if (!_movementTimeout.IsActive && _movements.Count == 0 && _cutOrRockSmashNpc != null)
-            {
-                TalkToNpc(_cutOrRockSmashNpc);
-                _cutOrRockSmashNpc = null;
             }
         }
 

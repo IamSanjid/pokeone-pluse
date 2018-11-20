@@ -80,7 +80,7 @@ namespace Poke1Bot
             //var packet = @"InventoryPokemon CtEBChIJ8TZvO060XkYRhk8er86fOWQSjgEIowEQCxjPCyAkKgYIXRAZGBkqBggtECgYKCoGCCEQIxgjKgYIXxAUGBQwAjhoQAtSDAgTEAQYHyAJKAEwDloAYAJqEgm/i6xDrmcMTxGCrF/kjgIhyXISCb+LrEOuZwxPEYKsX+SOAiHJgAEEkAHDruOwAaIBBhACIAEwBqoBCwi+8s/AlfvlNhAFsAEDGgwIJBAMGBAgCygRMBEiBXhjb2RlKgV4Y29kZTIIS2VlbiBFeWU4swpAwA0Q////////////ARj///////////8BIP///////////wE=";
             //var packet = @"Transfer CAESEgnxNm87TrReRhGGTx6vzp85ZA==";
             //var packet = @"Reorder ChIJ8TZvO060XkYRhk8er86fOWQKEgkmzfVu9CvLSRGQRb3nB/7fDAoSCfYOcUXnX0tPEaMc+TIXvZ2yChIJYRN0DkiWxU0RgB2UOdBYu10KEgnc3Xc6Zt6VQRG0ts8aa5F9XQ==";            
-            var packet = @"Evs ChIJzmzO96KID0sRpX/UHxsaRO4Y9AMi9gEK5gEKEgnObM73oogPSxGlf9QfGxpE7hKZAQhdEDEYoIgHIHUqBwicAxAHGAoqBgheEAkYCioHCPcBEA4YDyoHCI8DEA0YDzABOMEBQBlSDAgeEB4YCCAdKAowH1oEIHowSWABahIJbiu61rkSz0oRiGiHiyTpB9ZyEgluK7rWuRLPShGIaIeLJOkH1oABApABreWhwwaiAQwILRAfGC0gfSgbMEmqAQgI2pKDvgsQA7ABExoOCHUQPRg1IJIBKD8whgEiCE15TWFuSWFtKghNeU1hbklhbTIITGV2aXRhdGU449oGQPCUBxABIP///////////wEoAg==";
+            var packet = @"BattleMove CAoQARgBIAM=";
 
             var data = packet.Split(" ".ToCharArray());
 
@@ -314,7 +314,7 @@ namespace Poke1Bot
             if (canInteract)
             {
                 var fromNpcDir = target.GetDriectionFrom(Game.PlayerX, Game.PlayerY);
-                if (fromNpcDir != Game.LastDirection && !target.IsInLineOfSight(Game.PlayerX, Game.PlayerY))
+                if (fromNpcDir != Direction.None && fromNpcDir != Game.LastDirection && !target.IsInLineOfSight(Game.PlayerX, Game.PlayerY))
                 {
                     var oneStep = new[] { fromNpcDir.ToOneStepMoveActions() };
                     Game.SendMovement(oneStep, Game.PlayerX, Game.PlayerY);
