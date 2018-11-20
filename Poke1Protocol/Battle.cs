@@ -283,7 +283,7 @@ namespace Poke1Protocol
         {
             if (!PlayerBattleSide.pokemon.Any(pl => pl.active))
                 return;
-            SelectedPokemonIndex = _team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality 
+            SelectedPokemonIndex = _team.FindIndex(p => !p.IsEgg && p.PokemonData.Pokemon.Payload.Personality 
             == PlayerBattleSide.pokemon.FirstOrDefault(pl => pl.active).personality);
         }
 
@@ -294,7 +294,8 @@ namespace Poke1Protocol
             {
                 var newPoke = GetSwitchedPokemon(pokemon[i]);
                 PlayerAllPokemon.Add(newPoke);
-                var index = _team.FindIndex(p => p.PokemonData.Pokemon.Payload.Personality == pokemon[i].personality); // find the correct index...
+                var index = _team.FindIndex(p => !p.IsEgg &&
+                    p?.PokemonData?.Pokemon?.Payload?.Personality == pokemon[i]?.personality); // find the correct index...
                 if (index >= 0)
                 {
                     _team[index].UpdateHealth(newPoke.Health, newPoke.MaxHealth);

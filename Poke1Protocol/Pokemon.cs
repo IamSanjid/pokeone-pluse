@@ -21,6 +21,7 @@ namespace Poke1Protocol
         public PokemonMove[] Moves { get; private set; }
         public PokemonExperience Experience { get; private set; }
         public bool IsShiny { get; private set; }
+        public bool IsEgg { get; private set; }
         public string Gender { get; private set; }
         public string Nature
         {
@@ -42,7 +43,7 @@ namespace Poke1Protocol
         private string _status;
         public string Status
         {
-            get => CurrentHealth == 0 ? "KO" : _status;
+            get => CurrentHealth == 0 && !IsEgg ? "KO" : _status;
             set => _status = value;
         }
         public string Name { get; private set; }
@@ -55,8 +56,16 @@ namespace Poke1Protocol
         public string Forme { get; private set; }
         internal Pokemon(InventoryPokemon data)
         {
-            if (data != null && data.Pokemon != null && data.Pokemon.Payload != null)
+            if (data != null && data.Pokemon != null)
             {
+                if (data.Pokemon.EggState != PSXAPI.Response.Payload.EggState.None)
+                {
+                    _status = "OK";
+                    Name = "Egg";
+                    IsEgg = true;
+                    OriginalTrainer = data.Pokemon.OriginalTrainer;
+                    return;
+                }
                 PokemonData = data;
                 UniqueID = data.Pokemon.UniqueID;
                 Ability = new PokemonAbility(data.Pokemon.Ability, data.Pokemon.Payload.AbilitySlot);
@@ -104,8 +113,16 @@ namespace Poke1Protocol
 
         public void UpdatePokemonData(InventoryPokemon data)
         {
-            if (data != null && data.Pokemon != null && data.Pokemon.Payload != null)
+            if (data != null && data.Pokemon != null)
             {
+                if (data.Pokemon.EggState != PSXAPI.Response.Payload.EggState.None)
+                {
+                    _status = "OK";
+                    Name = "Egg";
+                    IsEgg = true;
+                    OriginalTrainer = data.Pokemon.OriginalTrainer;
+                    return;
+                }
                 PokemonData = data;
                 UniqueID = data.Pokemon.UniqueID;
                 Ability = new PokemonAbility(data.Pokemon.Ability, data.Pokemon.Payload.AbilitySlot);
