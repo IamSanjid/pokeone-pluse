@@ -84,7 +84,7 @@ namespace pokeone_plus
         {
             lock (_bot)
             {
-                if (_bot?.Game?.Map == null)
+                if (_bot.Game?.Map == null)
                     return;
             }
 
@@ -296,6 +296,9 @@ namespace pokeone_plus
         private void MapView_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             Window parent = Window.GetWindow(this);
+
+            if (parent is null) return;
+
             if (IsVisible)
             {
                 CompositionTarget.Rendering += CompositionTarget_Rendering;
