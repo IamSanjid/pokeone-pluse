@@ -2670,10 +2670,9 @@ namespace Poke1Protocol
         {
             Money = (int)data.Money;
             Gold = (int)data.Gold;
-            foreach(var id in data.Badges)
-            {
-                Badges.Add(id, BadgeFromID(id));
-            }
+
+            data?.Badges?.ToList().ForEach(id => Badges.Add(id, BadgeFromID(id)));
+
             UpdateItems(data.Items);
         }
 

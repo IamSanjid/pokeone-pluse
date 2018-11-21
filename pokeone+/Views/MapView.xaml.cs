@@ -23,7 +23,7 @@ namespace pokeone_plus
         private readonly BotClient _bot;
         private readonly Dictionary<int, Color> _colliderColors;
 
-        private int _cellWidth = 16;
+        private int _cellWidth = 15;
 
         private bool _isMapDirty;
 
