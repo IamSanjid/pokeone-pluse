@@ -163,6 +163,9 @@ namespace pokeone_plus
                 for (int y = camY1; y < camY2; ++y, rectY += _cellWidth, rectX = 0)
                     for (int x = camX1; x < camX2; ++x, rectX += _cellWidth)
                     {
+                        var modifiedX = -1;
+                        var modifiedY = -1;
+
                         Color rectColor;
                         int collider = map.GetCollider(x, y);
                         if (map.HasLink(x, y))
@@ -177,17 +180,29 @@ namespace pokeone_plus
                         if ((collider == 4 || collider == 22 || collider == 7) && !_bot.Game.Map.HasLink(x, y))
                         {
                             rectHeight = _cellWidth / 4;
+                            modifiedY = _cellWidth;
+                            rectY += modifiedY;
                             //rect.VerticalAlignment = VerticalAlignment.Top;
                         }
 
                         if (collider == 6 || collider == 5)
                         {
                             rectWidth = _cellWidth / 4;
+                            if (collider == 6)
+                            {
+                                modifiedX = _cellWidth;
+                                rectX += modifiedX;
+                            }
                         }
 
                         if (collider == 19 || collider == 20)
                         {
                             rectWidth = _cellWidth / 4;
+                            if (collider == 20)
+                            {
+                                modifiedX = _cellWidth;
+                                rectX += modifiedX;
+                            }
                             //rect.HorizontalAlignment = collider == 19 ? HorizontalAlignment.Left : HorizontalAlignment.Right;
                         }
 
@@ -195,6 +210,20 @@ namespace pokeone_plus
                         {
                             rectColor = Colors.Wheat;
                             rectHeight = _cellWidth / 4;
+                            if (collider == 16)
+                            {
+                                //drawing to rectangles
+                                _mapBmp.FillRectangle(rectX, rectY, rectX + rectWidth, rectY + rectHeight, rectColor);
+                                _mapBmp.FillRectangle(rectX, rectY, rectX + (rectWidth / 4), rectY + _cellWidth, rectColor);
+                                continue;
+                            }
+                            if (collider == 18)
+                            {
+                                //drawing to rectangles
+                                _mapBmp.FillRectangle(rectX, rectY, rectX + rectWidth, rectY + rectHeight, rectColor);
+                                _mapBmp.FillRectangle(rectX + (_cellWidth - (rectWidth / 4)), rectY, rectX + (rectWidth / 4) + (_cellWidth - (rectWidth / 4)), rectY + _cellWidth, rectColor);
+                                continue;
+                            }
                             //rect.VerticalAlignment = VerticalAlignment.Top;
                         }
 
@@ -203,12 +232,31 @@ namespace pokeone_plus
                             rectColor = Colors.MediumPurple;
                         }
 
-                        if (map.IsGrass(x, y)) rectColor = Colors.LightGreen;
+                        if (map.IsGrass(x, y))
+                        {
+                            rectColor = Colors.LightGreen;
+                            if (map.GetCollider(x - 1 , y) == 6)
+                            {
+                                rectWidth = _cellWidth - (_cellWidth / 4);
+                                modifiedX = _cellWidth / 4;
+                                rectX += modifiedX;
+                            }
+                        }
                         if (map.IsCutTree(x, y)) rectColor = Colors.DarkGreen;
                         if (map.IsRockSmash(x, y)) rectColor = Colors.SandyBrown;
 
                         if (rectColor != Colors.White)
+                        {
                             _mapBmp.FillRectangle(rectX, rectY, rectX + rectWidth, rectY + rectHeight, rectColor);
+                            if (modifiedX != -1)
+                            {
+                                rectX -= modifiedX;
+                            }
+                            if (modifiedY != -1)
+                            {
+                                rectY -= modifiedY;
+                            }
+                        }
                     }
             }
         }
