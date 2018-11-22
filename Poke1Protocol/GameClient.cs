@@ -80,7 +80,6 @@ namespace Poke1Protocol
             _teleportationTimeout.IsActive;
         public bool IsInactive =>
                     _movements.Count == 0
-                    && !IsScriptActive
                     && !_movementTimeout.IsActive
                     && !_battleTimeout.IsActive
                     && !_loadingTimeout.IsActive
@@ -149,7 +148,6 @@ namespace Poke1Protocol
 
         public string[] DialogContent { get; private set; }
         private Queue<object> _dialogResponses = new Queue<object>();
-        public bool IsScriptActive { get; private set; }
         public PSXAPI.Response.Time LastTimePacket { get; private set; }
         public string PokeTime { get; private set; }
         public string GameTime { get; private set; }
@@ -589,7 +587,7 @@ namespace Poke1Protocol
                 var script = Scripts[0];
                 Scripts.RemoveAt(0);
 
-                if (IsMapLoaded && script.Text != null)
+                if (script.Text != null)
                 {
                     foreach (var scriptText in script.Text)
                     {
@@ -663,7 +661,6 @@ namespace Poke1Protocol
                         {
                             _dialogResponses.Clear();
                         }
-                        IsScriptActive = false;
                         break;
                     case ScriptRequestType.Shop:
                         OpenedShop = new Shop(script.Data, script.ScriptID);
@@ -684,6 +681,7 @@ namespace Poke1Protocol
 #if DEBUG
                         Console.WriteLine($"UNKNOWN SCRIPT TYPE: {script.Type}");
 #endif
+                        _dialogTimeout.Set();
                         break;
 
                 }
@@ -927,7 +925,6 @@ namespace Poke1Protocol
         private void SendSetCollectedEvs(Guid pokemonGuid, string statType, PokemonStats evs, int amount)
         {
             var packet = EffortValuesManager.GetEvsSetPacket(statType, pokemonGuid, evs, amount);
-            _itemUseTimeout.Set(Rand.Next(1000, 1500));
             SendProto(packet);
         }
 
@@ -1998,7 +1995,6 @@ namespace Poke1Protocol
         {
             ClearPath();
             _slidingDirection = null;
-            IsScriptActive = false;
 
             IsInBattle = !battle.Ended;
 
@@ -2196,7 +2192,6 @@ namespace Poke1Protocol
             //_cachedScripts.Remove(data);
 
 
-            IsScriptActive = true;
             _dialogTimeout.Set(Rand.Next(1500, 4000));
             Scripts.Add(data);
         }
@@ -3018,6 +3013,7 @@ namespace Poke1Protocol
             if (amount > totalCollected)
                 return false;
             SendSetCollectedEvs(poke.UniqueID, statType, poke.EV, amount);
+            _itemUseTimeout.Set(Rand.Next(1000, 1500));
             return true;
         }
 

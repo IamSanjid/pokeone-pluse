@@ -803,9 +803,6 @@ namespace Poke1Protocol
             //        return true;
             //}
 
-            if ((collider == 2 || collider == 15) && !isSurfing)
-                return false;
-
             //if (HasLink(destx, desty) && !(direction == Direction.Up && collider == 22))
             //    return true;
 
@@ -904,7 +901,7 @@ namespace Poke1Protocol
                     }
                     break;
             }
-            if (isSurfing && (collider == 2 || TileWater[destx, desty] == 1))
+            if (isSurfing && (collider == 2 || collider == 15 || TileWater[destx, desty] == 1))
             {
                 return true;
             }
