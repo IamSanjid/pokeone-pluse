@@ -80,6 +80,7 @@ namespace Poke1Protocol
             _teleportationTimeout.IsActive;
         public bool IsInactive =>
                     _movements.Count == 0
+                    && !IsScriptActive
                     && !_movementTimeout.IsActive
                     && !_battleTimeout.IsActive
                     && !_loadingTimeout.IsActive
@@ -196,6 +197,7 @@ namespace Poke1Protocol
         public int PokedexOwned { get; private set; }
         public int PokedexSeen { get; private set; }
         public bool AreNpcReceived { get; private set; }
+        public bool IsAuthenticated { get; private set; }
 
         private ScriptRequestType _currentScriptType { get; set; }
         private Script _currentScript { get; set; }
@@ -294,6 +296,9 @@ namespace Poke1Protocol
         {
             _mapClient.Update();
             _connection.Update();
+
+            if (!IsAuthenticated)
+                return;
 
             _swapTimeout.Update();
             _movementTimeout.Update();
@@ -765,7 +770,8 @@ namespace Poke1Protocol
 #if DEBUG
             Console.WriteLine("[+++] Connected to the map server");
 #endif
-            IsConnected = true;
+            if (MapName != null && Map == null)
+                _mapClient.DownloadMap(MapName);
         }
 
         private void MapClient_ConnectionFailed(Exception ex)
@@ -788,10 +794,11 @@ namespace Poke1Protocol
 
         private void OnConnectionOpened()
         {
-            _mapClient.Open();
+            IsConnected = true;
 #if DEBUG
             Console.WriteLine("[+++] Connection opened");
 #endif
+            _mapClient.Open();
             ConnectionOpened?.Invoke();
 
             lastPingResponseUtc = DateTime.UtcNow;
@@ -920,6 +927,7 @@ namespace Poke1Protocol
         private void SendSetCollectedEvs(Guid pokemonGuid, string statType, PokemonStats evs, int amount)
         {
             var packet = EffortValuesManager.GetEvsSetPacket(statType, pokemonGuid, evs, amount);
+            _itemUseTimeout.Set(Rand.Next(1000, 1500));
             SendProto(packet);
         }
 
@@ -2405,6 +2413,8 @@ namespace Poke1Protocol
             LoggedIn?.Invoke();
             AddDefaultChannels();
 
+            IsAuthenticated = true;
+
             if (_currentScript != null)
             {
                 switch (_currentScriptType)
@@ -2968,7 +2978,6 @@ namespace Poke1Protocol
             }
             var boxPokemonGuid = CurrentPCBox[boxPokemonId - 1].UniqueID;
             var teamPokemonGuid = Team[teamPokemonUid - 1].UniqueID;
-            _refreshingPCBox.Set();
             SendPCSwapPokemon(boxPokemonGuid, teamPokemonGuid);
             return true;
         }

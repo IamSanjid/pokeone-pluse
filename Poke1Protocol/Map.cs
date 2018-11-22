@@ -798,14 +798,14 @@ namespace Poke1Protocol
             }
 
             //check for other areas!
-            var newArea = CheckArea(destx, desty);
-            if (newArea != null && !IsUnmoveableCellSide(direction, destx, desty))
-            {
-                if (newArea?.AreaName.ToLowerInvariant() != CurrentArea?.AreaName.ToLowerInvariant())
-                    return true;
-            }
+            //var newArea = CheckArea(destx, desty);
+            //if (newArea != null && !IsUnmoveableCellSide(direction, destx, desty))
+            //{
+            //    if (newArea?.AreaName.ToLowerInvariant() != CurrentArea?.AreaName.ToLowerInvariant())
+            //        return true;
+            //}
 
-            if (collider == 2 && !isSurfing)
+            if ((collider == 2 || collider == 15) && !isSurfing)
                 return false;
 
             //if (HasLink(destx, desty) && !(direction == Direction.Up && collider == 22))
