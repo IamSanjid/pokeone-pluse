@@ -1998,6 +1998,7 @@ namespace Poke1Protocol
         {
             ClearPath();
             _slidingDirection = null;
+            IsScriptActive = false;
 
             IsInBattle = !battle.Ended;
 
