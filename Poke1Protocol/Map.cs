@@ -624,10 +624,8 @@ namespace Poke1Protocol
 
         public MoveResult CanMove(Direction direction, int destinationX, int destinationY, bool isOnGround, bool isSurfing, bool canUseCut, bool canUseSmashRock)
         {
-            var newArea = CheckArea(destinationX, destinationY);
-            if ((destinationX < 0 || destinationX > DimensionX
-                || destinationY < 0 || destinationY > DimensionY) && !HasLink(destinationX, destinationY)
-                && newArea?.AreaName.ToLowerInvariant() == CurrentArea?.AreaName.ToLowerInvariant())
+            if ((destinationX < 0 || destinationX > Width
+                || destinationY < 0 || destinationY > Height))
             {
                 return MoveResult.Fail;
             }
