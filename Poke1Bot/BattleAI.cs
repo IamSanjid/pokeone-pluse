@@ -160,14 +160,23 @@ namespace Poke1Bot
             var sent = new List<SwitchedPokemon>();
             if (req != null && req.forceSwitch != null && req.forceSwitch.Length > 0)
             {
+                var needToChange = req.forceSwitch.Count(t => t);
+
+                if (needToChange == 0)
+                {
+                    needToChange = req.forceSwitch.Length;
+                }
+
+                var switchAblePokes = req.side.pokemon.Count(p => IsPokemonUsable(p));
+
                 for (int j = 0; j < req.forceSwitch.Length; j++)
                 {
-                    if (req.forceSwitch[j])
+                    if (req.forceSwitch[j] && j + 1 <= switchAblePokes)
                     {
                         for (int i = 0; i < Side.pokemon.Length; ++i)
                         {
                             var pokemon = Battle.GetSwitchedPokemon(Side.pokemon[i]);
-
+                            
                             if (!pokemon.Sent && IsPokemonUsable(pokemon) && !sent.Contains(pokemon) 
                                 && sent.Count < req.forceSwitch.Length)
                             {
@@ -177,7 +186,7 @@ namespace Poke1Bot
                             }
                         }
                     }
-                    else if (!req.forceSwitch[j])
+                    else
                     {
                         _client.UseAttack(0, j + 1, 0);
                         result = true;
@@ -193,12 +202,7 @@ namespace Poke1Bot
                     needToChange = ActivePokemons.Length;
                 }
 
-                var switchAblePokes = ActivePokemons.Count(p => IsPokemonUsable(p));
-
-                if (needToChange > switchAblePokes)
-                {
-                    return false;
-                }
+                var switchAblePokes = req.side.pokemon.Count(p => IsPokemonUsable(p));
 
                 for (int i = 0; i < Side.pokemon.Length; ++i)
                 {
