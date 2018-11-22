@@ -180,7 +180,7 @@ namespace pokeone_plus
                         if ((collider == 4 || collider == 22 || collider == 7) && !_bot.Game.Map.HasLink(x, y))
                         {
                             rectHeight = _cellWidth / 4;
-                            modifiedY = _cellWidth;
+                            modifiedY = _cellWidth - rectHeight;
                             rectY += modifiedY;
                             //rect.VerticalAlignment = VerticalAlignment.Top;
                         }
@@ -190,7 +190,7 @@ namespace pokeone_plus
                             rectWidth = _cellWidth / 4;
                             if (collider == 6)
                             {
-                                modifiedX = _cellWidth;
+                                modifiedX = _cellWidth - rectWidth;
                                 rectX += modifiedX;
                             }
                         }
@@ -200,7 +200,7 @@ namespace pokeone_plus
                             rectWidth = _cellWidth / 4;
                             if (collider == 20)
                             {
-                                modifiedX = _cellWidth;
+                                modifiedX = _cellWidth - rectWidth;
                                 rectX += modifiedX;
                             }
                             //rect.HorizontalAlignment = collider == 19 ? HorizontalAlignment.Left : HorizontalAlignment.Right;
@@ -212,14 +212,14 @@ namespace pokeone_plus
                             rectHeight = _cellWidth / 4;
                             if (collider == 16)
                             {
-                                //drawing to rectangles
+                                //drawing two rectangles
                                 _mapBmp.FillRectangle(rectX, rectY, rectX + rectWidth, rectY + rectHeight, rectColor);
                                 _mapBmp.FillRectangle(rectX, rectY, rectX + (rectWidth / 4), rectY + _cellWidth, rectColor);
                                 continue;
                             }
                             if (collider == 18)
                             {
-                                //drawing to rectangles
+                                //drawing two rectangles
                                 _mapBmp.FillRectangle(rectX, rectY, rectX + rectWidth, rectY + rectHeight, rectColor);
                                 _mapBmp.FillRectangle(rectX + (_cellWidth - (rectWidth / 4)), rectY, rectX + (rectWidth / 4) + (_cellWidth - (rectWidth / 4)), rectY + _cellWidth, rectColor);
                                 continue;
@@ -235,12 +235,12 @@ namespace pokeone_plus
                         if (map.IsGrass(x, y))
                         {
                             rectColor = Colors.LightGreen;
-                            if (map.GetCollider(x - 1 , y) == 6)
-                            {
-                                rectWidth = _cellWidth - (_cellWidth / 4);
-                                modifiedX = _cellWidth / 4;
-                                rectX += modifiedX;
-                            }
+                            //if (map.GetCollider(x - 1 , y) == 6)
+                            //{
+                            //    rectWidth = _cellWidth - (_cellWidth / 4);
+                            //    modifiedX = _cellWidth / 4;
+                            //    rectX += modifiedX;
+                            //}
                         }
                         if (map.IsCutTree(x, y)) rectColor = Colors.DarkGreen;
                         if (map.IsRockSmash(x, y)) rectColor = Colors.SandyBrown;

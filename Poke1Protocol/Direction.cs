@@ -44,6 +44,56 @@ namespace Poke1Protocol
             }
         }
 
+        public static void ApplyToDirectionFromChar(ref Direction direction, string actions, ref int x, ref int y)
+        {
+            foreach (var action in actions.ToLowerInvariant())
+            {
+                switch (action)
+                {
+                    case 'u':
+                        y--;
+                        direction = Direction.Up;
+                        break;
+                    case 'd':
+                        y++;
+                        direction = Direction.Down;
+                        break;
+                    case 'l':
+                        x--;
+                        direction = Direction.Left;
+                        break;
+                    case 'r':
+                        x++;
+                        direction = Direction.Right;
+                        break;
+                    case 'n':
+                        direction = Direction.Up;
+                        break;
+                    case 's':
+                        direction = Direction.Down;
+                        break;
+                    case 'e':
+                        direction = Direction.Right;
+                        break;
+                    case 'w':
+                        direction = Direction.Left;
+                        break;
+                    case '1':
+                        direction = Direction.Up;
+                        break;
+                    case '2':
+                        direction = Direction.Down;
+                        break;
+                    case '3':
+                        direction = Direction.Left;
+                        break;
+                    case '4':
+                        direction = Direction.Right;
+                        break;
+                }
+            }
+        }
+
         public static void ApplyToCoordinates(this Direction direction, ref int x, ref int y)
         {
             switch (direction)

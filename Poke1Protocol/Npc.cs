@@ -180,49 +180,13 @@ namespace Poke1Protocol
 
         public void ProcessActions(string actions)
         {
-            foreach(var action in actions.ToLowerInvariant())
-            {
-
-                switch (action)
-                {
-                    case 'u':
-                        PositionY--;
-                        break;
-                    case 'd':
-                        PositionY++;
-                        break;
-                    case 'l':
-                        PositionX--;
-                        break;
-                    case 'r':
-                        PositionX++;
-                        break;
-                    case 'n':
-                        Direction = Direction.Up;
-                        break;
-                    case 's':
-                        Direction = Direction.Down;
-                        break;
-                    case 'e':
-                        Direction = Direction.Right;
-                        break;
-                    case 'w':
-                        Direction = Direction.Left;
-                        break;
-                    case '1':
-                        Direction = Direction.Up;
-                        break;
-                    case '2':
-                        Direction = Direction.Down;
-                        break;
-                    case '3':
-                        Direction = Direction.Left;
-                        break;
-                    case '4':
-                        Direction = Direction.Right;
-                        break;
-                }
-            }
+            var dir = Direction;
+            var x = PositionX;
+            var y = PositionY;
+            DirectionExtensions.ApplyToDirectionFromChar(ref dir, actions, ref x, ref y);
+            PositionX = x;
+            PositionY = y;
+            Direction = dir;
         }
 
         public void UpdateLos(int los)

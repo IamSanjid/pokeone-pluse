@@ -280,7 +280,7 @@ namespace Poke1Protocol
 
         public void Open()
         {
-            _mapClient.Open();
+            _connection.Connect();
         }
 
         public void Close(Exception error = null)
@@ -579,10 +579,21 @@ namespace Poke1Protocol
 
         private void UpdateScript()
         {
-            if (IsScriptActive && !_dialogTimeout.IsActive && Scripts.Count > 0)
+            if (IsMapLoaded && !_dialogTimeout.IsActive && Scripts.Count > 0)
             {
                 var script = Scripts[0];
                 Scripts.RemoveAt(0);
+
+                if (IsMapLoaded && script.Text != null)
+                {
+                    foreach (var scriptText in script.Text)
+                    {
+                        if (!scriptText.Text.EndsWith(")") && scriptText.Text.IndexOf("(") == -1)
+                            DialogOpened?.Invoke(Regex.Replace(scriptText.Text, @"\[(\/|.\w+)\]", ""));
+                        else
+                            ProcessScriptMessage(scriptText.Text);
+                    }
+                }
 
                 DialogContent = script.Data;
 
@@ -603,7 +614,7 @@ namespace Poke1Protocol
                     case ScriptRequestType.WalkNpc:
                         if (DialogContent != null && DialogContent.Length >= 2)
                         {
-                            var walkingNpc = Map.Npcs.Find(npc => npc.Id == Guid.Parse(DialogContent[0]));
+                            var walkingNpc = Map?.Npcs?.Find(npc => npc.Id == Guid.Parse(DialogContent[0]));
                             if (walkingNpc != null)
                             {
                                 walkingNpc.ProcessActions(DialogContent[1]);
@@ -611,8 +622,11 @@ namespace Poke1Protocol
                         }
                         SendScriptResponse(script.ScriptID, "");
                         _dialogTimeout.Set();
-                        AreNpcReceived = true;
-                        NpcReceieved?.Invoke(Map.Npcs);
+                        if (IsMapLoaded)
+                        {
+                            AreNpcReceived = true;
+                            NpcReceieved?.Invoke(Map.Npcs);
+                        }
                         break;
                     case ScriptRequestType.WalkUser:
                         SendScriptResponse(script.ScriptID, "");
@@ -621,11 +635,17 @@ namespace Poke1Protocol
                         {
                             foreach(var d in script.Data)
                             {
-                                foreach(char c in d)
-                                {
-                                    if (c == 'd' || c == 'l' || c == 'r' || c == 'u')
-                                        Move(DirectionExtensions.FromChar(c));
-                                }
+                                var dir = LastDirection;
+                                var x = PlayerX;
+                                var y = PlayerY;
+
+                                DirectionExtensions.ApplyToDirectionFromChar(ref dir, d, ref x, ref y);
+
+                                if (x != PlayerX || y != PlayerY)
+                                    foreach (char c in d)
+                                        if (c == 'd' || c == 'l' || c == 'r' || c == 'u')
+                                            Move(DirectionExtensions.FromChar(c));
+                                LastDirection = dir;
                             }
                         }
                         break;
@@ -634,10 +654,11 @@ namespace Poke1Protocol
                         _dialogTimeout.Set();
                         break;
                     case ScriptRequestType.Unfreeze:
-                        if (script.Text is null)
+                        if (script.Text is null || DialogContent is null)
                         {
                             _dialogResponses.Clear();
                         }
+                        IsScriptActive = false;
                         break;
                     case ScriptRequestType.Shop:
                         OpenedShop = new Shop(script.Data, script.ScriptID);
@@ -656,7 +677,7 @@ namespace Poke1Protocol
                         break;
                     default:
 #if DEBUG
-                        Console.WriteLine($"UNKNOWN TYPE SCRIPT: {script.Type}");
+                        Console.WriteLine($"UNKNOWN SCRIPT TYPE: {script.Type}");
 #endif
                         break;
 
@@ -744,7 +765,7 @@ namespace Poke1Protocol
 #if DEBUG
             Console.WriteLine("[+++] Connected to the map server");
 #endif
-            _connection.Connect();
+            IsConnected = true;
         }
 
         private void MapClient_ConnectionFailed(Exception ex)
@@ -767,7 +788,7 @@ namespace Poke1Protocol
 
         private void OnConnectionOpened()
         {
-            IsConnected = true;
+            _mapClient.Open();
 #if DEBUG
             Console.WriteLine("[+++] Connection opened");
 #endif
@@ -2095,96 +2116,80 @@ namespace Poke1Protocol
             }
 #endif
 
-            var active = true;
-
             _currentScriptType = type;
             _currentScript = data;
-            if (IsLoggedIn && _cachedScripts.Count > 0 && IsMapLoaded) // processing _cachedScripts, these scripts are received before getting fully logged int!
-            {
-                switch (type)
-                {
-                    case ScriptRequestType.Choice:
-                        if (data.Text != null)
-                        {
-                            if (data.Text.ToList().Any(x => x.Text.Contains("start your journey"))
-                                || data.Data.ToList().Any(x => x == "Kanto" || x == "Johto"))
-                            {
-                                SendProto(new PSXAPI.Request.Script
-                                {
-                                    Response = "0",
-                                    ScriptID = data.ScriptID
-                                });
-                                active = false;
-                            }
-                        }
-                        break;
-                    case ScriptRequestType.Unfreeze:
-                        if (data.Text != null)
-                        {
-                            foreach (var text in data.Text)
-                            {
-                                var st = text.Text;
-                                var index = st.IndexOf("(");
-                                if (index < 0) break;
-                                var scriptType = st.Substring(0, index);
-                                switch (scriptType)
-                                {
-                                    case "setlos":
-                                        var command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
-                                        var npcId = Guid.Parse(command.Split(',')[0]);
-                                        var los = Convert.ToInt32(command.Split(',')[1]);
-                                        if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null)
-                                        {
-                                            Map.OriginalNpcs.Find(x => x.Id == npcId).UpdateLos(los);
-                                            if (Map.Npcs.Find(x => x.Id == npcId) != null)
-                                                Map.Npcs.Find(x => x.Id == npcId).UpdateLos(los);
-                                        }
-                                        active = false;
-                                        break;
-                                    case "enablenpc":
-                                        command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
-                                        npcId = Guid.Parse(command.Split(',')[0]);
-                                        var hide = command.Split(',')[1] == "0";
+            //if (IsLoggedIn && _cachedScripts.Count > 0 && IsMapLoaded) // processing _cachedScripts, these scripts are received before getting fully logged int!
+            //{
+            //    switch (type)
+            //    {
+            //        case ScriptRequestType.Choice:
+            //            if (data.Text != null)
+            //            {
+            //                if (data.Text.ToList().Any(x => x.Text.Contains("start your journey"))
+            //                    || data.Data.ToList().Any(x => x == "Kanto" || x == "Johto"))
+            //                {
+            //                    SendProto(new PSXAPI.Request.Script
+            //                    {
+            //                        Response = "0",
+            //                        ScriptID = data.ScriptID
+            //                    });
+            //                    active = false;
+            //                }
+            //            }
+            //            break;
+            //        case ScriptRequestType.Unfreeze:
+            //            if (data.Text != null)
+            //            {
+            //                foreach (var text in data.Text)
+            //                {
+            //                    var st = text.Text;
+            //                    var index = st.IndexOf("(");
+            //                    if (index < 0) break;
+            //                    var scriptType = st.Substring(0, index);
+            //                    switch (scriptType)
+            //                    {
+            //                        case "setlos":
+            //                            var command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
+            //                            var npcId = Guid.Parse(command.Split(',')[0]);
+            //                            var los = Convert.ToInt32(command.Split(',')[1]);
+            //                            if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null)
+            //                            {
+            //                                Map.OriginalNpcs.Find(x => x.Id == npcId).UpdateLos(los);
+            //                                if (Map.Npcs.Find(x => x.Id == npcId) != null)
+            //                                    Map.Npcs.Find(x => x.Id == npcId).UpdateLos(los);
+            //                            }
+            //                            active = false;
+            //                            break;
+            //                        case "enablenpc":
+            //                            command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
+            //                            npcId = Guid.Parse(command.Split(',')[0]);
+            //                            var hide = command.Split(',')[1] == "0";
 
-                                        if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null)
-                                        {
-                                            Map.OriginalNpcs.Find(x => x.Id == npcId).Visible(hide);
-                                            if (hide && Map.Npcs.Find(x => x.Id == npcId) != null)
-                                                Map.Npcs.Remove(Map.OriginalNpcs.Find(x => x.Id == npcId));
-                                            else if (!hide && Map.Npcs.Find(x => x.Id == npcId) == null)
-                                                Map.Npcs.Add(Map.OriginalNpcs.Find(x => x.Id == npcId));
-                                        }
-                                        active = false;
-                                        break;
-                                }
-                            }
-                        }
-                        break;
-                }
-            }
-            else if (!IsLoggedIn || !IsMapLoaded)
-                _cachedScripts.Add(data);
+            //                            if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null)
+            //                            {
+            //                                Map.OriginalNpcs.Find(x => x.Id == npcId).Visible(hide);
+            //                                if (hide && Map.Npcs.Find(x => x.Id == npcId) != null)
+            //                                    Map.Npcs.Remove(Map.OriginalNpcs.Find(x => x.Id == npcId));
+            //                                else if (!hide && Map.Npcs.Find(x => x.Id == npcId) == null)
+            //                                    Map.Npcs.Add(Map.OriginalNpcs.Find(x => x.Id == npcId));
+            //                            }
+            //                            active = false;
+            //                            break;
+            //                    }
+            //                }
+            //            }
+            //            break;
+            //    }
+            //}
+            //else if (!IsLoggedIn || !IsMapLoaded)
+            //    _cachedScripts.Add(data);
 
             //_cachedScripts.Remove(data);
 
-            if (_cachedScripts.Count <= 0 && active && IsLoggedIn && data.Text != null)
-            {
-                foreach (var scriptText in data.Text)
-                {
-                    if (!scriptText.Text.EndsWith(")") && scriptText.Text.IndexOf("(") == -1)
-                        DialogOpened?.Invoke(Regex.Replace(scriptText.Text, @"\[(\/|.\w+)\]", ""));
-                    else
-                        ProcessScriptMessage(scriptText.Text);
-                }
-            }
 
-
-            IsScriptActive = active && IsLoggedIn && _cachedScripts.Count <= 0;
-            if (active && IsLoggedIn && _cachedScripts.Count <= 0)
-            {
-                _dialogTimeout.Set(Rand.Next(1500, 4000));
-                Scripts.Add(data);
-            }
+            IsScriptActive = true;
+            _dialogTimeout.Set(Rand.Next(1500, 4000));
+            Scripts.Add(data);
         }
 
         private void ProcessScriptMessage(string text)
@@ -3106,14 +3111,6 @@ namespace Poke1Protocol
         private void OnNpcs(List<Npc> originalNpcs)
         {
             Map.Npcs.Clear();
-            if (_cachedScripts.Count > 0)
-            {
-                foreach (var script in _cachedScripts)
-                {
-                    OnScript(script);
-                }
-                _cachedScripts.Clear();
-            }
             foreach (var npc in originalNpcs)
             {
                 if (npc.IsVisible)

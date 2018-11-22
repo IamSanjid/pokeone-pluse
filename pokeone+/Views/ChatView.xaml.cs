@@ -77,6 +77,7 @@ namespace pokeone_plus
                 IList<ChatChannel> channelList;
                 lock (_bot)
                 {
+                    if (_bot.Game is null || _bot.Game?.Channels is null) return;
                     channelList = _bot.Game.Channels.Values.ToArray();
                 }
                 if (channelList.Count > 0 || channelList != null)
