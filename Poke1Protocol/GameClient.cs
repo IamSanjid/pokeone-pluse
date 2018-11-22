@@ -2221,15 +2221,13 @@ namespace Poke1Protocol
                     break;
                 case "openpc":
                     // Asking default or first Box's pokemon...
-                    if (IsPCOpen)
+                    if (!IsPCOpen || CurrentPCBox is null)
                     {
-                        IsPCOpen = false;
-                        CurrentPCBox = null;
+                        _refreshingPCBox.Set(Rand.Next(1500, 2000)); // this is the amount of time we wait for an answer
+                        SendRefreshPCBox(1);
+                        CurrentPCBoxId = 1;
+                        IsPCBoxRefreshing = true;
                     }
-                    _refreshingPCBox.Set(Rand.Next(1500, 2000)); // this is the amount of time we wait for an answer
-                    SendRefreshPCBox(1);
-                    CurrentPCBoxId = 1;
-                    IsPCBoxRefreshing = true;
                     break;
             }
         }
@@ -2970,6 +2968,7 @@ namespace Poke1Protocol
             }
             var boxPokemonGuid = CurrentPCBox[boxPokemonId - 1].UniqueID;
             var teamPokemonGuid = Team[teamPokemonUid - 1].UniqueID;
+            _refreshingPCBox.Set();
             SendPCSwapPokemon(boxPokemonGuid, teamPokemonGuid);
             return true;
         }
