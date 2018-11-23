@@ -14,6 +14,13 @@ namespace Poke1Bot
             Success
         }
 
+        private enum SwitchingResult
+        {
+            None,
+            Success,
+            NotPossible
+        }
+
         private const int DoubleEdge = 38;
         private const int DragonRage = 82;
         private const int DreamEater = 138;
@@ -152,49 +159,53 @@ namespace Poke1Bot
 
         public bool SendUsablePokemon(int changeWith = 0)
         {
-            if (_client.ActiveBattle.IsTrapped) return false;
-
             var req = _client.ActiveBattle.PlayerRequest;
-            var result = false;
+            var results = new List<SwitchingResult>();
 
-            var sent = new List<SwitchedPokemon>();
-            if (req != null && req.forceSwitch != null && req.forceSwitch.Length > 0)
+            if (req is null || _client.ActiveBattle.IsTrapped) return false;
+
+            if (req.forceSwitch != null && req.forceSwitch.Length > 0)
             {
-                var needToChange = req.forceSwitch.Count(t => t);
+                var switchAblePokes = req.side.pokemon.ToList().FindAll(p => IsPokemonUsable(p)).Count;
+                var switched = 0;
 
-                if (needToChange == 0)
+                for (int j = 0; j < req.forceSwitch.Length; ++j)
                 {
-                    needToChange = req.forceSwitch.Length;
-                }
-
-                var switchAblePokes = req.side.pokemon.Count(p => IsPokemonUsable(p));
-
-                for (int j = 0; j < req.forceSwitch.Length; j++)
-                {
-                    if (req.forceSwitch[j] && j + 1 <= switchAblePokes)
+                    if (req.forceSwitch[j])
                     {
-                        for (int i = 0; i < Side.pokemon.Length; ++i)
+                        switched++;
+                        if (switched <= switchAblePokes)
                         {
-                            var pokemon = Battle.GetSwitchedPokemon(Side.pokemon[i]);
-                            
-                            if (!pokemon.Sent && IsPokemonUsable(pokemon) && !sent.Contains(pokemon) 
-                                && sent.Count < req.forceSwitch.Length)
+                            for (int i = 0; i < Side.pokemon.Length; ++i)
                             {
-                                result = _client.ChangePokemon(i + 1, j + 1);
-                                pokemon.Sent = true;
-                                sent.Add(pokemon);
+                                var pokemon = Battle.GetSwitchedPokemon(Side.pokemon[i]);
+
+                                if (!pokemon.Sent && IsPokemonUsable(pokemon))
+                                {
+                                    var result = _client.ChangePokemon(i + 1, j + 1);
+                                    pokemon.Sent = true;
+                                    results.Add(result ? SwitchingResult.Success : SwitchingResult.NotPossible);
+                                    if (switched >= req.forceSwitch.ToList().FindAll(t => t).Count)
+                                        break;
+                                }
                             }
+                        }
+                        else
+                        {
+                            _client.UseAttack(0, j + 1, 0);
+                            results.Add(SwitchingResult.Success);
                         }
                     }
                     else
                     {
                         _client.UseAttack(0, j + 1, 0);
-                        result = true;
+                        results.Add(SwitchingResult.Success);
                     }
                 }
             }
             else
             {
+                var sent = new List<SwitchedPokemon>();
                 var needToChange = ActivePokemons.Count(p => !IsPokemonUsable(p));
 
                 if (needToChange == 0)
@@ -213,51 +224,62 @@ namespace Poke1Bot
                     }
                     if (!pokemon.Sent && IsPokemonUsable(pokemon) && sent.Count < needToChange)
                     {
-                        result = _client.ChangePokemon(i + 1, changeWith + 1);
+                        var result = _client.ChangePokemon(i + 1, changeWith + 1);
                         pokemon.Sent = true;
-                        sent.Add(pokemon);
                     }
                 }
             }
 
-            return result;
+            return results.All(r => r == SwitchingResult.Success);
         }
 
         public bool SendAnyPokemon(int changeWith = 0)
         {
-            if (_client.ActiveBattle.IsTrapped) return false;
             var req = _client.ActiveBattle.PlayerRequest;
-            var result = false;
+            var results = new List<SwitchingResult>();
 
-            var sent = new List<SwitchedPokemon>();
+            if (req is null || _client.ActiveBattle.IsTrapped) return false;
 
-            if (req != null && req.forceSwitch != null && req.forceSwitch.Length > 0)
+            if (req.forceSwitch != null && req.forceSwitch.Length > 0)
             {
-                for (int j = 0; j < req.forceSwitch.Length; j++)
+                var switchAblePokes = req.side.pokemon.ToList().FindAll(p => Battle.GetSwitchedPokemon(p).Health > 0).Count;
+                var switched = 0;
+
+                for (int j = 0; j < req.forceSwitch.Length; ++j)
                 {
                     if (req.forceSwitch[j])
                     {
-                        for (int i = 0; i < Side.pokemon.Length; ++i)
+                        switched++;
+                        if (switched <= switchAblePokes)
                         {
-                            var pokemon = Battle.GetSwitchedPokemon(Side.pokemon[i]);
-                            if (!pokemon.Sent && pokemon.Health > 0 && !sent.Contains(pokemon) 
-                                && sent.Count < req.forceSwitch.Length)
+                            for (int i = 0; i < Side.pokemon.Length; ++i)
                             {
-                                result = _client.ChangePokemon(i + 1, j + 1);
-                                pokemon.Sent = true;
-                                sent.Add(pokemon);
+                                var pokemon = Battle.GetSwitchedPokemon(Side.pokemon[i]);
+
+                                if (!pokemon.Sent && pokemon.Health > 0)
+                                {
+                                    var result = _client.ChangePokemon(i + 1, j + 1);
+                                    pokemon.Sent = true;
+                                    results.Add(result ? SwitchingResult.Success : SwitchingResult.NotPossible);
+                                }
                             }
                         }
+                        else
+                        {
+                            _client.UseAttack(0, j + 1, 0);
+                            results.Add(SwitchingResult.Success);
+                        }
                     }
-                    else if (!req.forceSwitch[j])
+                    else
                     {
                         _client.UseAttack(0, j + 1, 0);
-                        result = true;
+                        results.Add(SwitchingResult.Success);
                     }
                 }
             }
             else
             {
+                var sent = new List<SwitchedPokemon>();
                 var needToChange = ActivePokemons.Count(p => !IsPokemonUsable(p));
 
                 if (needToChange == 0)
@@ -265,12 +287,7 @@ namespace Poke1Bot
                     needToChange = ActivePokemons.Length;
                 }
 
-                var switchAblePokes = ActivePokemons.Count(p => p.Health > 0);
-
-                if (needToChange > switchAblePokes)
-                {
-                    return false;
-                }
+                var switchAblePokes = req.side.pokemon.Count(p => Battle.GetSwitchedPokemon(p).Health > 0);
 
                 for (int i = 0; i < Side.pokemon.Length; ++i)
                 {
@@ -281,13 +298,13 @@ namespace Poke1Bot
                     }
                     if (!pokemon.Sent && pokemon.Health > 0 && sent.Count < needToChange)
                     {
-                        result = _client.ChangePokemon(i + 1, changeWith + 1);
+                        var result = _client.ChangePokemon(i + 1, changeWith + 1);
                         pokemon.Sent = true;
-                        sent.Add(pokemon);
                     }
                 }
             }
-            return result;
+
+            return results.All(r => r == SwitchingResult.Success);
         }
 
         public bool Run()
