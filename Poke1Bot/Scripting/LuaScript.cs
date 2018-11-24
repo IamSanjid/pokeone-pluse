@@ -214,6 +214,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["isNight"] = new Func<bool>(IsNight);
                 _lua.Globals["isOutside"] = new Func<bool>(IsOutside);
                 _lua.Globals["isPlayerFacingWater"] = new Func<bool>(IsPlayerFacingWater);
+                _lua.Globals["getWaterDirectionFromPlayer"] = new Func<string>(GetWaterDirectionFromPlayer);
                 _lua.Globals["getDestinationId"] = new Func<int, int, string>(GetDestinationId);
                 _lua.Globals["isTrainerInfoReceived"] = new Func<bool>(IsTrainerInfoReceived);
                 _lua.Globals["askForTrainerInfo"] = new Func<bool>(AskForTrainerInfo);
@@ -1261,10 +1262,21 @@ namespace Poke1Bot.Scripting
             return Bot.Game.Map.IsOutside;
         }
 
-        // API: Returns tru if the character is facing water around it.
+        // API: Returns true if the character is facing water around it.
         private bool IsPlayerFacingWater()
         {
             return Bot.Game.Map.GetWaterDirectionFrom(Bot.Game.PlayerX, Bot.Game.PlayerY) == Bot.Game.LastDirection;
+        }
+
+        // API: Returns water direction from the player.
+        private string GetWaterDirectionFromPlayer()
+        {
+            if (!Bot.Game.Map.CanSurf(Bot.Game.PlayerX, Bot.Game.PlayerY, Bot.Game.IsOnGround))
+            {
+                Fatal("error: 'getWaterDirectionFromPlayer': You cannot use getWaterDirectionFromPlayer if you're not near to water cells.");
+                return null;
+            }
+            return Bot.Game.Map.GetWaterDirectionFrom(Bot.Game.PlayerX, Bot.Game.PlayerY).ToString();
         }
 
         // API: Check if the PC is open. Moving close the PC, usePC() opens it.
@@ -3074,12 +3086,10 @@ namespace Poke1Bot.Scripting
         }
 
         // API: Counts received badges.
-
         private int CountBadges()
         {
             if(Bot.Game.PlayerStats is null && Bot.Game.Badges.Count <= 0)
             {
-                Fatal("error: 'countBadges' haven't received player stats yet.");
                 return -1;
             }
             return Bot.Game.Badges.Count;
@@ -3090,7 +3100,6 @@ namespace Poke1Bot.Scripting
         {
             if (Bot.Game.PlayerStats is null && Bot.Game.Badges.Count <= 0)
             {
-                Fatal("error: 'hasBadgeId' haven't received player stats yet.");
                 return false;
             }
             return Bot.Game.Badges.ContainsKey(id);
@@ -3101,7 +3110,6 @@ namespace Poke1Bot.Scripting
         {
             if (Bot.Game.PlayerStats is null && Bot.Game.Badges.Count <= 0)
             {
-                Fatal("error: 'hasBadge' haven't received player stats yet.");
                 return false;
             }
             return Bot.Game.Badges.Values.Any(badge => badge.ToUpperInvariant() == name.ToUpperInvariant());

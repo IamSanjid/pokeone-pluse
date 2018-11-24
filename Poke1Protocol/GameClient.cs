@@ -143,7 +143,7 @@ namespace Poke1Protocol
         public event Action BattleUpdated;
         public event Action<Npc> MoveToBattleWithNpc;
         public event Action<List<Pokemon>> PCBoxUpdated;
-        public event Action<bool> MountUpdated;
+        public event Action MountUpdated;
 
 
         public string[] DialogContent { get; private set; }
@@ -1307,7 +1307,13 @@ namespace Poke1Protocol
             if (PlayerStats is null)
             {
                 SendPlayerStatsRequest();
-                _dialogTimeout.Set(Rand.Next(1500, 2000));
+                if (!_itemUseTimeout.IsActive)
+                    _itemUseTimeout.Set(Rand.Next(1500, 2000));
+                else
+                {
+                    _lootBoxTimeout.Cancel();
+                    _lootBoxTimeout.Set(Rand.Next(1500, 2000));
+                }
                 return true;
             }
             return false;
@@ -2099,9 +2105,10 @@ namespace Poke1Protocol
             else if (mtP.MountType == MountType.Surfing)
             {
                 IsBiking = false;
-                IsSurfing = true;
+                IsSurfing = true;               
             }
-            MountUpdated?.Invoke(IsSurfing);
+            _mountingTimeout.Set(Rand.Next(500, 1000));
+            MountUpdated?.Invoke();
         }
 
         private void OnScript(PSXAPI.Response.Script data)

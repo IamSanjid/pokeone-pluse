@@ -34,10 +34,9 @@
             }
         }
 
-        private void Game_MountUpdated(bool isSurfing)
+        private void Game_MountUpdated()
         {
-            if (isSurfing)
-                Reset();
+            Reset();
         }
 
         private void Game_BattleEnded()
