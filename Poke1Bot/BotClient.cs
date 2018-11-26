@@ -327,7 +327,9 @@ namespace Poke1Bot
             var result = MoveToCell(target.PositionX, target.PositionY, 1);
 
             if (!result)
+            {
                 _npcBattler = null;
+            }
 
             return result;
         }
@@ -357,10 +359,10 @@ namespace Poke1Bot
 
         public bool MoveToNearestLink()
         {
-            var links = Game.Map.Links.FindAll(link => link.DestinationID != Guid.Empty).
-                OrderBy(link => GameClient.DistanceBetween(Game.PlayerX, Game.PlayerY, link.x, -link.z));
+            var links = Game.Map.Links.FindAll(link => link.DestinationId != Guid.Empty).
+                OrderBy(link => GameClient.DistanceBetween(Game.PlayerX, Game.PlayerY, link.DestinationX, link.DestinationY));
             foreach (var link in links)
-                if (MoveToCell(link.x, -link.z))
+                if (MoveToCell(link.DestinationX, link.DestinationY))
                     return true;
             return false;
         }

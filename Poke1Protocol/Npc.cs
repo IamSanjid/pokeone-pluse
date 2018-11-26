@@ -24,7 +24,6 @@ namespace Poke1Protocol
 
         private readonly string _path;
 
-        public bool CanBlockPlayer { get; }
         public bool IsVisible { get; private set; }
         public Npc(NPCData data)
         {
@@ -35,7 +34,6 @@ namespace Poke1Protocol
             Id = data.ID;
             _path = data.Settings.Path;
             UpdateLos(data.Settings.LOS);
-            CanBlockPlayer = en;
             IsVisible = en;
 #if DEBUG
             Console.WriteLine($"LOS: {LosLength}, Is Battler: {IsBattler}, Path = {_path}, Enabled: {en}");
@@ -141,7 +139,9 @@ namespace Poke1Protocol
         }
         public Npc Clone()
         {
-            return new Npc(Data);
+            var clone = new Npc(Data);
+            clone.CanBattle = CanBattle;
+            return clone;
         }
 
         public Direction GetDriectionFrom(int x, int y)
@@ -197,9 +197,12 @@ namespace Poke1Protocol
             CanBattle = IsBattler;
         }
 
-        public void Visible(bool hide)
+        public void SetVisibility(bool hide)
         {
             IsVisible = !hide;
+            IsBattler = IsVisible && LosLength > 0 && (Data.Settings.SightAction == "Move To Player"
+                || Data.Settings.SightAction == "Player To NPC");
+            CanBattle = IsBattler;
         }
     }
 }

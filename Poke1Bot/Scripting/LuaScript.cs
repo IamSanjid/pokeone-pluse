@@ -1169,13 +1169,13 @@ namespace Poke1Bot.Scripting
         private bool IsNpcVisible(string npcName)
         {
             npcName = npcName.ToUpperInvariant();
-            return Bot.Game.Map.OriginalNpcs.Any(npc => npc.NpcName.ToUpperInvariant() == npcName && npc.IsVisible);
+            return Bot.Game.Map.Npcs.Any(npc => npc.NpcName.ToUpperInvariant() == npcName && npc.IsVisible);
         }
 
         // API: Returns true if there is a visible NPC the specified coordinates.
         private bool IsNpcOnCell(int cellX, int cellY)
         {
-            return Bot.Game.Map.OriginalNpcs.Any(npc => npc.PositionX == cellX && npc.PositionY == cellY && npc.IsVisible);
+            return Bot.Game.Map.Npcs.Any(npc => npc.PositionX == cellX && npc.PositionY == cellY && npc.IsVisible);
         }
 
         // API: Returns true if there is a shop opened.
@@ -2115,13 +2115,13 @@ namespace Poke1Bot.Scripting
                 Fatal("error: 'moveToLink' given link id was invalid.");
                 return false;
             }
-            var findLink = Bot.Game.Map.Links.Find(l => l.DestinationID == linkId);
+            var findLink = Bot.Game.Map.Links.Find(l => l.DestinationId == linkId);
             if (findLink is null)
             {
                 Fatal($"error: 'moveToLink' there is no link id which matches this {id} id.");
                 return false;
             }
-            return ExecuteAction(Bot.MoveToCell(findLink.x, -findLink.z));
+            return ExecuteAction(Bot.MoveToCell(findLink.DestinationX, findLink.DestinationY));
         }
 
         // API: Moves to nearest accessible link from player.
@@ -2309,7 +2309,7 @@ namespace Poke1Bot.Scripting
             if (!ValidateAction("talkToNpc", false)) return false;
 
             npcName = npcName.ToUpperInvariant();
-            Npc target = Bot.Game.Map.OriginalNpcs.FirstOrDefault(npc => npc.NpcName.ToUpperInvariant() == npcName);
+            Npc target = Bot.Game.Map.Npcs.FirstOrDefault(npc => npc.NpcName.ToUpperInvariant() == npcName);
             if (target == null)
             {
                 Fatal("error: talkToNpc: could not find the NPC '" + npcName + "'.");
@@ -2324,7 +2324,7 @@ namespace Poke1Bot.Scripting
         {
             if (!ValidateAction("talkToNpcOnCell", false)) return false;
 
-            Npc target = Bot.Game.Map.OriginalNpcs.FirstOrDefault(npc => npc.PositionX == cellX && npc.PositionY == cellY);
+            Npc target = Bot.Game.Map.Npcs.FirstOrDefault(npc => npc.PositionX == cellX && npc.PositionY == cellY);
             if (target == null)
             {
                 Fatal("error: talkToNpcOnCell: could not find any NPC on the cell [" + cellX + "," + cellY + "].");
@@ -2346,13 +2346,13 @@ namespace Poke1Bot.Scripting
         {
             if (!ValidateAction("usePokecenter", false)) return false;
 
-            Npc nurse = Bot.Game.Map.OriginalNpcs.FirstOrDefault(npc => npc.NpcName.StartsWith("Nurse"));
+            Npc nurse = Bot.Game.Map.Npcs.FirstOrDefault(npc => npc.NpcName.StartsWith("Nurse"));
             if (nurse == null)
             {
                 Fatal("error: usePokecenter: could not find the Nurse Joy.");
                 return false;
             }
-            Npc target = Bot.Game.Map.OriginalNpcs.FirstOrDefault(npc => npc.PositionX == nurse.PositionX && npc.PositionY == nurse.PositionY + 1);
+            Npc target = Bot.Game.Map.Npcs.FirstOrDefault(npc => npc.PositionX == nurse.PositionX && npc.PositionY == nurse.PositionY + 1);
             if (target == null)
             {
                 Fatal("error: usePokecenter: could not find the entity below the Nurse Joy.");
@@ -2999,13 +2999,13 @@ namespace Poke1Bot.Scripting
                 return null;
             }
 
-            var destination = Bot.Game.Map.Links.Find(dest => dest.x == x && dest.z == -y);
+            var destination = Bot.Game.Map.Links.Find(dest => dest.DestinationX == x && dest.DestinationY == y);
             if (destination is null)
             {
                 Fatal($"error: ‘getDestinationId’ there is no link at {x}, {y}");
                 return null;
             }
-            return destination.DestinationID.ToString();
+            return destination.DestinationId.ToString();
         }
 
         // API: Gets the nearest moveable cell from specified cells.

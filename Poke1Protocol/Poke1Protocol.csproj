@@ -65,7 +65,7 @@
     <Compile Include="Map.cs" />
     <Compile Include="MapClient.cs" />
     <Compile Include="MapConnection.cs" />
-    <Compile Include="AreaLink.cs" />
+    <Compile Include="MapLink.cs" />
     <Compile Include="MovesManager.cs" />
     <Compile Include="Npc.cs" />
     <Compile Include="PlayerEffect.cs" />

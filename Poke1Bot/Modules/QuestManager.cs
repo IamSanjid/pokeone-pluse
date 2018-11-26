@@ -20,7 +20,7 @@ namespace Poke1Bot.Modules
 
         public PlayerQuest SelectedQuest { get; set; }
 
-        private MAPAPI.Response.LINKData _haveToMoveLink;
+        private MapLink _haveToMoveLink;
 
         public QuestManager(BotClient bot)
         {
@@ -42,7 +42,7 @@ namespace Poke1Bot.Modules
             _haveToMoveLink = null;
             foreach (var link in path.Links)
             {
-                var getLink = _bot.Game.Map.Links.Find(l => l.ID == link);
+                var getLink = _bot.Game.Map.Links.Find(l => l.Id == link);
                 if (getLink != null)
                 {
                     if (SelectedQuest is null is false)
@@ -72,11 +72,11 @@ namespace Poke1Bot.Modules
 
             if (_haveToMoveLink != null && !_bot.Game.IsInBattle && _bot.Game != null)
             {
-                if (_bot.Game.PlayerX != _haveToMoveLink.x || _bot.Game.PlayerY != -_haveToMoveLink.z)
+                if (_bot.Game.PlayerX != _haveToMoveLink.DestinationX || _bot.Game.PlayerY != _haveToMoveLink.DestinationY)
                 {
                     _questTimeout.Set();
                     _bot.Game?.ClearPath();
-                    _bot.MoveToCell(_haveToMoveLink.x, -_haveToMoveLink.z);
+                    _bot.MoveToCell(_haveToMoveLink.DestinationX, -_haveToMoveLink.DestinationY);
                     _haveToMoveLink = null;
                     return;
                 }

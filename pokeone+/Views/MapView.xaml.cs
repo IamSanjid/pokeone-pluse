@@ -443,7 +443,8 @@ namespace pokeone_plus
 
             if (_bot.Game.Map.HasLink(x, y))
             {
-                logBuilder.AppendLine("Link ID: " + _bot.Game.Map.Links.Find(s => s.x == x && s.z == -y).DestinationID);
+                logBuilder.AppendLine("Link Id: " + _bot.Game.Map.Links.Find(s => s.DestinationX == x && s.DestinationY == y).Id);
+                logBuilder.AppendLine("Link Destination Id: " + _bot.Game.Map.Links.Find(s => s.DestinationX == x && s.DestinationY == y).DestinationId);
             }
             PlayerInfos[] playersOnCell = _bot.Game.Players.Values.Where(player => player.PosX == x && player.PosY == y).ToArray();
             if (playersOnCell.Length > 0)
@@ -470,6 +471,7 @@ namespace pokeone_plus
                     if (npc.NpcName != string.Empty) logBuilder.AppendLine("    name: " + npc.NpcName);
                     logBuilder.AppendLine("    sprite: " + npc.Data.Settings.Sprite);
                     logBuilder.AppendLine("    Is Battler: " + npc.IsBattler);
+                    logBuilder.AppendLine("    Can Battle: " + npc.CanBattle);
                     logBuilder.AppendLine("    Is PC: " + (_bot.Game.Map.IsPc(npc.PositionX, npc.PositionY)));
                     logBuilder.AppendLine("    Is Cutable Tree: " + (_bot.Game.Map.IsCutTree(npc.PositionX, npc.PositionY)));
                     logBuilder.AppendLine("    Is Smashable Rock: " + (_bot.Game.Map.IsRockSmash(npc.PositionX, npc.PositionY)));
@@ -711,9 +713,9 @@ namespace pokeone_plus
             });
         }
 
-        public void Client_AreaUpdated()
+        public void Client_LinksUpdated()
         {
-
+            _isMapDirty = true;
         }
 
         public void Client_PositionUpdated(string map, int x, int y)

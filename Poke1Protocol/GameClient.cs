@@ -104,7 +104,7 @@ namespace Poke1Protocol
         public PlayerStats PlayerStats { get; private set; }
 
         public event Action ConnectionOpened;
-        public event Action AreaUpdated;
+        public event Action LinksUpdated;
         public event Action<Exception> ConnectionFailed;
         public event Action<Exception> ConnectionClosed;
         public event Action<PSXAPI.Response.LoginError> AuthenticationFailed;
@@ -308,7 +308,6 @@ namespace Poke1Protocol
             _itemUseTimeout.Update();
             _fishingTimeout.Update();
             _mountingTimeout.Update();
-            _npcBattleTimeout.Update();
             _refreshingPCBox.Update();
 
             UpdateScript();
@@ -335,6 +334,7 @@ namespace Poke1Protocol
         {
             if (_npcBattler == null) return;
 
+            _npcBattleTimeout.Update();
             if (_npcBattleTimeout.IsActive) return;
 
             TalkToNpc(_npcBattler);
@@ -501,23 +501,21 @@ namespace Poke1Protocol
                             battler.CanBattle = false;
                             LogMessage?.Invoke("The NPC " + (battler.NpcName ?? battler.Id.ToString()) + " saw us, interacting...");
                             int distanceFromBattler = DistanceBetween(PlayerX, PlayerY, battler.PositionX, battler.PositionY);
-                            ClearPath();
                             if (battler.Data.Settings.SightAction.ToLowerInvariant() == "player to npc")
                             {
                                 //npcs which will ask the player to come to them lol....
-                                _npcBattleTimeout.Set(Rand.Next(1000, 2000) + distanceFromBattler);
                                 MoveToBattleWithNpc?.Invoke(battler);
                             }
                             else
                             {
                                 //npcs which going to come to the player...
-                                _npcBattleTimeout.Set(Rand.Next(1000, 2000) + distanceFromBattler * 300);
+                                _npcBattleTimeout.Set(Rand.Next(1000, 2000) + distanceFromBattler * (IsBiking ? 150 : 300));
                                 _npcBattler = battler;
                             }
+                            ClearPath();
                         }
                     }
                     SendMovement(actions.ToArray(), fromX, fromY); // PokeOne sends the (x,y) without applying the movement(but it checks the collisions) to the server.
-                    _lootBoxTimeout.Cancel();
                 }
                 if (_movements.Count == 0 && _surfAfterMovement)
                 {
@@ -530,17 +528,6 @@ namespace Poke1Protocol
                     }
                     _movementTimeout.Set(Rand.Next(750, 900));
                 }
-                if (_movements.Count == 0 && _cutOrRockSmashNpc != null 
-                    && DistanceBetween(_cutOrRockSmashNpc.PositionX, _cutOrRockSmashNpc.PositionY, PlayerX, PlayerY) == 1)
-                {
-                    var npcDir = _cutOrRockSmashNpc.GetDriectionFrom(PlayerX, PlayerY);
-                    if (npcDir != Direction.None && npcDir != LastDirection)
-                    {
-                        // Facing to the cut or rock smash npc....
-                        SendMovement(new[] { npcDir.ToOneStepMoveActions() }, PlayerX, PlayerY);
-                        LastDirection = npcDir;
-                    }
-                }
             }
 
             if (!_movementTimeout.IsActive && _movements.Count == 0 && _surfAfterMovement)
@@ -551,6 +538,13 @@ namespace Poke1Protocol
             if (!_movementTimeout.IsActive && _movements.Count == 0 && _cutOrRockSmashNpc != null 
                 && DistanceBetween(_cutOrRockSmashNpc.PositionX, _cutOrRockSmashNpc.PositionY, PlayerX, PlayerY) == 1)
             {
+                var npcDir = _cutOrRockSmashNpc.GetDriectionFrom(PlayerX, PlayerY);
+                if (npcDir != Direction.None && npcDir != LastDirection)
+                {
+                    // Facing to the cut or rock smash npc....
+                    SendMovement(new[] { npcDir.ToOneStepMoveActions() }, PlayerX, PlayerY);
+                    LastDirection = npcDir;
+                }
                 TalkToNpc(_cutOrRockSmashNpc);
                 _cutOrRockSmashNpc = null;
             }
@@ -657,10 +651,8 @@ namespace Poke1Protocol
                         _dialogTimeout.Set();
                         break;
                     case ScriptRequestType.Unfreeze:
-                        if (script.Text is null || DialogContent is null)
-                        {
-                            _dialogResponses.Clear();
-                        }
+                        _dialogResponses.Clear();
+                        Scripts.Clear();
                         break;
                     case ScriptRequestType.Shop:
                         OpenedShop = new Shop(script.Data, script.ScriptID);
@@ -681,7 +673,6 @@ namespace Poke1Protocol
 #if DEBUG
                         Console.WriteLine($"UNKNOWN SCRIPT TYPE: {script.Type}");
 #endif
-                        _dialogTimeout.Set();
                         break;
 
                 }
@@ -768,13 +759,12 @@ namespace Poke1Protocol
 #if DEBUG
             Console.WriteLine("[+++] Connected to the map server");
 #endif
-            if (MapName != null && Map == null)
-                _mapClient.DownloadMap(MapName);
         }
 
         private void MapClient_ConnectionFailed(Exception ex)
         {
             ConnectionFailed?.Invoke(ex);
+            _connection.Close();
         }
 
         private void MapClient_ConnectionClosed(Exception ex)
@@ -806,7 +796,9 @@ namespace Poke1Protocol
         private void OnConnectionClosed(Exception ex)
         {
             _isLoggedIn = false;
-            _mapClient.Close();
+            if (_mapClient.IsConnected)
+                _mapClient.Close();
+
             if (!IsConnected)
             {
 #if DEBUG
@@ -1072,6 +1064,7 @@ namespace Poke1Protocol
                 ScriptID = _currentScript.ScriptID
             };
             SendProto(packet);
+            _dialogTimeout.Set();
         }
 
         private void SendOpenLootBox(PSXAPI.Request.LootboxType type)
@@ -2000,6 +1993,7 @@ namespace Poke1Protocol
         private void OnBattle(PSXAPI.Response.Battle battle)
         {
             ClearPath();
+            Scripts.Clear();
             _slidingDirection = null;
 
             IsInBattle = !battle.Ended;
@@ -2126,78 +2120,13 @@ namespace Poke1Protocol
                     Console.WriteLine(s.Text);
                 }
             }
+            if (data.Data != null)
+                foreach (var d in data.Data)
+                    Console.WriteLine(d);
 #endif
 
             _currentScriptType = type;
             _currentScript = data;
-            //if (IsLoggedIn && _cachedScripts.Count > 0 && IsMapLoaded) // processing _cachedScripts, these scripts are received before getting fully logged int!
-            //{
-            //    switch (type)
-            //    {
-            //        case ScriptRequestType.Choice:
-            //            if (data.Text != null)
-            //            {
-            //                if (data.Text.ToList().Any(x => x.Text.Contains("start your journey"))
-            //                    || data.Data.ToList().Any(x => x == "Kanto" || x == "Johto"))
-            //                {
-            //                    SendProto(new PSXAPI.Request.Script
-            //                    {
-            //                        Response = "0",
-            //                        ScriptID = data.ScriptID
-            //                    });
-            //                    active = false;
-            //                }
-            //            }
-            //            break;
-            //        case ScriptRequestType.Unfreeze:
-            //            if (data.Text != null)
-            //            {
-            //                foreach (var text in data.Text)
-            //                {
-            //                    var st = text.Text;
-            //                    var index = st.IndexOf("(");
-            //                    if (index < 0) break;
-            //                    var scriptType = st.Substring(0, index);
-            //                    switch (scriptType)
-            //                    {
-            //                        case "setlos":
-            //                            var command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
-            //                            var npcId = Guid.Parse(command.Split(',')[0]);
-            //                            var los = Convert.ToInt32(command.Split(',')[1]);
-            //                            if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null)
-            //                            {
-            //                                Map.OriginalNpcs.Find(x => x.Id == npcId).UpdateLos(los);
-            //                                if (Map.Npcs.Find(x => x.Id == npcId) != null)
-            //                                    Map.Npcs.Find(x => x.Id == npcId).UpdateLos(los);
-            //                            }
-            //                            active = false;
-            //                            break;
-            //                        case "enablenpc":
-            //                            command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
-            //                            npcId = Guid.Parse(command.Split(',')[0]);
-            //                            var hide = command.Split(',')[1] == "0";
-
-            //                            if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null)
-            //                            {
-            //                                Map.OriginalNpcs.Find(x => x.Id == npcId).Visible(hide);
-            //                                if (hide && Map.Npcs.Find(x => x.Id == npcId) != null)
-            //                                    Map.Npcs.Remove(Map.OriginalNpcs.Find(x => x.Id == npcId));
-            //                                else if (!hide && Map.Npcs.Find(x => x.Id == npcId) == null)
-            //                                    Map.Npcs.Add(Map.OriginalNpcs.Find(x => x.Id == npcId));
-            //                            }
-            //                            active = false;
-            //                            break;
-            //                    }
-            //                }
-            //            }
-            //            break;
-            //    }
-            //}
-            //else if (!IsLoggedIn || !IsMapLoaded)
-            //    _cachedScripts.Add(data);
-
-            //_cachedScripts.Remove(data);
-
 
             _dialogTimeout.Set(Rand.Next(1500, 4000));
             Scripts.Add(data);
@@ -2208,27 +2137,52 @@ namespace Poke1Protocol
             var st = text;
             var index = st.IndexOf("(");
             var scriptType = st.Substring(0, index);
-            switch (scriptType)
+
+            var tempNpcs = Map.Npcs.Select(n => n.Clone()).ToList();
+
+            switch (scriptType.ToLowerInvariant())
             {
                 case "setlos":
                     var command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
                     var npcId = Guid.Parse(command.Split(',')[0]);
                     var los = Convert.ToInt32(command.Split(',')[1]);
-                    if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null)
+                    var npc = tempNpcs.Find(x => x.Id == npcId);
+                    if (npc != null)
                     {
-                        Map.OriginalNpcs.Find(x => x.Id == npcId).UpdateLos(los);
+                        npc.UpdateLos(los);
                     }
-                    OnNpcs(Map.OriginalNpcs);
+                    else if (Map.OriginalNpcs.Find(n => n.Id == npcId) != null)
+                    {
+                        var clone = Map.OriginalNpcs.Find(n => n.Id == npcId).Clone();
+                        clone.UpdateLos(los);
+                        tempNpcs.Add(clone);
+                    }
+                    OnNpcs(tempNpcs);
                     break;
                 case "enablenpc":
                     command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
                     npcId = Guid.Parse(command.Split(',')[0]);
                     var hide = command.Split(',')[1] == "0";
-                    if (Map.OriginalNpcs.Find(x => x.Id == npcId) != null)
+                    npc = tempNpcs.Find(x => x.Id == npcId);
+                    if (npc != null)
                     {
-                        Map.OriginalNpcs.Find(x => x.Id == npcId).Visible(hide);
+                        npc.SetVisibility(hide);
                     }
-                    OnNpcs(Map.OriginalNpcs);
+                    else if (Map.OriginalNpcs.Find(n => n.Id == npcId) != null)
+                    {
+                        var clone = Map.OriginalNpcs.Find(n => n.Id == npcId).Clone();
+                        clone.SetVisibility(hide);
+                        tempNpcs.Add(clone);
+                    }
+                    OnNpcs(tempNpcs);
+                    break;
+                case "enablelink":
+                    command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
+                    var linkId = Guid.Parse(command.Split(',')[0]);
+                    hide = command.Split(',')[1] == "0";
+                    if (Map.Links.Find(link => link.Id == linkId) != null)
+                        Map.Links.Find(link => link.Id == linkId).SetVisibility(hide);
+                    LinksUpdated?.Invoke();
                     break;
                 case "openpc":
                     // Asking default or first Box's pokemon...
@@ -2426,9 +2380,6 @@ namespace Poke1Protocol
                         //Character!
 
                         SendCharacterCustomization(0, Rand.Next(0, 3), Rand.Next(0, 13), Rand.Next(0, 27), Rand.Next(0, 4));
-
-                        break;
-                    case ScriptRequestType.Unfreeze:
 
                         break;
                 }
@@ -3081,8 +3032,7 @@ namespace Poke1Protocol
         {
             Players.Clear();
             Map = map;
-            OnNpcs(map.OriginalNpcs);
-            Map.AreaUpdated += Map_AreaUpdated;
+            OnNpcs(Map.OriginalNpcs);
 
             if (Map.IsSessioned)
             {
@@ -3123,19 +3073,13 @@ namespace Poke1Protocol
         private void OnNpcs(List<Npc> originalNpcs)
         {
             Map.Npcs.Clear();
+
             foreach (var npc in originalNpcs)
-            {
                 if (npc.IsVisible)
                     Map.Npcs.Add(npc);
-            }
 
             AreNpcReceived = true;
             NpcReceieved?.Invoke(Map.Npcs);
-        }
-
-        private void Map_AreaUpdated()
-        {
-            AreaUpdated?.Invoke();
         }
 
         public void CheckArea()

@@ -453,7 +453,7 @@ namespace pokeone_plus
                     // Map Stuff
                     Bot.Game.MapLoaded += Map.Client_MapLoaded;
                     Bot.Game.PositionUpdated += Map.Client_PositionUpdated;
-                    Bot.Game.AreaUpdated += Map.Client_AreaUpdated;
+                    Bot.Game.LinksUpdated += Map.Client_LinksUpdated;
                     Bot.Game.PlayerAdded += Map.Client_PlayerEnteredMap;
                     Bot.Game.PlayerRemoved += Map.Client_PlayerLeftMap;
                     Bot.Game.PlayerUpdated += Map.Client_PlayerMoved;

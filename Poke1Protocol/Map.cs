@@ -8,7 +8,6 @@ namespace Poke1Protocol
     public class Map
     {
         public event Action<List<Npc>> NpcReceieved;
-        public event Action AreaUpdated;
         public enum MoveResult
         {
             Success,
@@ -35,7 +34,7 @@ namespace Poke1Protocol
             { 17, true },
             { 18, true }
         };
-        public List<LINKData> Links { get; }
+        public List<MapLink> Links { get; }
         public MAPAPI.Response.MapDump MapDump { get; }
         public int[,] Colliders { get; }
         public int[,] TileTypes { get; }
@@ -77,6 +76,7 @@ namespace Poke1Protocol
             IsSessioned = isSessioned;
             Npcs = new List<Npc>();
             OriginalNpcs = new List<Npc>();
+            Links = new List<MapLink>();
             if (MapDump.NPCs != null && MapDump?.NPCs.Count > 0)
             {
                 foreach (var npc in MapDump.NPCs)
@@ -85,7 +85,7 @@ namespace Poke1Protocol
                 }
                 NpcReceieved?.Invoke(OriginalNpcs);
             }
-            Links = MapDump.Links;
+            MapDump.Links.ForEach(link => Links.Add(new MapLink(link)));
 
             ProcessAreas();
         }
@@ -118,7 +118,6 @@ namespace Poke1Protocol
                         {
                             CurrentArea.EndX = Width;
                             CurrentArea.EndY = Height;
-                            AreaUpdated?.Invoke();
                             return;
                         }
                     }
@@ -146,7 +145,6 @@ namespace Poke1Protocol
                         {
                             if (CurrentArea.AreaName.ToLowerInvariant() != area.AreaName.ToLowerInvariant())
                             {
-                                AreaUpdated?.Invoke();
                                 CurrentArea = area;
                                 DimensionX = area.EndX;
                                 DimensionY = area.EndY;
@@ -166,7 +164,6 @@ namespace Poke1Protocol
                         {
                             CurrentArea.EndX = Width;
                             CurrentArea.EndY = Height;
-                            AreaUpdated?.Invoke();
                             return;
                         }
                     }
@@ -179,7 +176,6 @@ namespace Poke1Protocol
                         StartX = 0,
                         StartY = 0
                     };
-                    AreaUpdated?.Invoke();
                 }
             }
         }
@@ -449,7 +445,7 @@ namespace Poke1Protocol
         public bool HasLink(int x, int y)
         {
             if (!IsInCurrentArea(x, y)) return false;
-            return Links.Any(l => l.x == x && l.z == -y && l.DestinationID != Guid.Empty);
+            return Links.Any(l => l.DestinationX == x && l.DestinationY == y && l.IsVisible);
         }
         public bool CanInteract(int playerX, int playerY, int npcX, int npcY)
         {
@@ -556,7 +552,7 @@ namespace Poke1Protocol
         {
             if (!IsInCurrentArea(x, y)) return false;
             return (Objects.Any(ob => ob != null && ob.x == x && ob.z == -y && ob.Name.StartsWith("PC") && !string.IsNullOrEmpty(ob.Name))
-                    && OriginalNpcs.Any(n => n.PositionX == x && n.PositionY == y
+                    && Npcs.Any(n => n.PositionX == x && n.PositionY == y
                     && n.NpcName.ToLowerInvariant().StartsWith("new") && n.Data.Settings.Sprite == 0));
         }
 
@@ -571,7 +567,7 @@ namespace Poke1Protocol
         public bool IsRockSmash(int x, int y)
         {
             if (!IsInCurrentArea(x, y)) return false;
-            if (OriginalNpcs.Find(s => s.PositionX == x && s.PositionY == y
+            if (Npcs.Find(s => s.PositionX == x && s.PositionY == y
                    && (s.NpcName.ToLowerInvariant().StartsWith(".rocksmash") || s.Data.Settings.Sprite == 11) && s.IsVisible) != null)
                 return true;
             return false;
@@ -580,7 +576,7 @@ namespace Poke1Protocol
         public bool IsCutTree(int x, int y)
         {
             if (!IsInCurrentArea(x, y)) return false;
-            return OriginalNpcs.Find(s => s.PositionX == x && s.PositionY == y
+            return Npcs.Find(s => s.PositionX == x && s.PositionY == y
                 && (s.NpcName.ToLowerInvariant().StartsWith(".cut") || s.Data.Settings.Sprite == 9) && s.IsVisible) != null;
         }
 
@@ -630,9 +626,8 @@ namespace Poke1Protocol
                 return MoveResult.Fail;
             }
 
-            if (OriginalNpcs.Any(npc => npc.PositionX == destinationX && npc.PositionY == destinationY && !npc.IsMoving
-                && !IsCutTree(destinationX, destinationY) && !IsRockSmash(destinationX, destinationY)
-                    && npc.CanBlockPlayer && npc.IsVisible))
+            if (Npcs.Any(npc => npc.PositionX == destinationX && npc.PositionY == destinationY && !npc.IsMoving
+                && !IsCutTree(destinationX, destinationY) && !IsRockSmash(destinationX, destinationY) && npc.IsVisible))
                 return MoveResult.Fail;
 
             //if (direction != Direction.Down && GetCollider(destinationX, destinationY) == 4)
@@ -862,7 +857,7 @@ namespace Poke1Protocol
                         if (collPre == 19 || collPre == 16 || collPre == 21)
                             return false;
                         if (collider == 15 || collider == 0 || collider == 7 || collider == 13 || collider == 24
-                            || collider == 8 || collider == 9 || collider == 25 || collider == 22 ||
+                            || collider == 8 || collider == 9 || collider == 25 || collider == 22 || collider == 19 ||
                             collider == 5 || collider == 12 || collider == 11 || IsGoingToSlide(collider))
                         {
                             return true;
@@ -884,7 +879,7 @@ namespace Poke1Protocol
                         if (collPre == 20 || collPre == 23 || collPre == 18)
                             return false;
                         if (collider == 15 || collider == 0 || collider == 25 || collider == 13 || collider == 24 ||
-                            collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 22 ||
+                            collider == 6 || collider == 7 || collider == 8 || collider == 9 || collider == 22 || collider == 20 ||
                             collider == 3 || collider == 12 || collider == 11 || IsGoingToSlide(collider))
                         {
                             return true;
