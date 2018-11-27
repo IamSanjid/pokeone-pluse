@@ -577,14 +577,14 @@ namespace Poke1Protocol
 
         private void UpdateScript()
         {
-            if (IsMapLoaded && !_dialogTimeout.IsActive && Scripts.Count > 0)
+            if (_cachedScripts.Count > 0 && IsMapLoaded && !_dialogTimeout.IsActive)
             {
-                var script = Scripts[0];
-                Scripts.RemoveAt(0);
+                var cacheScript = _cachedScripts[0];
+                _cachedScripts.RemoveAt(0);
 
-                if (script.Text != null)
+                if (cacheScript.Text != null)
                 {
-                    foreach (var scriptText in script.Text)
+                    foreach (var scriptText in cacheScript.Text)
                     {
                         if (!scriptText.Text.EndsWith(")") && scriptText.Text.IndexOf("(") == -1)
                             DialogOpened?.Invoke(Regex.Replace(scriptText.Text, @"\[(\/|.\w+)\]", ""));
@@ -592,6 +592,13 @@ namespace Poke1Protocol
                             ProcessScriptMessage(scriptText.Text);
                     }
                 }
+                _dialogTimeout.Set();
+            }
+
+            if (IsMapLoaded && !_dialogTimeout.IsActive && Scripts.Count > 0)
+            {
+                var script = Scripts[0];
+                Scripts.RemoveAt(0);
 
                 DialogContent = script.Data;
 
@@ -1993,7 +2000,6 @@ namespace Poke1Protocol
         private void OnBattle(PSXAPI.Response.Battle battle)
         {
             ClearPath();
-            Scripts.Clear();
             _slidingDirection = null;
 
             IsInBattle = !battle.Ended;
@@ -2124,11 +2130,27 @@ namespace Poke1Protocol
                 foreach (var d in data.Data)
                     Console.WriteLine(d);
 #endif
+            if (!IsLoggedIn || !IsMapLoaded)
+                _cachedScripts.Add(data);
+
+            if (data.Text != null)
+            {
+                foreach (var scriptText in data.Text)
+                {
+                    if (!scriptText.Text.EndsWith(")") && scriptText.Text.IndexOf("(") == -1)
+                        DialogOpened?.Invoke(Regex.Replace(scriptText.Text, @"\[(\/|.\w+)\]", ""));
+                    else if (IsMapLoaded && IsLoggedIn)
+                        ProcessScriptMessage(scriptText.Text);
+                }
+            }
 
             _currentScriptType = type;
             _currentScript = data;
 
-            _dialogTimeout.Set(Rand.Next(1500, 4000));
+            if (_cachedScripts.Count > 0)
+            {
+                _dialogTimeout.Set(Rand.Next(1500, 4000));
+            }
             Scripts.Add(data);
         }
 
@@ -3033,7 +3055,7 @@ namespace Poke1Protocol
         {
             Players.Clear();
             Map = map;
-            OnNpcs(Map.OriginalNpcs);
+            OnNpcs(Map.OriginalNpcs);            
 
             if (Map.IsSessioned)
             {
