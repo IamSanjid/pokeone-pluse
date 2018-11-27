@@ -32,8 +32,13 @@ before_build:
 - cmd: appveyor-retry nuget restore
 build:
   verbosity: normal
+
+artifacts:
+- path: pokeone+\bin\Release
+  name: PokeOne+
+  
 # Generating some information about scripts, Lua API(s) and PokeOne+'s Discord Link #
-after_build:
+on_success:
 - cmd: >-
     del /f pokeone+\bin\Release*.pdb
 
@@ -47,7 +52,3 @@ after_build:
     echo Discord Link: https://discord.gg/XzDPGPW >> pokeone+\bin\ReleaseReadMe.txt
 
     echo LUA API(s): https://crazy3001.github.io/pokeoneplus-slate/ >>> pokeone+\bin\ReleaseReadMe.txt
-
-artifacts:
-- path: pokeone+\bin\Release
-  name: PokeOne+
