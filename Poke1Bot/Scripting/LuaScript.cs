@@ -223,6 +223,8 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["hasBadge"] = new Func<string, bool>(HasBadge);
                 _lua.Globals["hasBadgeId"] = new Func<int, bool>(HasBadgeId);
                 _lua.Globals["countBadges"] = new Func<int>(CountBadges);
+                _lua.Globals["countNpcWith"] = new Func<string, int>(CountNpcWith);
+                _lua.Globals["checkNpcWith"] = new Func<string, bool>(CheckNpcWith);
 
                 _lua.Globals["getNearestMovableCell"] = new Func<DynValue[], DynValue[]>(GetNearestMovableCell);
 
@@ -319,6 +321,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["moveToGrass"] = new Func<bool>(MoveToGrass);
                 _lua.Globals["moveToWater"] = new Func<bool>(MoveToWater);
                 _lua.Globals["talkToNpc"] = new Func<string, bool>(TalkToNpc);
+                _lua.Globals["talkNpcWith"] = new Func<string, bool>(TalkNpcWith);
                 _lua.Globals["talkToNpcOnCell"] = new Func<int, int, bool>(TalkToNpcOnCell);
                 _lua.Globals["turnCharacter"] = new Func<string, bool>(TurnCharacter);
                 _lua.Globals["usePokecenter"] = new Func<bool>(UsePokecenter);
@@ -2319,6 +2322,31 @@ namespace Poke1Bot.Scripting
             return ExecuteAction(Bot.TalkToNpc(target));
         }
 
+        // API: Moves then talk to NPC which name contains specified string
+        private bool TalkNpcWith(string containedString)
+        {
+            if (!ValidateAction("talkNpcWith", false)) return false;
+            containedString = containedString.ToLowerInvariant();
+            var allNpcsWithName = Bot.Game.Map.Npcs.FindAll(npc => npc.NpcName.ToLowerInvariant().Contains(containedString));
+            if (allNpcsWithName is null || allNpcsWithName.Count <= 0)
+            {
+                Fatal("error: talkNpcWith: could not find any NPC with '" + containedString + "'.");
+                return false;
+            }
+            if (allNpcsWithName.Count > 1)
+            {
+                Log("info: talkNpcWith: Found more than one NPC with " + containedString + ". Now the bot will talk to the nearest NPC from the player.");
+            }
+            var target = allNpcsWithName.OrderBy(npc => GameClient.DistanceBetween(npc.PositionX, npc.PositionY, Bot.Game.PlayerX, Bot.Game.PlayerY))
+                            .ToList().FirstOrDefault();
+            if (target is null)
+            {
+                Fatal("error: talkNpcWith: something went wrong while talking to the NPC with '" + containedString + "'.");
+                return false;
+            }
+            return ExecuteAction(Bot.TalkToNpc(target));
+        }
+
         // API: Moves then talk to NPC located on the specified cell.
         private bool TalkToNpcOnCell(int cellX, int cellY)
         {
@@ -3148,6 +3176,31 @@ namespace Poke1Bot.Scripting
         private bool IsTrainerInfoReceived()
         {
             return Bot.Game.PlayerStats != null;
+        }
+
+        // API: Counts total NPCs with specified string
+        private int CountNpcWith(string containedString)
+        {
+            containedString = containedString.ToLowerInvariant();
+            var allNpcsWithName = Bot.Game.Map.Npcs.FindAll(npc => npc.NpcName.ToLowerInvariant().Contains(containedString));
+            if (allNpcsWithName is null || allNpcsWithName.Count <= 0)
+            {
+                Fatal("error: countNpcWith: could not find any NPC with '" + containedString + "'.");
+                return -1;
+            }
+            return allNpcsWithName.Count;
+        }
+
+        // API: Checks if any NPCs is visible with specified string
+        private bool CheckNpcWith(string containedString)
+        {
+            containedString = containedString.ToLowerInvariant();
+            var allNpcsWithName = Bot.Game.Map.Npcs.FindAll(npc => npc.NpcName.ToLowerInvariant().Contains(containedString));
+            if (allNpcsWithName is null || allNpcsWithName.Count <= 0)
+            {                
+                return false;
+            }
+            return true;
         }
     }
 }

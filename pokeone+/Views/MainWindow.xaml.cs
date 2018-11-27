@@ -1156,24 +1156,29 @@ namespace pokeone_plus
             }
         }
 
+        private void ReloadHotKey_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            ReloadScript_Click(sender, null);
+        }
+
         private void SourceCode_View_Click(object sender, RoutedEventArgs e)
         {
             Process.Start("http://bit.ly/2qaXE4J");
         }
 
+        private void Donate_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start("https://www.paypal.me/purpleP1");
+        }
+
         private void LuaApi_View_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start("http://bit.ly/2CAUtLa");
+            Process.Start("https://crazy3001.github.io/pokeoneplus-slate/");
         }
 
         private void About_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show(App.Name + " version " + App.Version + ", by " + App.Author + "." + Environment.NewLine + App.Description, App.Name + " - About");
-        }
-
-        private void ReloadHotKey_Executed(object sender, ExecutedRoutedEventArgs e)
-        {
-            ReloadScript_Click(sender, null);
         }
     }
 }

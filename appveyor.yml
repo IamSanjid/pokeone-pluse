@@ -1,0 +1,53 @@
+# version format
+version: 1.0.{build}
+
+# VS Version
+image: Visual Studio 2017
+
+# enable patching of AssemblyInfo.* files
+assembly_info:
+  patch: true
+  file: AssemblyInfo.*
+  assembly_version: "1.0.{build}"
+  assembly_file_version: "{version}"
+  assembly_informational_version: "{version}"
+
+
+#---------------------------------#
+#       build configuration       #
+#---------------------------------#
+
+# build platform, i.e. x86, x64, Any CPU. This setting is optional.
+platform: Any CPU
+
+# to add several platforms to build matrix:
+#platform:
+#  - x86
+#  - Any CPU
+
+# build Configuration, i.e. Debug, Release, etc.
+configuration: Release
+
+before_build:
+- cmd: appveyor-retry nuget restore
+build:
+  verbosity: normal
+# Generating some information about scripts, Lua API(s) and PokeOne+'s Discord Link #
+after_build:
+- cmd: >-
+    del /f pokeone+\bin\Release*.pdb
+
+    del /f pokeone+\bin\Release*.xml
+
+
+    type nul > ReadMe.txt
+
+    echo Sample-Scripts: https://github.com/IamSanjid/pokeone_pluse-script > pokeone+\bin\ReleaseReadMe.txt
+
+    echo Discord Link: https://discord.gg/XzDPGPW >> pokeone+\bin\ReleaseReadMe.txt
+
+    echo LUA API(s): https://crazy3001.github.io/pokeoneplus-slate/ >>> pokeone+\bin\ReleaseReadMe.txt
+
+artifacts:
+- path: pokeone+\bin\Release
+  name: PokeOne+
