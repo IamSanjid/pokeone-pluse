@@ -48,7 +48,6 @@ after_build:
     echo Discord Link: https://discord.gg/XzDPGPW >> pokeone+\bin\Release\ReadMe.txt
 
     echo LUA API(s): https://crazy3001.github.io/pokeoneplus-slate/ >>> pokeone+\bin\Release\ReadMe.txt
-
 artifacts:
 - path: pokeone+\bin\Release
   name: PokeOne+
