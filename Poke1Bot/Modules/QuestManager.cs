@@ -65,6 +65,9 @@ namespace Poke1Bot.Modules
 
         public void Update()
         {
+            if (_bot.Game is null)
+                return;
+
             _questTimeout.Update();
 
             if (_bot.Game != null && _bot.Game.IsInBattle)

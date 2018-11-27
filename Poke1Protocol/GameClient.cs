@@ -335,6 +335,7 @@ namespace Poke1Protocol
             if (_npcBattler == null) return;
 
             _npcBattleTimeout.Update();
+
             if (_npcBattleTimeout.IsActive) return;
 
             TalkToNpc(_npcBattler);
@@ -492,6 +493,7 @@ namespace Poke1Protocol
                         Npc battler = Map.Npcs.FirstOrDefault(npc => npc.CanBattle && npc.IsInLineOfSight(PlayerX, PlayerY));
                         if (battler != null)
                         {
+                            ClearPath();
                             var fromNpcDir = battler.Direction.GetOpposite();
                             if (LastDirection != fromNpcDir)
                             {
@@ -512,7 +514,6 @@ namespace Poke1Protocol
                                 _npcBattleTimeout.Set(Rand.Next(1000, 2000) + distanceFromBattler * (IsBiking ? 150 : 300));
                                 _npcBattler = battler;
                             }
-                            ClearPath();
                         }
                     }
                     SendMovement(actions.ToArray(), fromX, fromY); // PokeOne sends the (x,y) without applying the movement(but it checks the collisions) to the server.
@@ -652,7 +653,6 @@ namespace Poke1Protocol
                         break;
                     case ScriptRequestType.Unfreeze:
                         _dialogResponses.Clear();
-                        Scripts.Clear();
                         break;
                     case ScriptRequestType.Shop:
                         OpenedShop = new Shop(script.Data, script.ScriptID);
@@ -3001,6 +3001,7 @@ namespace Poke1Protocol
 
             ClearPath();
             OpenedShop = null;
+            PlayerStats = null;
             _surfAfterMovement = false;
             CurrentPCBox = null;
             _slidingDirection = null;
