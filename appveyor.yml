@@ -41,7 +41,7 @@ after_build:
     del /f pokeone+\bin\Release\*.xml
 
 
-    type nul > ReadMe.txt
+    type nul > pokeone+\bin\Release\ReadMe.txt
 
     echo Sample-Scripts: https://github.com/IamSanjid/pokeone_pluse-script > pokeone+\bin\Release\ReadMe.txt
 
