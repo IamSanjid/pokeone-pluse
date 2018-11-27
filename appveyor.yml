@@ -32,8 +32,6 @@ before_build:
 - cmd: appveyor-retry nuget restore
 build:
   verbosity: normal
-  
-# Generating some information about scripts, Lua API(s) and PokeOne+'s Discord Link #
 after_build:
 - cmd: >-
     del /f pokeone+\bin\Release\*.pdb
