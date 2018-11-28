@@ -3170,22 +3170,22 @@ namespace Poke1Protocol
 
         public bool PokemonUidHasMove(int pokemonUid, string moveName)
         {
-            return Team.FirstOrDefault(p => p.Uid == pokemonUid)?.Moves.Any(m => m.Name?.Equals(moveName, StringComparison.InvariantCultureIgnoreCase) ?? false) ?? false;
+            return Team.FirstOrDefault(p => p.Uid == pokemonUid)?.Moves?.Any(m => m?.Name?.Equals(moveName, StringComparison.InvariantCultureIgnoreCase) ?? false) ?? false;
         }
 
         public bool HasMove(string moveName)
         {
-            return Team.Any(p => p.Moves != null && p.Moves.Any(m => m?.Name.Equals(moveName, StringComparison.InvariantCultureIgnoreCase) ?? false));
+            return Team.Any(p => p?.Moves != null && p?.Moves?.Any(m => m?.Name?.Equals(moveName, StringComparison.InvariantCultureIgnoreCase) ?? false) == true);
         }
 
         public int GetMovePosition(int pokemonUid, string moveName)
         {
-            return Team[pokemonUid].Moves.FirstOrDefault(m => m.Name?.Equals(moveName, StringComparison.InvariantCultureIgnoreCase) ?? false)?.Position ?? -1;
+            return Team[pokemonUid]?.Moves?.FirstOrDefault(m => m?.Name?.Equals(moveName, StringComparison.InvariantCultureIgnoreCase) ?? false)?.Position ?? -1;
         }
 
         public InventoryItem GetItemFromId(int id)
         {
-            return Items.FirstOrDefault(i => i.Id == id && i.Quantity > 0);
+            return Items?.FirstOrDefault(i => i?.Id == id && i?.Quantity > 0);
         }
 
         public bool HasItemId(int id)
@@ -3200,7 +3200,7 @@ namespace Poke1Protocol
 
         public Pokemon FindFirstPokemonInTeam(string pokemonName)
         {
-            return Team.FirstOrDefault(p => p.Name.Equals(pokemonName, StringComparison.InvariantCultureIgnoreCase));
+            return Team?.FirstOrDefault(p => p != null && p.Name.Equals(pokemonName, StringComparison.InvariantCultureIgnoreCase));
         }
 
         public InventoryItem GetItemFromName(string itemName)
