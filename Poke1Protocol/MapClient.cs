@@ -44,7 +44,8 @@ namespace Poke1Protocol
 #if DEBUG
                 Console.WriteLine("[Map] Loaded from cache: " + mapName);
 #endif
-                MapLoaded?.Invoke(RemoveExtension(mapName), _cache[mapName.ToLowerInvariant()]);
+                var cache = _cache[mapName.ToLowerInvariant()];
+                MapLoaded?.Invoke(RemoveExtension(mapName), new Map(MAPAPI.Response.MapDump.Serialize(cache.MapDump), cache.IsSessioned, _client));
                 return;
             }
 #if DEBUG

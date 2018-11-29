@@ -313,7 +313,7 @@ namespace Poke1Protocol
                 if (area != null && currentArea != null)
                 {
                     var isHori = currentArea.StartX >= area.EndX || area.StartX >= currentArea.EndX; // Horizontal
-                    var isVerti = currentArea.EndY <= area.StartY || currentArea.StartY >= area.EndY; // Vertical
+                    var isVerti = area.StartY <= currentArea.StartY || area.StartY >= currentArea.EndY; // Vertical
                     if (Colliders[x, y] == 0)
                     {
                         if ((isHori && (x == area.EndX || x == area.StartX)) || (isVerti && (y == area.StartY || y == area.EndY)))
@@ -344,7 +344,7 @@ namespace Poke1Protocol
                 if (area != null && currentArea != null)
                 {
                     var isHori = currentArea.StartX >= area.EndX || area.StartX >= currentArea.EndX; // Horizontal
-                    var isVerti = currentArea.EndY <= area.StartY || currentArea.StartY >= area.EndY; // Vertical
+                    var isVerti = area.StartY <= currentArea.StartY || area.StartY >= currentArea.EndY; // Vertical
                     if (Colliders[x, y] == 0)
                     {
                         if ((isHori && (x == area.EndX || x == area.StartX)) || (isVerti && (y == area.StartY || y == area.EndY)))
@@ -390,7 +390,7 @@ namespace Poke1Protocol
                 if (area != null && currentArea != null)
                 {
                     var isHori = currentArea.StartX >= area.EndX || area.StartX >= currentArea.EndX; // Horizontal
-                    var isVerti = currentArea.EndY <= area.StartY || currentArea.StartY >= area.EndY; // Vertical
+                    var isVerti = area.StartY <= currentArea.StartY || area.StartY >= currentArea.EndY;
                     return isVerti;
                 }
             }

@@ -139,9 +139,13 @@ namespace Poke1Protocol
         }
         public Npc Clone()
         {
-            var clone = new Npc(Data);
-            clone.CanBattle = CanBattle;
-            return clone;
+            var newData = Data;
+            //copying latest updats to newData..
+            newData.Settings.LOS = LosLength;
+            newData.Settings.Facing = Direction.ToString().ToLowerInvariant();
+            newData.x = PositionX;
+            newData.z = -PositionY;
+            return new Npc(newData);
         }
 
         public Direction GetDriectionFrom(int x, int y)
