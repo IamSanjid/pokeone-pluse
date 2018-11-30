@@ -188,7 +188,8 @@ namespace Poke1Bot
             if (_npcBattler != null && Game != null && Game.IsMapLoaded && Game.IsInactive && !Game.IsInBattle)
             {
                 Game.ClearPath();
-                TalkToNpc(_npcBattler);
+                MoveToCell(_npcBattler.PositionX, _npcBattler.PositionY, 1);
+                _npcBattler = null;
                 return;
             }
 
@@ -320,18 +321,10 @@ namespace Poke1Bot
                     Game.SendMovement(oneStep, Game.PlayerX, Game.PlayerY);
                     Game.LastDirection = fromNpcDir;
                 }
-                _npcBattler = null;
                 Game.TalkToNpc(target);
                 return true;
             }
-            var result = MoveToCell(target.PositionX, target.PositionY, 1);
-
-            if (!result)
-            {
-                _npcBattler = null;
-            }
-
-            return result;
+            return MoveToCell(target.PositionX, target.PositionY, 1);
         }
 
         public bool MoveToCell(int x, int y, int requiredDistance = 0)
@@ -546,12 +539,10 @@ namespace Poke1Bot
             string message = "Position updated: [" + map + "] (" + x + ", " + y + ")";
             if (Game.Map == null || Game.IsTeleporting)
             {
-                _npcBattler = null;
                 message += " [OK]";
             }
             else if (Game.MapName != map)
             {
-                _npcBattler = null;
                 message += " [WARNING, different map] /!\\";
                 Script?.OnWarningMessage(true);
             }

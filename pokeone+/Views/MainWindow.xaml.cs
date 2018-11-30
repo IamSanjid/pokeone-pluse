@@ -579,6 +579,7 @@ namespace pokeone_plus
                 IList<InventoryItem> items;
                 lock (Bot)
                 {
+                    if (Bot.Game is null) return;
                     money = Bot.Game.Money.ToString("#,##0");
                     gold = Bot.Game.Gold.ToString("#,##0");
                     items = Bot.Game.Items.ToArray();

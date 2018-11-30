@@ -338,6 +338,8 @@ namespace Poke1Protocol
 
             if (_npcBattleTimeout.IsActive) return;
 
+            if (_npcBattler.SightAction == SightAction.PlayerToNPC && DistanceBetween(_npcBattler.PositionX, _npcBattler.PositionY, PlayerX, PlayerY) != 1) return;
+
             TalkToNpc(_npcBattler);
             _npcBattler = null;
         }
@@ -490,7 +492,8 @@ namespace Poke1Protocol
                     }
                     else
                     {
-                        Npc battler = Map.Npcs.FirstOrDefault(npc => npc.CanBattle && npc.IsInLineOfSight(PlayerX, PlayerY));
+                        Npc battler = Map.Npcs.FirstOrDefault(npc => npc.CanBattle && (npc.IsInLineOfSight(PlayerX, PlayerY) 
+                            || npc.IsInLineOfSight(fromX, fromY)));
                         if (battler != null)
                         {
                             ClearPath();
@@ -503,10 +506,12 @@ namespace Poke1Protocol
                             battler.CanBattle = false;
                             LogMessage?.Invoke("The NPC " + (battler.NpcName ?? battler.Id.ToString()) + " saw us, interacting...");
                             int distanceFromBattler = DistanceBetween(PlayerX, PlayerY, battler.PositionX, battler.PositionY);
-                            if (battler.Data.Settings.SightAction.ToLowerInvariant() == "player to npc")
+                            if (battler.SightAction == SightAction.PlayerToNPC)
                             {
                                 //npcs which will ask the player to come to them lol....
                                 MoveToBattleWithNpc?.Invoke(battler);
+                                _npcBattleTimeout.Set(Rand.Next(1000, 2000) + distanceFromBattler);
+                                _npcBattler = battler;
                             }
                             else
                             {
@@ -592,7 +597,7 @@ namespace Poke1Protocol
                             ProcessScriptMessage(scriptText.Text);
                     }
                 }
-                _dialogTimeout.Set();
+                //_dialogTimeout.Set();
             }
 
             if (IsMapLoaded && !_dialogTimeout.IsActive && Scripts.Count > 0)
@@ -625,17 +630,16 @@ namespace Poke1Protocol
                                 walkingNpc.ProcessActions(DialogContent[1]);
                             }
                         }
-                        SendScriptResponse(script.ScriptID, "");
-                        _dialogTimeout.Set();
                         if (IsMapLoaded)
                         {
-                            AreNpcReceived = true;
-                            NpcReceieved?.Invoke(Map.Npcs);
+                            OnNpcs(Map.Npcs.Select(npc => npc.Clone()).ToList());
                         }
+                        SendScriptResponse(script.ScriptID, "");
+                        _dialogTimeout.Set();
                         break;
                     case ScriptRequestType.WalkUser:
                         SendScriptResponse(script.ScriptID, "");
-                        _dialogTimeout.Set();
+                        //_dialogTimeout.Set();
                         if (script.Data != null && script.Data.Length > 0)
                         {
                             foreach(var d in script.Data)
@@ -2160,7 +2164,7 @@ namespace Poke1Protocol
             var index = st.IndexOf("(");
             var scriptType = st.Substring(0, index);
 
-            var tempNpcs = Map.Npcs.Select(n => n.Clone()).ToList();
+            var tempNpcs = Map.Npcs.Select(npc => npc.Clone()).ToList();
 
             switch (scriptType.ToLowerInvariant())
             {
@@ -2179,7 +2183,6 @@ namespace Poke1Protocol
                         clone.UpdateLos(los);
                         tempNpcs.Add(clone);
                     }
-                    OnNpcs(tempNpcs);
                     break;
                 case "enablenpc":
                     command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
@@ -2190,13 +2193,13 @@ namespace Poke1Protocol
                     {
                         npc.SetVisibility(hide);
                     }
-                    else if (Map.OriginalNpcs.Find(n => n.Id == npcId) != null)
+                    else if (!hide && Map.OriginalNpcs.Find(n => n.Id == npcId) != null)
                     {
                         var clone = Map.OriginalNpcs.Find(n => n.Id == npcId).Clone();
                         clone.SetVisibility(hide);
                         tempNpcs.Add(clone);
                     }
-                    OnNpcs(tempNpcs);
+                    //OnNpcs(tempNpcs);
                     break;
                 case "enablelink":
                     command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
@@ -2217,6 +2220,7 @@ namespace Poke1Protocol
                     }
                     break;
             }
+            OnNpcs(tempNpcs);
         }
 
         private void OnLootBoxRecieved(IProto dl, TimeSpan? timeSpan = null)

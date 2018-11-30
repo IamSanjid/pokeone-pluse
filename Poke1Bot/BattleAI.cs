@@ -188,6 +188,8 @@ namespace Poke1Bot
                                     if (switched >= req.forceSwitch.ToList().FindAll(t => t).Count)
                                         break;
                                 }
+                                else if (i == Side.pokemon.Length - 1)
+                                    results.Add(SwitchingResult.NotPossible);
                             }
                         }
                         else
@@ -213,6 +215,8 @@ namespace Poke1Bot
                     needToChange = ActivePokemons.Length;
                 }
 
+                var switched = 0;
+
                 var switchAblePokes = req.side.pokemon.Count(p => IsPokemonUsable(p));
 
                 for (int i = 0; i < Side.pokemon.Length; ++i)
@@ -222,11 +226,18 @@ namespace Poke1Bot
                     {
                         changeWith = ActivePokemons.ToList().FindLastIndex(p => !IsPokemonUsable(p));
                     }
+
                     if (!pokemon.Sent && IsPokemonUsable(pokemon) && sent.Count < needToChange)
                     {
                         var result = _client.ChangePokemon(i + 1, changeWith + 1);
                         pokemon.Sent = true;
+                        results.Add(result ? SwitchingResult.Success : SwitchingResult.NotPossible);
+                        switched++;
+                        if (switched >= ActivePokemons.ToList().FindAll(t => IsPokemonUsable(t)).Count)
+                            break;
                     }
+                    else if (i == Side.pokemon.Length - 1)
+                        results.Add(SwitchingResult.NotPossible);
                 }
             }
 
@@ -261,7 +272,11 @@ namespace Poke1Bot
                                     var result = _client.ChangePokemon(i + 1, j + 1);
                                     pokemon.Sent = true;
                                     results.Add(result ? SwitchingResult.Success : SwitchingResult.NotPossible);
+                                    if (switched >= req.forceSwitch.ToList().FindAll(t => t).Count)
+                                        break;
                                 }
+                                else if (i == Side.pokemon.Length - 1)
+                                    results.Add(SwitchingResult.NotPossible);
                             }
                         }
                         else
@@ -287,6 +302,8 @@ namespace Poke1Bot
                     needToChange = ActivePokemons.Length;
                 }
 
+                var switched = 0;
+
                 var switchAblePokes = req.side.pokemon.Count(p => Battle.GetSwitchedPokemon(p).Health > 0);
 
                 for (int i = 0; i < Side.pokemon.Length; ++i)
@@ -296,11 +313,18 @@ namespace Poke1Bot
                     {
                         changeWith = ActivePokemons.ToList().FindLastIndex(p => !IsPokemonUsable(p));
                     }
+                    
                     if (!pokemon.Sent && pokemon.Health > 0 && sent.Count < needToChange)
                     {
                         var result = _client.ChangePokemon(i + 1, changeWith + 1);
                         pokemon.Sent = true;
+                        results.Add(result ? SwitchingResult.Success : SwitchingResult.NotPossible);
+                        switched++;
+                        if (switched >= ActivePokemons.ToList().FindAll(t => t.Health > 0).Count)
+                            break;
                     }
+                    else if (i == Side.pokemon.Length - 1)
+                        results.Add(SwitchingResult.NotPossible);
                 }
             }
 

@@ -7,6 +7,12 @@ using MAPAPI.Response;
 
 namespace Poke1Protocol
 {
+    public enum SightAction
+    {
+        None,
+        MoveToPlayer,
+        PlayerToNPC
+    }
     public class Npc
     {
         public int PositionX { get; private set; }
@@ -25,6 +31,7 @@ namespace Poke1Protocol
         private readonly string _path;
 
         public bool IsVisible { get; private set; }
+        public SightAction SightAction { get; private set; }
         public Npc(NPCData data)
         {
             var en = data.Settings.Enabled;
@@ -32,6 +39,8 @@ namespace Poke1Protocol
             PositionX = data.x;
             PositionY = -data.z;
             Id = data.ID;
+            var result = SightAction.TryParse<SightAction>(data.Settings.SightAction.Replace(" ", ""), true, out var action);
+            SightAction = result ? action : SightAction.None;
             _path = data.Settings.Path;
             UpdateLos(data.Settings.LOS);
             IsVisible = en;
@@ -139,13 +148,7 @@ namespace Poke1Protocol
         }
         public Npc Clone()
         {
-            var newData = Data;
-            //copying latest updats to newData..
-            newData.Settings.LOS = LosLength;
-            newData.Settings.Facing = Direction.ToString().ToLowerInvariant();
-            newData.x = PositionX;
-            newData.z = -PositionY;
-            return new Npc(newData);
+            return new Npc(Data);
         }
 
         public Direction GetDriectionFrom(int x, int y)
@@ -191,6 +194,10 @@ namespace Poke1Protocol
             PositionX = x;
             PositionY = y;
             Direction = dir;
+            //copying to main data
+            Data.Settings.Facing = dir.ToString().ToLowerInvariant();
+            Data.x = x;
+            Data.z = -y;
         }
 
         public void UpdateLos(int los)
@@ -199,6 +206,8 @@ namespace Poke1Protocol
             IsBattler = LosLength > 0 && (Data.Settings.SightAction == "Move To Player"
                 || Data.Settings.SightAction == "Player To NPC");
             CanBattle = IsBattler;
+            //copying to main data
+            Data.Settings.LOS = los;
         }
 
         public void SetVisibility(bool hide)
@@ -207,6 +216,8 @@ namespace Poke1Protocol
             IsBattler = IsVisible && LosLength > 0 && (Data.Settings.SightAction == "Move To Player"
                 || Data.Settings.SightAction == "Player To NPC");
             CanBattle = IsBattler;
+            //copying to main data
+            Data.Settings.Enabled = IsVisible;
         }
     }
 }
