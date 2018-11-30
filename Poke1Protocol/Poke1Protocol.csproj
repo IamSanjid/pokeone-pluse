@@ -94,12 +94,6 @@
     <Compile Include="TypesManager.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\OneNetwork\OneNetwork.csproj">
-      <Project>{bd428769-4f66-4d9d-ab36-2d0aa9efbfd5}</Project>
-      <Name>OneNetwork</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -111,6 +105,11 @@
     <None Include="Resources\moves.json" />
     <None Include="Resources\pokemons.json" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\BrightNetwork\BrightNetwork.csproj">
+      <Project>{f6f45690-9361-4da4-8a8a-18d782e29752}</Project>
+      <Name>BrightNetwork</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

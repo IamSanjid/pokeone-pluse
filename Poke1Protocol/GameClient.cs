@@ -12,11 +12,11 @@ using System.Text;
 
 namespace Poke1Protocol
 {
-    public class GameClient
+    public class GameClient : IDisposable
     {
         #region From PSXAPI.DLL
         private TimeSpan pingUpdateTime = TimeSpan.FromSeconds(5.0);
-        private readonly Timer timer;
+        private Timer timer { get; set; }
         private DateTime lastPingResponseUtc;
         private bool receivedPing;
         private volatile int ping;
@@ -825,16 +825,11 @@ namespace Poke1Protocol
 #endif
                 ConnectionClosed?.Invoke(ex);
             }
-            if (!disposedValue)
-            {
-                timer.Dispose();
-                disposedValue = true;
-            }
         }
 
         private void Timer(object obj)
         {
-            if (IsConnected && receivedPing)
+            if (IsConnected && receivedPing && !disposedValue)
             {
                 receivedPing = false;
                 SendProto(new PSXAPI.Request.Ping
@@ -3360,6 +3355,15 @@ namespace Poke1Protocol
                     break;
             }
             return status;
+        }
+
+        public void Dispose()
+        {
+            if (!disposedValue)
+            {
+                timer.Dispose();
+                disposedValue = true;
+            }
         }
     }
 

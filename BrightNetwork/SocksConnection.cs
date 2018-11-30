@@ -4,7 +4,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OneNetwork
+namespace BrightNetwork
 {
     public static class SocksConnection
     {

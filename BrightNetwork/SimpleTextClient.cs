@@ -4,18 +4,18 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace OneNetwork
+namespace BrightNetwork
 {
-    public class OneConnection
+    public class SimpleTextClient
     {
         public event Action Connected;
         public event Action<Exception> Disconnected;
         public event Action<string> PacketReceived;
 
-        protected string PacketDelimiter = "\r\n";
+        protected string PacketDelimiter = "\n";
         protected Encoding TextEncoding = Encoding.UTF8;
 
-        private readonly ANetwork _client;
+        private readonly BrightClient _client;
 
         private string _receiveBuffer = string.Empty;
         private Queue<string> _pendingPackets = new Queue<string>();
@@ -34,7 +34,7 @@ namespace OneNetwork
             get { return _client.RemoteIPAddress; }
         }
 
-        public OneConnection(ANetwork client)
+        public SimpleTextClient(BrightClient client)
         {
             _client = client;
 
@@ -150,7 +150,7 @@ namespace OneNetwork
             }
             while (hasExtracted);
         }
-
+        
         private bool ExtractPendingPacket()
         {
             int pos = _receiveBuffer.IndexOf(PacketDelimiter);

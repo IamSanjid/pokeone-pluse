@@ -75,10 +75,6 @@
     <Compile Include="Utils\TaskUtils.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\OneNetwork\OneNetwork.csproj">
-      <Project>{bd428769-4f66-4d9d-ab36-2d0aa9efbfd5}</Project>
-      <Name>OneNetwork</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Poke1Protocol\Poke1Protocol.csproj">
       <Project>{856b3d4c-9717-4828-a46c-0d9c4454c28e}</Project>
       <Name>Poke1Protocol</Name>

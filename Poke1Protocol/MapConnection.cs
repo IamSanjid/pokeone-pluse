@@ -1,11 +1,12 @@
-﻿using OneNetwork;
+﻿using BrightNetwork;
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 namespace Poke1Protocol
 {
-    public class MapConnection : OneConnection
+    public class MapConnection : SimpleTextClient
     {
         private const string ServerAddress = "95.183.55.67";
         private const int ServerPort = 2015;
@@ -18,8 +19,10 @@ namespace Poke1Protocol
         private string _socksPass;
 
         public MapConnection()
-            : base(new ANetwork())
+            : base(new BrightClient())
         {
+            PacketDelimiter = "\r\n";
+            TextEncoding = Encoding.UTF8;
         }
 
         public MapConnection(int socksVersion, string socksHost, int socksPort, string socksUser, string socksPass)

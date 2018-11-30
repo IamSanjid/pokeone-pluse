@@ -2,9 +2,9 @@
 using System.Net;
 using System.Net.Sockets;
 
-namespace OneNetwork
+namespace BrightNetwork
 {
-    public class ANetwork
+    public class BrightClient
     {
         public event Action Connected;
         public event Action<Exception> Disconnected;
@@ -22,12 +22,12 @@ namespace OneNetwork
         private bool _isClosed;
         private byte[] _receiveBuffer;
 
-        public ANetwork()
+        public BrightClient()
         {
             _receiveBuffer = new byte[4096];
         }
 
-        public ANetwork(Socket socket)
+        public BrightClient(Socket socket)
         {
             _receiveBuffer = new byte[4096];
             Initialize(socket);

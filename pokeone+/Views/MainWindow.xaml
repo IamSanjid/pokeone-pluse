@@ -405,7 +405,7 @@
                     <MenuItem Style="{StaticResource NoBorderMenu}"  BorderThickness="0" Header="_Help">
                         <MenuItem Foreground="#F1F1F1" BorderThickness="0" BorderBrush="{x:Null}" Click="SourceCode_View_Click" Header="_Source Code (GitHub)"/>
                         <MenuItem Foreground="#F1F1F1" BorderThickness="0" BorderBrush="{x:Null}" Click="LuaApi_View_Click" Header="_Lua Api(s)"/>
-                        <MenuItem Foreground="#F1F1F1" BorderThickness="0" BorderBrush="{x:Null}" Click="SourceCode_View_Click" Header="_Donate (PayPal)"/>
+                        <MenuItem Foreground="#F1F1F1" BorderThickness="0" BorderBrush="{x:Null}" Click="Donate_Click" Header="_Donate (PayPal)"/>
                         <MenuItem Foreground="#F1F1F1" BorderThickness="0" BorderBrush="{x:Null}" Click="About_Click" Header="_About"/>
                     </MenuItem>
                 </Menu>
