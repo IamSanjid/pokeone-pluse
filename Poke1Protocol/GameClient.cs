@@ -492,33 +492,7 @@ namespace Poke1Protocol
                     }
                     else
                     {
-                        Npc battler = Map.Npcs.FirstOrDefault(npc => npc.CanBattle && npc.IsInLineOfSight(PlayerX, PlayerY));
-                        if (battler != null)
-                        {
-                            ClearPath();
-                            var fromNpcDir = battler.Direction.GetOpposite();
-                            if (LastDirection != fromNpcDir)
-                            {
-                                actions.Add(fromNpcDir.ToOneStepMoveActions());
-                                LastDirection = fromNpcDir;
-                            }
-                            battler.CanBattle = false;
-                            LogMessage?.Invoke("The NPC " + (battler.NpcName ?? battler.Id.ToString()) + " saw us, interacting...");
-                            int distanceFromBattler = DistanceBetween(PlayerX, PlayerY, battler.PositionX, battler.PositionY);
-                            if (battler.SightAction == SightAction.PlayerToNPC)
-                            {
-                                //npcs which will ask the player to come to them lol....
-                                MoveToBattleWithNpc?.Invoke(battler);
-                                _npcBattleTimeout.Set(Rand.Next(1000, 2000) + distanceFromBattler);
-                                _npcBattler = battler;
-                            }
-                            else
-                            {
-                                //npcs which going to come to the player...
-                                _npcBattleTimeout.Set(Rand.Next(1000, 2000) + distanceFromBattler * (IsBiking ? 150 : 300));
-                                _npcBattler = battler;
-                            }
-                        }
+                        CheckForNpcInteraction(ref actions);
                     }
                     SendMovement(actions.ToArray(), fromX, fromY); // PokeOne sends the (x,y) without applying the movement(but it checks the collisions) to the server.
                 }
@@ -552,6 +526,37 @@ namespace Poke1Protocol
                 }
                 TalkToNpc(_cutOrRockSmashNpc);
                 _cutOrRockSmashNpc = null;
+            }
+        }
+
+        private void CheckForNpcInteraction(ref List<PSXAPI.Request.MoveAction> actions)
+        {
+            Npc battler = Map.Npcs.FirstOrDefault(npc => npc.CanBattle && npc.IsInLineOfSight(PlayerX, PlayerY));
+            if (battler != null)
+            {
+                ClearPath();
+                var fromNpcDir = battler.Direction.GetOpposite();
+                if (LastDirection != fromNpcDir)
+                {
+                    actions.Add(fromNpcDir.ToOneStepMoveActions());
+                    LastDirection = fromNpcDir;
+                }
+                battler.CanBattle = false;
+                LogMessage?.Invoke("The NPC " + (battler.NpcName ?? battler.Id.ToString()) + " saw us, interacting...");
+                int distanceFromBattler = DistanceBetween(PlayerX, PlayerY, battler.PositionX, battler.PositionY);
+                if (battler.SightAction == SightAction.PlayerToNPC)
+                {
+                    //npcs which will ask the player to come to them lol....
+                    MoveToBattleWithNpc?.Invoke(battler);
+                    _npcBattleTimeout.Set(Rand.Next(1000, 2000) + distanceFromBattler);
+                    _npcBattler = battler;
+                }
+                else
+                {
+                    //npcs which going to come to the player...
+                    _npcBattleTimeout.Set(Rand.Next(1000, 2000) + distanceFromBattler * (IsBiking ? 150 : 300));
+                    _npcBattler = battler;
+                }
             }
         }
 
@@ -2319,8 +2324,14 @@ namespace Poke1Protocol
                 if (sync)
                     Resync(MapName == syncP.Map);
             }
-
             CheckArea();
+            if (!IsMapLoaded) return;
+            var moveActions = new List<PSXAPI.Request.MoveAction>();
+            CheckForNpcInteraction(ref moveActions);
+            if (moveActions.Count > 0)
+            {
+                SendMovement(moveActions.ToArray(), PlayerX, PlayerY);
+            }
         }
 
         private void OnPokedexData(PSXAPI.Response.Pokedex data)
@@ -3089,6 +3100,12 @@ namespace Poke1Protocol
                 }
             }
 #endif
+            var moveActions = new List<PSXAPI.Request.MoveAction>();
+            CheckForNpcInteraction(ref moveActions);
+            if (moveActions.Count > 0)
+            {
+                SendMovement(moveActions.ToArray(), PlayerX, PlayerY);
+            }
         }
 
         private void OnNpcs(List<Npc> originalNpcs)
