@@ -482,13 +482,18 @@ namespace Poke1Protocol
                 var fromY = PlayerY;
                 if (ApplyMovement(direction))
                 {
-                    SendMovement(direction.ToMoveActions(), fromX, fromY); // PokeOne sends the (x,y) without applying the movement(but it checks the collisions) to the server.
+                    var actions = direction.ToMoveActions().ToList();
                     LastDirection = direction;
                     _movementTimeout.Set(IsBiking ? 150 : 300);
                     if (Map.HasLink(PlayerX, PlayerY))
                     {
                         _teleportationTimeout.Set();
                     }
+                    else
+                    {
+                        CheckForNpcInteraction(ref actions);
+                    }
+                    SendMovement(actions.ToArray(), fromX, fromY); // PokeOne sends the (x,y) without applying the movement(but it checks the collisions) to the server.
                 }
                 if (_movements.Count == 0 && _surfAfterMovement)
                 {
@@ -520,13 +525,6 @@ namespace Poke1Protocol
                 }
                 TalkToNpc(_cutOrRockSmashNpc);
                 _cutOrRockSmashNpc = null;
-            }
-
-            var moveActions = new List<PSXAPI.Request.MoveAction>();
-            CheckForNpcInteraction(ref moveActions);
-            if (moveActions.Count > 0)
-            {
-                SendMovement(moveActions.ToArray(), PlayerX, PlayerY);
             }
         }
 
@@ -637,7 +635,8 @@ namespace Poke1Protocol
                         }
                         if (IsMapLoaded)
                         {
-                            OnNpcs(Map.Npcs.Select(npc => npc.Clone()).ToList());
+                            AreNpcReceived = true;
+                            NpcReceieved?.Invoke(Map.Npcs);
                         }
                         SendScriptResponse(script.ScriptID, "");
                         _dialogTimeout.Set();
@@ -2172,7 +2171,7 @@ namespace Poke1Protocol
             var index = st.IndexOf("(", StringComparison.CurrentCulture);
             var scriptType = st.Substring(0, index);
 
-            var tempNpcs = Map.Npcs.Select(npc => npc.Clone()).ToList();
+            var tempNpcs = Map.Npcs/*.Select(npc => npc.Clone()).ToList()*/;
 
             switch (scriptType.ToLowerInvariant())
             {
@@ -2199,7 +2198,10 @@ namespace Poke1Protocol
                     npc = tempNpcs.Find(x => x.Id == npcId);
                     if (npc != null)
                     {
-                        npc.SetVisibility(hide);
+                        if (hide)
+                            tempNpcs.Remove(npc);
+                        Console.WriteLine(Map.Npcs.Count());
+                        Console.WriteLine(Map.OriginalNpcs.Count());
                     }
                     else if (!hide && Map.OriginalNpcs.Find(n => n.Id == npcId) != null)
                     {
@@ -2231,7 +2233,8 @@ namespace Poke1Protocol
                     Console.WriteLine("[-]Unknown action[-]: " + scriptType);
                     break;
             }
-            OnNpcs(tempNpcs);
+            //OnNpcs(tempNpcs);
+            //NpcReceieved?.Invoke(Map.Npcs);
         }
 
         private void OnLootBoxRecieved(IProto dl, TimeSpan? timeSpan = null)
@@ -2550,6 +2553,7 @@ namespace Poke1Protocol
             }
             RefreshChannelList?.Invoke();
         }
+
         private void OnPokemonUpdated(PSXAPI.Response.InventoryPokemon[] pokemons)
         {
             if (pokemons is null) return;
@@ -3107,15 +3111,26 @@ namespace Poke1Protocol
                 }
             }
 #endif
+            var moveActions = new List<PSXAPI.Request.MoveAction>();
+            CheckForNpcInteraction(ref moveActions);
+            if (moveActions.Count > 0)
+            {
+                SendMovement(moveActions.ToArray(), PlayerX, PlayerY);
+            }
         }
 
         private void OnNpcs(List<Npc> originalNpcs)
         {
             Map.Npcs.Clear();
 
-            foreach (var npc in originalNpcs)
-                if (npc.IsVisible)
-                    Map.Npcs.Add(npc);
+            foreach (var npc in originalNpcs.Select(clNpc => clNpc.Clone()).ToList())
+            {
+                var clone = npc.Clone();
+                if (clone.IsVisible)
+                    Map.Npcs.Add(clone);
+            }
+
+            Console.WriteLine("Cut: " + originalNpcs.Count(npc => Map.IsCutTree(npc.PositionX, npc.PositionY)));
 
             AreNpcReceived = true;
             NpcReceieved?.Invoke(Map.Npcs);

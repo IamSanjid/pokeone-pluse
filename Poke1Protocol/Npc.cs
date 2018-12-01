@@ -143,6 +143,9 @@ namespace Poke1Protocol
                 case "up":
                     Direction = Direction.Up;
                     break;
+                default:
+                    Direction = Direction.None;
+                    break;
             }
             NpcName = data.Settings.NPCName;
         }
@@ -168,7 +171,7 @@ namespace Poke1Protocol
         public bool IsInLineOfSight(int x, int y)
         {
             if (x != PositionX && y != PositionY) return false;
-            int distance = GameClient.DistanceBetween(PositionX, PositionY, x, y);
+            var distance = GameClient.DistanceBetween(PositionX, PositionY, x, y);
             if (distance > LosLength) return false;
             switch (Direction)
             {
