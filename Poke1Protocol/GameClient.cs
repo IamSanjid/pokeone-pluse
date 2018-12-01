@@ -492,8 +492,7 @@ namespace Poke1Protocol
                     }
                     else
                     {
-                        Npc battler = Map.Npcs.FirstOrDefault(npc => npc.CanBattle && (npc.IsInLineOfSight(PlayerX, PlayerY) 
-                            || npc.IsInLineOfSight(fromX, fromY)));
+                        Npc battler = Map.Npcs.FirstOrDefault(npc => npc.CanBattle && npc.IsInLineOfSight(PlayerX, PlayerY));
                         if (battler != null)
                         {
                             ClearPath();
