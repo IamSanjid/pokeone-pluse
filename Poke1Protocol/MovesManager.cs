@@ -72,7 +72,7 @@ namespace Poke1Protocol
             }
         }
 
-        public const int MovesCount = 721;
+        public const int MovesCount = 720;
         private MoveDatas Datas;
         public MoveData[] Moves = new MoveData[MovesCount];
         private Dictionary<string, MoveData> _namesToMoves;
@@ -89,8 +89,8 @@ namespace Poke1Protocol
             {
                 var move = Moves[i];
                 _namesToMoves[move.BattleID.ToLowerInvariant()] = move;
-                _namesToIds[move.BattleID.ToLowerInvariant()] = i + 1;
-                _idsToMoves[i + 1] = move;
+                _namesToIds[move.BattleID.ToLowerInvariant()] = i;
+                _idsToMoves[i] = move;
             }
         }
 
@@ -116,7 +116,7 @@ namespace Poke1Protocol
 
         public MoveData GetMoveData(int moveId)
         {
-            if (moveId > 0 && moveId < MovesCount)
+            if (moveId >= 0 && moveId < MovesCount)
             {
                 return _idsToMoves[moveId];
             }
