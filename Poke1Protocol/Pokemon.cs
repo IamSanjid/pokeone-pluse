@@ -54,6 +54,8 @@ namespace Poke1Protocol
         public PSXAPI.Response.Payload.PokemonID CanEvolveTo { get; private set; }
         public Guid UniqueID { get; private set; }
         public string Forme { get; private set; }
+        public int Personality { get; private set; }
+
         internal Pokemon(InventoryPokemon data)
         {
             if (data != null && data.Pokemon != null)
@@ -92,7 +94,8 @@ namespace Poke1Protocol
                     var i = 0;
                     foreach(var move in data.Pokemon.Payload.Moves)
                     {
-                        Moves[i] = new PokemonMove(i + 1, MovesManager.Instance.GetMoveId(move.Move.ToString()), move.MaxPP, move.PP);
+                        var newMove = new PokemonMove(i + 1, MovesManager.Instance.GetMoveId(move.Move.ToString()), move.MaxPP, move.PP);
+                        Moves[i] = newMove;
                         i++;
                     }
                 }
@@ -107,6 +110,7 @@ namespace Poke1Protocol
                 Gender = data.Pokemon.Payload.Gender.ToString();
                 Nature = data.Pokemon.Payload.Nature.ToString().FirstOrDefault().ToString().ToUpperInvariant() + data.Pokemon.Payload.Nature.ToString().Substring(1);
                 Name = PokemonManager.Instance.Names[Id];
+                Personality = data.Pokemon.Payload.Personality;
             }
             Forme = "Normal";
         }
@@ -164,6 +168,7 @@ namespace Poke1Protocol
                 Gender = data.Pokemon.Payload.Gender.ToString();
                 Nature = data.Pokemon.Payload.Nature.ToString().FirstOrDefault().ToString().ToUpperInvariant() + data.Pokemon.Payload.Nature.ToString().Substring(1);
                 Name = PokemonManager.Instance.Names[Id];
+                Personality = data.Pokemon.Payload.Personality;
             }
         }
 

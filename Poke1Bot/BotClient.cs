@@ -185,13 +185,16 @@ namespace Poke1Bot
             AutoLootBoxOpener.Update();
             QuestManager.Update();
 
-            if (_npcBattler != null && Game != null && Game.IsMapLoaded && Game.IsInactive && !Game.IsInBattle)
+            if (_npcBattler != null && Game.DistanceFrom(_npcBattler.PositionX, _npcBattler.PositionY) > 1
+                && Game != null && Game.IsMapLoaded && Game.IsInactive && !Game.IsInBattle)
             {
                 Game.ClearPath();
                 MoveToCell(_npcBattler.PositionX, _npcBattler.PositionY, 1);
                 _npcBattler = null;
                 return;
             }
+            if (_npcBattler != null && Game != null && Game?.DistanceFrom(_npcBattler.PositionX, _npcBattler.PositionY) <= 1)
+                _npcBattler = null;
 
             if (Script?.IsLoaded == true)
                 Script?.Update();

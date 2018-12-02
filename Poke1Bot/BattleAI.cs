@@ -663,9 +663,7 @@ namespace Poke1Bot
             {
                 if (Side != null)
                 {
-                    var sidePoke = Side.pokemon.ToList().Find(p => p.personality 
-                        == pokemon.PokemonData.Pokemon.Payload.Personality 
-                        && p.trainer?.ToLowerInvariant() == _client.ActiveBattle._playerName?.ToLowerInvariant());
+                    var sidePoke = Side.pokemon.FirstOrDefault(p => p.personality == pokemon.Personality);
                     if (sidePoke != null)
                     {
                         var pok = Battle.GetSwitchedPokemon(sidePoke);
@@ -678,9 +676,9 @@ namespace Poke1Bot
             {
                 foreach (PokemonMove move in pokemon.Moves)
                 {
-                    MovesManager.MoveData moveData = MovesManager.Instance.GetMoveData(move.Id);
-                    if (move.CurrentPoints > 0 && IsMoveOffensive(move, moveData) &&
-                        move.Id + 1 != DreamEater && move.Id + 1 != Synchronoise && move.Id + 1 != DoubleEdge)
+                    var moveData = MovesManager.Instance.GetMoveData(move.Id) ?? MovesManager.Instance.GetMoveData(move.Name);
+                    if (move.CurrentPoints > 0 && IsMoveOffensive(move, moveData)
+                        && move.Id + 1 != DreamEater && move.Id + 1 != Synchronoise && move.Id + 1 != DoubleEdge)
                     {
                         return true;
                     }
@@ -695,7 +693,7 @@ namespace Poke1Bot
             {
                 foreach (var move in pokemon.Moves)
                 {
-                    MovesManager.MoveData moveData = MovesManager.Instance.GetMoveData(move.id);
+                    var moveData = MovesManager.Instance.GetMoveData(move.id);
                     if (move.pp > 0 && IsMoveOffensive(moveData) && !move.disabled &&
                         moveData.ID != DreamEater && moveData.ID != Synchronoise && moveData.ID != DoubleEdge)
                     {
@@ -713,7 +711,7 @@ namespace Poke1Bot
             {
                 foreach (var move in pokemon.Moves)
                 {
-                    MovesManager.MoveData moveData = MovesManager.Instance.GetMoveData(move.id);
+                    var moveData = MovesManager.Instance.GetMoveData(move.id);
                     if (move.pp > 0 && IsMoveOffensive(moveData) && !move.disabled &&
                         moveData.ID != DreamEater && moveData.ID != Synchronoise && moveData.ID != DoubleEdge)
                     {

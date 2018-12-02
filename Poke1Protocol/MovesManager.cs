@@ -22,14 +22,19 @@ namespace Poke1Protocol
             public int? PP;
             public int? Power;
             public int? ACC;
+
             [JsonIgnore]
             public bool Status => Category == "status";
+
             [JsonIgnore]
-            public DamageType DamageType => Category.ToLowerInvariant() == "special" ? DamageType.Special : DamageType.Physical;
+            public DamageType DamageType => string.Equals(Category, "special", StringComparison.InvariantCultureIgnoreCase) ? DamageType.Special : DamageType.Physical;
+
             [JsonIgnore]
             public int Accuracy => ACC.HasValue ? ACC.Value : -1;
+
             [JsonIgnore]
             public int RealPower => Power.HasValue ? Power.Value : -1;
+
             [JsonIgnore]
             public int RealPP => PP.HasValue ? PP.Value : -1;
         }
@@ -42,7 +47,7 @@ namespace Poke1Protocol
 
         public MoveData GetMoveDataFromEnum(PSXAPI.Response.Payload.PokemonMoveID id)
         {
-            MoveData result = Moves.ToList().Find(move => move.BattleID.ToLowerInvariant() == id.ToString().ToLowerInvariant());
+            var result = Moves.ToList().Find(move => string.Equals(move.BattleID, id.ToString(), StringComparison.InvariantCultureIgnoreCase));
             return result;
         }
 
@@ -67,38 +72,25 @@ namespace Poke1Protocol
             }
         }
 
-        public const int MovesCount = 720;
+        public const int MovesCount = 721;
         private MoveDatas Datas;
         public MoveData[] Moves = new MoveData[MovesCount];
-        public string[] MoveNames = new string[MovesCount];
         private Dictionary<string, MoveData> _namesToMoves;
         private Dictionary<string, int> _namesToIds = new Dictionary<string, int>();
         private MoveData[] _idsToMoves = new MoveData[MovesCount];
+
         private MovesManager()
         {
             LoadMoves();
 
-
             _namesToMoves = new Dictionary<string, MoveData>();
 
-            for (int i = 0; i < MovesCount; i++)
+            for (int i = 0; i < Moves.Length; ++i)
             {
-                if (Moves[i].BattleID != null && !_namesToMoves.ContainsKey(Moves[i].BattleID.ToLowerInvariant()))
-                {
-                    _namesToMoves.Add(Moves[i].BattleID.ToLowerInvariant(), Moves[i]);
-                }
-            }
-            for (int i = 0; i < MovesCount; i++)
-            {
-                string lowerName = MoveNames[i].ToLowerInvariant();
-                if (_namesToMoves.ContainsKey(lowerName))
-                {
-                    _idsToMoves[i] = _namesToMoves[lowerName];
-                    if (!_namesToIds.ContainsKey(lowerName))
-                    {
-                        _namesToIds.Add(lowerName, i);
-                    }
-                }
+                var move = Moves[i];
+                _namesToMoves[move.BattleID.ToLowerInvariant()] = move;
+                _namesToIds[move.BattleID.ToLowerInvariant()] = i + 1;
+                _idsToMoves[i + 1] = move;
             }
         }
 
@@ -106,19 +98,12 @@ namespace Poke1Protocol
         {
             if (!string.IsNullOrEmpty(moveName))
             {
-                for (int i = 0; i < MovesCount; i++)
-                {
-                    if (_idsToMoves[i].Name.ToLowerInvariant() == moveName.ToLowerInvariant())
-                        return _idsToMoves[i];
-                }
-                for (int i = 0; i < MovesCount; i++)
-                {
-                    if (Moves[i].BattleID.ToLowerInvariant() == moveName.ToLowerInvariant())
-                        return Moves[i];
-                }
+                return Array.Find(_idsToMoves, m => string.Equals(m.BattleID, moveName, StringComparison.InvariantCultureIgnoreCase))
+                    ?? Array.Find(Moves, m => string.Equals(m.Name, moveName, StringComparison.InvariantCultureIgnoreCase));
             }
             return null;
         }
+
         public int GetMoveId(string moveName)
         {
             moveName = moveName.ToLowerInvariant();
@@ -128,6 +113,7 @@ namespace Poke1Protocol
             }
             return -1;
         }
+
         public MoveData GetMoveData(int moveId)
         {
             if (moveId > 0 && moveId < MovesCount)
@@ -142,16 +128,6 @@ namespace Poke1Protocol
             var json = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(Resources.moves)) as JObject;
             Datas = JsonConvert.DeserializeObject<MoveDatas>(json.ToString());
             Moves = Datas.Moves;
-            var i = 0;
-            //MoveNames[0] = string.Empty;
-            foreach (var move in Moves)
-            {
-                if (i <= MovesCount)
-                {
-                    MoveNames[i] = move.BattleID;
-                    i++;
-                }
-            }
         }
     }
 }

@@ -848,7 +848,7 @@ namespace Poke1Protocol
         private void SendAck()
         {
             _needToSendAck = false;
-
+            IsAuthenticated = true;
             var s = new PSXAPI.Request.Ack
             {
                 Data = StringCipher.EncryptOrDecryptToBase64Byte(PlayerName, _logidId.ToString())
@@ -2198,10 +2198,9 @@ namespace Poke1Protocol
                     npc = tempNpcs.Find(x => x.Id == npcId);
                     if (npc != null)
                     {
+                        npc.SetVisibility(hide);
                         if (hide)
                             tempNpcs.Remove(npc);
-                        Console.WriteLine(Map.Npcs.Count());
-                        Console.WriteLine(Map.OriginalNpcs.Count());
                     }
                     else if (!hide && Map.OriginalNpcs.Find(n => n.Id == npcId) != null)
                     {
@@ -2408,8 +2407,6 @@ namespace Poke1Protocol
             _logidId = login.LoginID;
             LoggedIn?.Invoke();
             AddDefaultChannels();
-
-            IsAuthenticated = true;
 
             if (_currentScript != null)
             {
@@ -3029,6 +3026,11 @@ namespace Poke1Protocol
             return Math.Abs(PlayerX - cellX) + Math.Abs(PlayerY - cellY);
         }
 
+        public int DistanceFrom(int fromX, int fromY)
+        {
+            return DistanceBetween(fromX, fromY, PlayerX, PlayerY);
+        }
+
         public static int DistanceBetween(int fromX, int fromY, int toX, int toY)
         {
             return Math.Abs(fromX - toX) + Math.Abs(fromY - toY);
@@ -3123,7 +3125,7 @@ namespace Poke1Protocol
         {
             Map.Npcs.Clear();
 
-            foreach (var npc in originalNpcs.Select(clNpc => clNpc.Clone()).ToList())
+            foreach (var npc in originalNpcs)
             {
                 var clone = npc.Clone();
                 if (clone.IsVisible)

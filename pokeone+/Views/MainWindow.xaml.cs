@@ -31,10 +31,10 @@ namespace pokeone_plus
     {
         #region CUSTOM_WINDOW
         private const int WM_SYSCOMMAND = 0x112;
-        uint TPM_LEFTALIGN = 0x0000;
-        uint TPM_RETURNCMD = 0x0100;
-        const UInt32 MF_ENABLED = 0x00000000;
-        const UInt32 MF_GRAYED = 0x00000001;
+        private uint TPM_LEFTALIGN = 0x0000;
+        private uint TPM_RETURNCMD = 0x0100;
+        private const UInt32 MF_ENABLED = 0x00000000;
+        private const UInt32 MF_GRAYED = 0x00000001;
         internal const UInt32 SC_MAXIMIZE = 0xF030;
         internal const UInt32 SC_RESTORE = 0xF120;
 
@@ -51,13 +51,15 @@ namespace pokeone_plus
         [DllImport("user32.dll")]
         static extern bool EnableMenuItem(IntPtr hMenu, uint uIDEnableItem,
            uint uEnable);
-        private bool PressedIcon = false;
+
+        private bool PressedIcon;
+
         private void Icon_MouseDown(object sender, MouseButtonEventArgs e)
         {
             PressedIcon = true;
-            WindowInteropHelper helper = new WindowInteropHelper(this);
-            IntPtr callingWindow = helper.Handle;
-            IntPtr wMenu = GetSystemMenu(callingWindow, false);
+            var helper = new WindowInteropHelper(this);
+            var callingWindow = helper.Handle;
+            var wMenu = GetSystemMenu(callingWindow, false);
             // Display the menu
             if (WindowState == WindowState.Maximized)
             {
@@ -68,7 +70,7 @@ namespace pokeone_plus
                 EnableMenuItem(wMenu, SC_MAXIMIZE, MF_ENABLED);
             }
 
-            int command = WindowState != WindowState.Maximized ? TrackPopupMenuEx(wMenu, TPM_LEFTALIGN | TPM_RETURNCMD,
+            var command = WindowState != WindowState.Maximized ? TrackPopupMenuEx(wMenu, TPM_LEFTALIGN | TPM_RETURNCMD,
                 (int)Application.Current.MainWindow.Left + 8, (int)Application.Current.MainWindow.Top + 30, callingWindow, IntPtr.Zero) 
                 : TrackPopupMenuEx(wMenu, TPM_LEFTALIGN | TPM_RETURNCMD,
                 (int)e.GetPosition(null).X, (int)e.GetPosition(null).Y, callingWindow, IntPtr.Zero);
@@ -623,7 +625,7 @@ namespace pokeone_plus
         {
             Dispatcher.InvokeAsync(delegate
             {
-                string message = "";
+                var message = "";
                 switch (reason)
                 {
                     case PSXAPI.Response.LoginError.AlreadyLoggedIn:
@@ -644,11 +646,14 @@ namespace pokeone_plus
                     case PSXAPI.Response.LoginError.Unsupported:
                         message = "Outdated client, please wait for an update";
                         break;
-                   case PSXAPI.Response.LoginError.Locked:
+                    case PSXAPI.Response.LoginError.Locked:
                         message = "Server locked for maintenance";
                         break;
                     case PSXAPI.Response.LoginError.Full:
                         message = "Server is full";
+                        break;
+                    default:
+                        message = "Unexpected error";
                         break;
                 }
                 LogMessage("Authentication failed: " + message, Brushes.OrangeRed);
@@ -685,7 +690,7 @@ namespace pokeone_plus
         {
             Dispatcher.InvokeAsync(delegate
             {
-                StringBuilder content = new StringBuilder();
+                var content = new StringBuilder();
                 content.Append("Shop opened:");
                 foreach (ShopItem item in shop.Items)
                 {
@@ -749,7 +754,7 @@ namespace pokeone_plus
                     "An error file has been created next to the application.", App.Name + " - Fatal error", MessageBoxButton.OK, MessageBoxImage.Error);
                 Environment.Exit(0);
             }
-            catch
+            catch(Exception)
             {
                 //ignore
             }
@@ -858,7 +863,7 @@ namespace pokeone_plus
 
         private void LoginButton_Click(object sender, RoutedEventArgs e)
         {
-            bool shouldLogin = false;
+            var shouldLogin = false;
             lock (Bot)
             {
                 if (Bot.Game == null || !Bot.Game.IsConnected)
@@ -918,8 +923,8 @@ namespace pokeone_plus
 
         private void OpenLoginWindow()
         {
-            LoginWindow login = new LoginWindow(Bot) { Owner = this };
-            bool? result = login.ShowDialog();
+            var login = new LoginWindow(Bot) { Owner = this };
+            var result = login.ShowDialog();
             if (result != true)
             {
                 return;
@@ -937,7 +942,7 @@ namespace pokeone_plus
         /// <param name="login"></param>
         private void Login(LoginWindow login)
         {
-            Account account = new Account(login.Username);
+            var account = new Account(login.Username);
             lock (Bot)
             {
                 account.Password = login.Password;
@@ -958,7 +963,7 @@ namespace pokeone_plus
         {
             if (filePath == null)
             {
-                OpenFileDialog openDialog = new OpenFileDialog
+                var openDialog = new OpenFileDialog
                 {
                     Filter = App.Name + " Scripts|*.lua;*.txt|All Files|*.*"
                 };
@@ -989,7 +994,7 @@ namespace pokeone_plus
             }
             catch (Exception ex)
             {
-                string filename = Path.GetFileName(filePath);
+                var filename = Path.GetFileName(filePath);
 #if DEBUG
                 LogMessage(string.Format("Could not load script {0}: " + Environment.NewLine + "{1}", filename, ex), Brushes.OrangeRed);
 #else
@@ -1030,15 +1035,14 @@ namespace pokeone_plus
         public static void AppendLineToRichTextBox(RichTextBox richTextBox, string message, Brush color = null)
         {
             Paragraph para;
-            TextRange r = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
-            string t = Regex.Replace(r.Text, @"\s+", "");
+            var r = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
+            var t = Regex.Replace(r.Text, @"\s+", "");
 #if DEBUG
             Console.WriteLine(t.Length.ToString());
 #endif
             if (t.Length > 0)
             {
-                para = new Paragraph();
-                para.Margin = new Thickness(0);
+                para = new Paragraph { Margin = new Thickness(0) };
             }
             else
             {
@@ -1060,18 +1064,18 @@ namespace pokeone_plus
 
             richTextBox.Document.Blocks.Add(para);
 
-            TextRange range = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
+            var range = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
             if (range.Text.Length > 12000)
             {
-                string text = range.Text;
+                var text = range.Text;
                 text = text.Substring(text.Length - 10000, 10000);
-                int index = text.IndexOf(Environment.NewLine);
+                var index = text.IndexOf(Environment.NewLine, StringComparison.Ordinal);
                 if (index != -1)
                 {
                     text = text.Substring(index + Environment.NewLine.Length);
                 }
-                long lines = StringExtentions.Lines(text);
-                int ln = Convert.ToInt32(lines);
+                var lines = text.Lines();
+                var ln = Convert.ToInt32(lines);
                 ln = richTextBox.Document.Blocks.Count - ln;
                 for (int i = 0; i <= richTextBox.Document.Blocks.Count - 1; i++)
                 {
@@ -1149,7 +1153,7 @@ namespace pokeone_plus
         {
             if (e.Data.GetData(DataFormats.FileDrop) != null)
             {
-                string[] file = (string[])e.Data.GetData(DataFormats.FileDrop);
+                var file = (string[])e.Data.GetData(DataFormats.FileDrop);
                 if (file != null)
                 {
                     await LoadScript(file[0]);

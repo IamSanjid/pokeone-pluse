@@ -151,7 +151,15 @@ namespace Poke1Protocol
         }
         public Npc Clone()
         {
-            return new Npc(Data);
+            var newData = Data;
+            //copying latest updates to data..
+            newData.x = PositionX;
+            newData.z = -PositionY;
+            newData.Settings.Facing = Direction.ToString().ToLowerInvariant();
+            newData.Settings.LOS = LosLength;
+            newData.Settings.Enabled = IsVisible;
+
+            return new Npc(newData);
         }
 
         public Direction GetDriectionFrom(int x, int y)
@@ -197,10 +205,6 @@ namespace Poke1Protocol
             PositionX = x;
             PositionY = y;
             Direction = dir;
-            //copying to main data
-            Data.Settings.Facing = dir.ToString().ToLowerInvariant();
-            Data.x = x;
-            Data.z = -y;
         }
 
         public void UpdateLos(int los)
@@ -209,8 +213,6 @@ namespace Poke1Protocol
             IsBattler = LosLength > 0 && (Data.Settings.SightAction == "Move To Player"
                 || Data.Settings.SightAction == "Player To NPC");
             CanBattle = IsBattler;
-            //copying to main data
-            Data.Settings.LOS = los;
         }
 
         public void SetVisibility(bool hide)
@@ -219,8 +221,6 @@ namespace Poke1Protocol
             IsBattler = IsVisible && LosLength > 0 && (Data.Settings.SightAction == "Move To Player"
                 || Data.Settings.SightAction == "Player To NPC");
             CanBattle = IsBattler;
-            //copying to main data
-            Data.Settings.Enabled = IsVisible;
         }
     }
 }

@@ -7,7 +7,7 @@ namespace Poke1Protocol
     {
         public static string EncryptOrDecrypt(string plainText, string passPhrase)
         {
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
 
             for (int i = 0; i < plainText.Length; ++i)
             {

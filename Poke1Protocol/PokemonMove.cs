@@ -14,25 +14,14 @@ namespace Poke1Protocol
         public int MaxPoints { get; set; }
         public int CurrentPoints { get; set; }
 
-        private TextInfo ti = CultureInfo.CurrentCulture.TextInfo;
+        private readonly TextInfo ti = CultureInfo.CurrentCulture.TextInfo;
 
-        public MovesManager.MoveData Data
-        {
-            get { return MovesManager.Instance.GetMoveData(Id); }
-        }
+        public MovesManager.MoveData Data => MovesManager.Instance.GetMoveData(Id);
 
-        public string Name
-        {
-            get { return Data?.Name != null ? ti.ToTitleCase(Data?.Name) : Data?.Name; }
-        }
+        public string Name => Data?.Name != null ? ti.ToTitleCase(Data?.Name) : Data?.Name;
 
-        public string PP
-        {
-            get
-            {
-                return Name != null ? CurrentPoints + " / " + MaxPoints : "";
-            }
-        }
+        public string PP => Name != null ? CurrentPoints + " / " + MaxPoints : "";
+
         public PokemonMove(int position, int id, int maxPoints, int currentPoints)
         {
             Position = position;
