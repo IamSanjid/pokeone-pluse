@@ -370,30 +370,28 @@ namespace Poke1Protocol
         public bool IsHorizontal(Area area)
         {
             var currentArea = CurrentArea;
-            if (area?.AreaName.ToLowerInvariant() != CurrentArea?.AreaName.ToLowerInvariant())
+            if (area?.AreaName.ToLowerInvariant() != CurrentArea?.AreaName.ToLowerInvariant()
+                && area != null && currentArea != null)
             {
-                if (area != null && currentArea != null)
-                {
-                    var isHori = currentArea.StartX >= area.EndX || area.StartX >= currentArea.EndX; // Horizontal
-                    var isVerti = currentArea.EndY <= area.StartY || currentArea.StartY >= area.EndY; // Vertical
-                    return isHori;
-                }
+                var isHori = currentArea.EndX <= area.StartX || currentArea.StartX >= area.EndX; // Horizontal
+                var isVerti = currentArea.EndY <= area.StartY || currentArea.StartY >= area.EndY; // Vertical
+                return isHori;
             }
+
             return false;
         }
 
         public bool IsVertical(Area area)
         {
             var currentArea = CurrentArea;
-            if (area?.AreaName.ToLowerInvariant() != CurrentArea?.AreaName.ToLowerInvariant())
+            if (area?.AreaName.ToLowerInvariant() != CurrentArea?.AreaName.ToLowerInvariant() 
+                && area != null && currentArea != null)
             {
-                if (area != null && currentArea != null)
-                {
-                    var isHori = currentArea.StartX >= area.EndX || area.StartX >= currentArea.EndX; // Horizontal
-                    var isVerti = area.StartY <= currentArea.StartY || area.StartY >= currentArea.EndY;
-                    return isVerti;
-                }
+                var isHori = currentArea.StartX >= area.EndX || area.StartX >= currentArea.EndX; // Horizontal
+                var isVerti = currentArea.EndY <= area.StartY || currentArea.StartY >= area.EndY;
+                return isVerti;
             }
+
             return false;
         }
 

@@ -63,11 +63,11 @@ namespace Poke1Protocol
         private double _lastCheckTime;
         private double _lastSentMovement;
         private DateTime _lastGameTime;
-        private bool _needToSendSync = false;
-        private bool _needToSendAck = false;
-        private bool _isLoggedIn = false;
+        private bool _needToSendSync;
+        private bool _needToSendAck;
+        private bool _isLoggedIn;
         public Direction LastDirection;
-        private bool _wasLoggedIn = false;
+        private bool _wasLoggedIn;
         private Guid _logidId;
 
         public double RunningForSeconds => GetRunningTimeInSeconds();
@@ -585,10 +585,12 @@ namespace Poke1Protocol
 
         private void UpdateScript()
         {
-            if (_cachedScripts.Count > 0 && IsMapLoaded && !_dialogTimeout.IsActive)
+            if (_cachedScripts.Count > 0 && IsMapLoaded)
             {
                 var cacheScript = _cachedScripts[0];
                 _cachedScripts.RemoveAt(0);
+
+                var processTexts = new List<string>();
 
                 if (cacheScript.Text != null)
                 {
@@ -597,8 +599,12 @@ namespace Poke1Protocol
                         if (!scriptText.Text.EndsWith(")", StringComparison.CurrentCulture) && scriptText.Text.IndexOf("(", StringComparison.CurrentCulture) == -1)
                             DialogOpened?.Invoke(Regex.Replace(scriptText.Text, @"\[(\/|.\w+)\]", ""));
                         else
-                            ProcessScriptMessage(scriptText.Text);
+                            processTexts.Add(scriptText.Text);
                     }
+                }
+                if (processTexts.Count > 0)
+                {
+                    ProcessScriptMessage(processTexts.ToArray());
                 }
                 //_dialogTimeout.Set();
             }
@@ -610,8 +616,7 @@ namespace Poke1Protocol
 
                 DialogContent = script.Data;
 
-                var type = script.Type;
-                switch (type)
+                switch (script.Type)
                 {
                     case ScriptRequestType.Choice:
                         if (_dialogResponses.Count <= 0)
@@ -848,7 +853,6 @@ namespace Poke1Protocol
         private void SendAck()
         {
             _needToSendAck = false;
-            IsAuthenticated = true;
             var s = new PSXAPI.Request.Ack
             {
                 Data = StringCipher.EncryptOrDecryptToBase64Byte(PlayerName, _logidId.ToString())
@@ -1037,15 +1041,13 @@ namespace Poke1Protocol
 
         public bool OpenLootBox(PSXAPI.Request.LootboxType type)
         {
-            if (RecievedLootBoxes != null)
+            if (RecievedLootBoxes != null && RecievedLootBoxes.TotalLootBoxes > 0)
             {
-                if (RecievedLootBoxes.TotalLootBoxes > 0)
-                {
-                    SendOpenLootBox(type);
-                    _lootBoxTimeout.Set();
-                    return true;
-                }
+                SendOpenLootBox(type);
+                _lootBoxTimeout.Set();
+                return true;
             }
+
             return false;
         }
 
@@ -1835,13 +1837,22 @@ namespace Poke1Protocol
 
         private void OnEvolved(Evolve evolve)
         {
-            if (evolve.Result == EvolutionResult.Success)
-                SystemMessage?.Invoke($"{PokemonManager.Instance.GetNameFromEnum(evolve.Previous)} evolved into " +
-                    $"{PokemonManager.Instance.GetNameFromEnum(evolve.Pokemon.Pokemon.Payload.PokemonID)}");
-            else if (evolve.Result == EvolutionResult.Failed)
-                SystemMessage?.Invoke("Failed to evolve!");
-            else if (evolve.Result == EvolutionResult.Canceled)
-                SystemMessage?.Invoke($"{PokemonManager.Instance.GetNameFromEnum(evolve.Previous)} did not evolve!");
+            switch (evolve.Result)
+            {
+                case EvolutionResult.Success:
+                    SystemMessage?.Invoke($"{PokemonManager.Instance.GetNameFromEnum(evolve.Previous)} evolved into " +
+                        $"{PokemonManager.Instance.GetNameFromEnum(evolve.Pokemon.Pokemon.Payload.PokemonID)}");
+                    break;
+                case EvolutionResult.Failed:
+                    SystemMessage?.Invoke("Failed to evolve!");
+                    break;
+                case EvolutionResult.Canceled:
+                    SystemMessage?.Invoke($"{PokemonManager.Instance.GetNameFromEnum(evolve.Previous)} did not evolve!");
+                    break;
+                default:
+                    Console.WriteLine("Unexpected evolve result: " + evolve.Result);
+                    break;
+            }
 
             if (evolve.Pokemon != null)
                 OnPokemonUpdated(new[] { evolve.Pokemon });
@@ -2144,6 +2155,8 @@ namespace Poke1Protocol
             if (!IsLoggedIn || !IsMapLoaded)
                 _cachedScripts.Add(data);
 
+            var processTexts = new List<string>();
+
             if (data.Text != null)
             {
                 foreach (var scriptText in data.Text)
@@ -2151,9 +2164,12 @@ namespace Poke1Protocol
                     if (!scriptText.Text.EndsWith(")", StringComparison.CurrentCulture) && scriptText.Text.IndexOf("(", StringComparison.CurrentCulture) == -1)
                         DialogOpened?.Invoke(Regex.Replace(scriptText.Text, @"\[(\/|.\w+)\]", ""));
                     else if (IsMapLoaded && IsLoggedIn)
-                        ProcessScriptMessage(scriptText.Text);
+                        processTexts.Add(scriptText.Text);
                 }
             }
+
+            if (processTexts.Count > 0)
+                ProcessScriptMessage(processTexts.ToArray());
 
             _currentScriptType = type;
             _currentScript = data;
@@ -2165,72 +2181,85 @@ namespace Poke1Protocol
             Scripts.Add(data);
         }
 
-        private void ProcessScriptMessage(string text)
+        private void ProcessScriptMessage(params string[] texts)
         {
-            var st = text;
-            var index = st.IndexOf("(", StringComparison.CurrentCulture);
-            var scriptType = st.Substring(0, index);
-
-            var tempNpcs = Map.Npcs/*.Select(npc => npc.Clone()).ToList()*/;
-
-            switch (scriptType.ToLowerInvariant())
+            foreach (var text in texts)
             {
-                case "setlos":
-                    var command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
-                    var npcId = Guid.Parse(command.Split(',')[0]);
-                    var los = Convert.ToInt32(command.Split(',')[1]);
-                    var npc = tempNpcs.Find(x => x.Id == npcId);
-                    if (npc != null)
-                    {
-                        npc.UpdateLos(los);
-                    }
-                    else if (Map.OriginalNpcs.Find(n => n.Id == npcId) != null)
-                    {
-                        var clone = Map.OriginalNpcs.Find(n => n.Id == npcId).Clone();
-                        clone.UpdateLos(los);
-                        tempNpcs.Add(clone);
-                    }
-                    break;
-                case "enablenpc":
-                    command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
-                    npcId = Guid.Parse(command.Split(',')[0]);
-                    var hide = command.Split(',')[1] == "0";
-                    npc = tempNpcs.Find(x => x.Id == npcId);
-                    if (npc != null)
-                    {
-                        npc.SetVisibility(hide);
-                        if (hide)
-                            tempNpcs.Remove(npc);
-                    }
-                    else if (!hide && Map.OriginalNpcs.Find(n => n.Id == npcId) != null)
-                    {
-                        var clone = Map.OriginalNpcs.Find(n => n.Id == npcId).Clone();
-                        clone.SetVisibility(hide);
-                        tempNpcs.Add(clone);
-                    }
-                    //OnNpcs(tempNpcs);
-                    break;
-                case "enablelink":
-                    command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
-                    var linkId = Guid.Parse(command.Split(',')[0]);
-                    hide = command.Split(',')[1] == "0";
-                    if (Map.Links.Find(link => link.Id == linkId) != null)
-                        Map.Links.Find(link => link.Id == linkId).SetVisibility(hide);
-                    LinksUpdated?.Invoke();
-                    break;
-                case "openpc":
-                    // Asking default or first Box's pokemon...
-                    if (!IsPCOpen || CurrentPCBox is null)
-                    {
-                        _refreshingPCBox.Set(Rand.Next(1500, 2000)); // this is the amount of time we wait for an answer
-                        SendRefreshPCBox(1);
-                        CurrentPCBoxId = 1;
-                        IsPCBoxRefreshing = true;
-                    }
-                    break;
-                default:
-                    Console.WriteLine("[-]Unknown action[-]: " + scriptType);
-                    break;
+                var st = text;
+                var index = st.IndexOf("(", StringComparison.CurrentCulture);
+                var scriptType = st.Substring(0, index);
+
+                var tempNpcs = Map.Npcs;
+
+                switch (scriptType.ToLowerInvariant())
+                {
+                    case "setlos":
+                        var command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
+                        var npcId = Guid.Parse(command.Split(',')[0]);
+                        var los = Convert.ToInt32(command.Split(',')[1]);
+                        var npc = tempNpcs.Find(x => x.Id == npcId);
+                        if (npc != null)
+                        {
+                            npc.UpdateLos(los);
+                        }
+                        else if (Map.OriginalNpcs.Find(n => n.Id == npcId) != null)
+                        {
+                            var clone = Map.OriginalNpcs.Find(n => n.Id == npcId).Clone();
+                            clone.UpdateLos(los);
+                            tempNpcs.Add(clone);
+                        }
+                        break;
+                    case "enablenpc":
+                        command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
+                        npcId = Guid.Parse(command.Split(',')[0]);
+                        var hide = command.Split(',')[1] == "0";
+                        npc = tempNpcs.Find(x => x.Id == npcId);
+                        if (npc != null)
+                        {
+                            npc.SetVisibility(hide);
+                            if (hide)
+                                tempNpcs.Remove(npc);
+                        }
+                        else if (!hide && Map.OriginalNpcs.Find(n => n.Id == npcId) != null)
+                        {
+                            var clone = Map.OriginalNpcs.Find(n => n.Id == npcId).Clone();
+                            clone.SetVisibility(hide);
+                            tempNpcs.Add(clone);
+                        }
+                        //OnNpcs(tempNpcs);
+                        break;
+                    case "enablelink":
+                        command = st.Replace(scriptType, "").Replace("(", "").Replace(")", "");
+                        var linkId = Guid.Parse(command.Split(',')[0]);
+                        hide = command.Split(',')[1] == "0";
+                        if (Map.Links.Find(link => link.Id == linkId) != null)
+                            Map.Links.Find(link => link.Id == linkId).SetVisibility(hide);
+                        LinksUpdated?.Invoke();
+                        break;
+                    case "openpc":
+                        // Asking default or first Box's pokemon...
+                        if (!IsPCOpen || CurrentPCBox is null)
+                        {
+                            _refreshingPCBox.Set(Rand.Next(1500, 2000)); // this is the amount of time we wait for an answer
+                            SendRefreshPCBox(1);
+                            CurrentPCBoxId = 1;
+                            IsPCBoxRefreshing = true;
+                        }
+                        break;
+                    default:
+                        Console.WriteLine("[-]Unknown action[-]: " + scriptType);
+                        break;
+                }
+            }
+
+            if (_wasLoggedIn)
+            {
+                var moveActions = new List<PSXAPI.Request.MoveAction>();
+                CheckForNpcInteraction(ref moveActions);
+                if (moveActions.Count > 0)
+                {
+                    SendMovement(moveActions.ToArray(), PlayerX, PlayerY);
+                }
             }
             //OnNpcs(tempNpcs);
             //NpcReceieved?.Invoke(Map.Npcs);
@@ -2267,6 +2296,7 @@ namespace Poke1Protocol
         {
             if (login.Result == PSXAPI.Response.LoginResult.Success)
             {
+                IsAuthenticated = true;
                 OnLoggedIn(login);
             }
             else
@@ -2951,7 +2981,7 @@ namespace Poke1Protocol
 
         public bool WithdrawPokemonFromPC(int boxId, int boxPokemonId)
         {
-            if (!IsPCOpen || IsPCBoxRefreshing || Team.Count >= 6
+            if (!IsPCOpen || IsPCBoxRefreshing || Team.Count >= 6 || boxId != CurrentPCBoxId
                 || boxPokemonId < 1 || boxPokemonId > CurrentPCBox.Count)
             {
                 return false;
@@ -3091,7 +3121,7 @@ namespace Poke1Protocol
                 MapLoaded?.Invoke(AreaName);
             }
 
-            if (_cachedNerbyUsers != null && _cachedNerbyUsers.Users != null)
+            if (_cachedNerbyUsers?.Users != null)
             {
                 OnUpdatePlayer(_cachedNerbyUsers);
             }
@@ -3105,7 +3135,7 @@ namespace Poke1Protocol
             }
 #if DEBUG
 
-            if (Map.MapDump.Areas != null && Map.MapDump.Areas.Count > 0)
+            if (Map.MapDump.Areas?.Count > 0)
             {
                 foreach (var area in Map.MapDump.Areas)
                 {
@@ -3113,16 +3143,12 @@ namespace Poke1Protocol
                 }
             }
 #endif
-            var moveActions = new List<PSXAPI.Request.MoveAction>();
-            CheckForNpcInteraction(ref moveActions);
-            if (moveActions.Count > 0)
-            {
-                SendMovement(moveActions.ToArray(), PlayerX, PlayerY);
-            }
         }
 
         private void OnNpcs(List<Npc> originalNpcs)
         {
+            if (!IsMapLoaded) return;
+
             Map.Npcs.Clear();
 
             foreach (var npc in originalNpcs)
@@ -3131,8 +3157,6 @@ namespace Poke1Protocol
                 if (clone.IsVisible)
                     Map.Npcs.Add(clone);
             }
-
-            Console.WriteLine("Cut: " + originalNpcs.Count(npc => Map.IsCutTree(npc.PositionX, npc.PositionY)));
 
             AreNpcReceived = true;
             NpcReceieved?.Invoke(Map.Npcs);
@@ -3152,7 +3176,7 @@ namespace Poke1Protocol
                     {
                         if (PlayerX >= area.StartX && PlayerX <= area.EndX && PlayerY >= area.StartY && PlayerY <= area.EndY)
                         {
-                            if (area.AreaName.Equals(AreaName, StringComparison.InvariantCultureIgnoreCase) == false)
+                            if (!area.AreaName.Equals(AreaName, StringComparison.InvariantCultureIgnoreCase))
                                 RequestArea(MapName, area.AreaName);
 
                             AreaName = area.AreaName;
@@ -3172,10 +3196,10 @@ namespace Poke1Protocol
                     RequestArea(MapName, AreaName);
                 }
 
-
                 PositionUpdated?.Invoke(AreaName, PlayerX, PlayerY);
             }
         }
+
         public void Resync(bool mapLoad = true)
         {
             var _syncId = Guid.NewGuid();
