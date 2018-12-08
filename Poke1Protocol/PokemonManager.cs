@@ -29,14 +29,15 @@ namespace Poke1Protocol
             {
                 var foundPok = AllPokemonInfos.Pokemon.ToList().Find(x => x.ID == id);
                 if (foundPok != null)
-                    result = foundPok.Ability1.ToLowerInvariant() == "levitate"
-                        || foundPok.Ability2.ToLowerInvariant() == "levitate"
-                        || foundPok.Ability3.ToLowerInvariant() == "levitate";
+                    result = string.Equals(foundPok.Ability1, "levitate", StringComparison.InvariantCultureIgnoreCase)
+                        || string.Equals(foundPok.Ability2, "levitate", StringComparison.InvariantCultureIgnoreCase)
+                        || string.Equals(foundPok.Ability3, "levitate", StringComparison.InvariantCultureIgnoreCase);
             }
             return result;
         }
 
-        public string[] Names { get; private set; }
+        public string[] Names { get; }
+
         public int GetIdByName(string name)
         {
             if (string.IsNullOrEmpty(name)) return -1;
@@ -44,9 +45,9 @@ namespace Poke1Protocol
             if (Names.Length > 0)
             {
                 name = name.ToUpperInvariant();
-                var foundName = Names.ToList().FirstOrDefault(x => x.Replace("-", "").Replace(" ", "").ToUpperInvariant()
-                    == name.Replace("-", "").Replace(" ", ""));
-                
+                var foundName = Names.ToList().FirstOrDefault(x => x.Replace("-", "").Replace(" ", "").Replace("'", "").ToUpperInvariant()
+                    == name.Replace("-", "").Replace(" ", "").Replace("'", ""));
+
                 result = string.IsNullOrEmpty(foundName) ? -1 : Names.ToList().IndexOf(foundName);
             }
             return result;
@@ -57,8 +58,8 @@ namespace Poke1Protocol
             string result = null;
             if (!string.IsNullOrEmpty(id.ToString()))
             {
-                var foundName = Names.ToList().Find(x => x.Replace("-", "").Replace(" ", "")
-                    .ToLowerInvariant() == id.ToString().ToLowerInvariant());
+                var foundName = Names.ToList().Find(x => string.Equals(x.Replace("-", "").Replace(" ", "").Replace("'", ""), id.ToString(),
+                    StringComparison.InvariantCultureIgnoreCase));
 
                 result = string.IsNullOrEmpty(foundName) ? null : foundName;
             }
@@ -82,10 +83,10 @@ namespace Poke1Protocol
         {
             try
             {
-                List<string> name = new List<string>();
+                var name = new List<string>();
                 var json = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(Resources.pokemons)) as JObject;
                 AllPokemonInfos = JsonConvert.DeserializeObject<DexInfo>(json.ToString());
-                int i = 0;
+                var i = 0;
                 foreach (var st in AllPokemonInfos.Pokemon)
                 {
                     name.Add(st.Name);
@@ -96,7 +97,7 @@ namespace Poke1Protocol
             }
             catch (Exception)
             {
-
+                //ignore
             }
         }
 
