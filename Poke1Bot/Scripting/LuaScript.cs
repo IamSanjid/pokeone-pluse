@@ -3208,7 +3208,7 @@ namespace Poke1Bot.Scripting
         private bool CanBattleNpc(string containedString)
         {
             containedString = containedString.ToLowerInvariant();
-            var allNpcsWithName = Bot.Game.Map.Npcs.FindAll(npc => npc.NpcName.ToLowerInvariant().Contains(containedString) || npc.IsBattler || npc.CanBattle);
+            var allNpcsWithName = Bot.Game.Map.Npcs.FindAll(npc => npc.NpcName.ToLowerInvariant().Contains(containedString) && npc.IsBattler && npc.CanBattle);
             if (allNpcsWithName is null || allNpcsWithName.Count <= 0)
             {
                 return false;
