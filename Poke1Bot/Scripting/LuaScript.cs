@@ -225,6 +225,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["countBadges"] = new Func<int>(CountBadges);
                 _lua.Globals["countNpcWith"] = new Func<string, int>(CountNpcWith);
                 _lua.Globals["checkNpcWith"] = new Func<string, bool>(CheckNpcWith);
+                _lua.Globals["canBattleNPC"] = new Func<string, bool>(CanBattleNpc);
 
                 _lua.Globals["getNearestMovableCell"] = new Func<DynValue[], DynValue[]>(GetNearestMovableCell);
 
@@ -3198,6 +3199,18 @@ namespace Poke1Bot.Scripting
             var allNpcsWithName = Bot.Game.Map.Npcs.FindAll(npc => npc.NpcName.ToLowerInvariant().Contains(containedString));
             if (allNpcsWithName is null || allNpcsWithName.Count <= 0)
             {                
+                return false;
+            }
+            return true;
+        }
+
+        // API: Checks if any NPCs is able to battle with specified string
+        private bool CanBattleNpc(string containedString)
+        {
+            containedString = containedString.ToLowerInvariant();
+            var allNpcsWithName = Bot.Game.Map.Npcs.FindAll(npc => npc.NpcName.ToLowerInvariant().Contains(containedString) && npc.IsBattler && npc.CanBattle);
+            if (allNpcsWithName is null || allNpcsWithName.Count <= 0)
+            {
                 return false;
             }
             return true;
