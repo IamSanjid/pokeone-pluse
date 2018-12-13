@@ -225,7 +225,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["countBadges"] = new Func<int>(CountBadges);
                 _lua.Globals["countNpcWith"] = new Func<string, int>(CountNpcWith);
                 _lua.Globals["checkNpcWith"] = new Func<string, bool>(CheckNpcWith);
-                _lua.Globals["canBattleNPC"] = new Func<string, bool>(CanBattleNpc);
+                _lua.Globals["canBattleNpc"] = new Func<string, bool>(CanBattleNpc);
 
                 _lua.Globals["getNearestMovableCell"] = new Func<DynValue[], DynValue[]>(GetNearestMovableCell);
 
