@@ -432,6 +432,9 @@ namespace Poke1Protocol
             return (x >= CurrentArea.StartX && x <= CurrentArea.EndX && y >= CurrentArea.StartY && y <= CurrentArea.EndY) || (x >= 0 && x < Width && y >= 0 && y < Height);
         }
 
+        public bool IsWildEncounterAbleCell(int x, int y)
+            => IsInCurrentArea(x, y) && TileZones[x, y] > 0;
+
         public int GetCollider(int x, int y)
         {
             if (IsInCurrentArea(x, y))

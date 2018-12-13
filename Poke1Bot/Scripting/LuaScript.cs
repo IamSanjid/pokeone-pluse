@@ -108,7 +108,7 @@ namespace Poke1Bot.Scripting
 
         public override bool ExecuteNextAction()
         {
-            string functionName = Bot.Game.IsInBattle ? "onBattleAction" : "onPathAction";
+            var functionName = Bot.Game.IsInBattle ? "onBattleAction" : "onPathAction";
 
             _actionExecuted = false;
             try
@@ -225,6 +225,9 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["countBadges"] = new Func<int>(CountBadges);
                 _lua.Globals["countNpcWith"] = new Func<string, int>(CountNpcWith);
                 _lua.Globals["checkNpcWith"] = new Func<string, bool>(CheckNpcWith);
+                _lua.Globals["getAllNpcData"] = new Func<List<Dictionary<string, DynValue>>>(GetAllNpcData);
+                _lua.Globals["getNpcData"] = new Func<string, Dictionary<string, DynValue>>(GetNpcData);
+                _lua.Globals["getNpcDataWith"] = new Func<string, Dictionary<string, DynValue>>(GetNpcDataWith);
 
                 _lua.Globals["getNearestMovableCell"] = new Func<DynValue[], DynValue[]>(GetNearestMovableCell);
 
@@ -320,6 +323,7 @@ namespace Poke1Bot.Scripting
                 _lua.Globals["moveLinearY"] = new Func<DynValue[], bool>(MoveLinearY);
                 _lua.Globals["moveToGrass"] = new Func<bool>(MoveToGrass);
                 _lua.Globals["moveToWater"] = new Func<bool>(MoveToWater);
+                _lua.Globals["moveToEncounterWild"] = new Func<bool>(MoveToEncounterWild);
                 _lua.Globals["talkToNpc"] = new Func<string, bool>(TalkToNpc);
                 _lua.Globals["talkNpcWith"] = new Func<string, bool>(TalkNpcWith);
                 _lua.Globals["talkToNpcOnCell"] = new Func<int, int, bool>(TalkToNpcOnCell);
@@ -2234,7 +2238,7 @@ namespace Poke1Bot.Scripting
         {
             if (!ValidateAction("moveToGrass", false)) return false;
 
-            return ExecuteAction(MoveToCellType((x, y) => Bot.Game.Map.IsGrass(x, y)));
+            return ExecuteAction(MoveToCellType(Bot.Game.Map.IsGrass));
         }
 
         // API: Moves to the nearest water area then move randomly inside it.
@@ -2242,28 +2246,35 @@ namespace Poke1Bot.Scripting
         {
             if (!ValidateAction("moveToWater", false)) return false;
 
-            return ExecuteAction(MoveToCellType((x, y) => Bot.Game.Map.IsWater(x, y)));
+            return ExecuteAction(MoveToCellType(Bot.Game.Map.IsWater));
+        }
+
+        // API: Moves to wild encounter able cells randomly.
+        private bool MoveToEncounterWild()
+        {
+            if (!ValidateAction("moveToEncounterWild", false)) return false;
+            return ExecuteAction(MoveToCellType(Bot.Game.Map.IsWildEncounterAbleCell));
         }
 
         private bool MoveToCellType(Func<int, int, bool> cellTypePredicate)
         {
-            bool alreadyInCell = cellTypePredicate(Bot.Game.PlayerX, Bot.Game.PlayerY);
+            var alreadyInCell = cellTypePredicate?.Invoke(Bot.Game.PlayerX, Bot.Game.PlayerY) ?? default(bool);
 
-            List<Tuple<int, int, int>> cells = new List<Tuple<int, int, int>>();
+            var cells = new List<Tuple<int, int, int>>();
 
             for (int x = 0; x < Bot.Game.Map.Width; ++x)
             {
                 for (int y = 0; y < Bot.Game.Map.Height; ++y)
                 {
-                    if (cellTypePredicate(x, y) && (x != Bot.Game.PlayerX || y != Bot.Game.PlayerY))
+                    if (cellTypePredicate?.Invoke(x, y) ?? default(bool) && (x != Bot.Game.PlayerX || y != Bot.Game.PlayerY))
                     {
-                        int distance = Bot.Game.DistanceTo(x, y);
+                        var distance = Bot.Game.DistanceTo(x, y);
                         cells.Add(new Tuple<int, int, int>(x, y, distance));
                     }
                 }
             }
 
-            List<Tuple<int, int, int>> trash = new List<Tuple<int, int, int>>();
+            var trash = new List<Tuple<int, int, int>>();
             if (alreadyInCell)
             {
                 foreach (var cell in cells)
@@ -2276,7 +2287,7 @@ namespace Poke1Bot.Scripting
             }
             else
             {
-                int minDistance = -1;
+                var minDistance = -1;
                 foreach (var cell in cells)
                 {
                     if (minDistance == -1 || cell.Item3 < minDistance)
@@ -2735,8 +2746,8 @@ namespace Poke1Bot.Scripting
             }
 
             moveName = moveName.ToUpperInvariant();
-            Pokemon pokemon = Bot.Game.Team.Find(pok => pok.PokemonData.Pokemon.UniqueID == Bot.MoveTeacher.PokemonUniqueId);
-            PokemonMove move = pokemon.Moves.FirstOrDefault(m => MovesManager.Instance.GetMoveData(m.Id)?.Name.ToUpperInvariant() == moveName);
+            var pokemon = Bot.Game.Team.Find(pok => pok.PokemonData.Pokemon.UniqueID == Bot.MoveTeacher.PokemonUniqueId);
+            var move = pokemon.Moves.FirstOrDefault(m => MovesManager.Instance.GetMoveData(m.Id)?.Name.ToUpperInvariant() == moveName);
 
             if (move != null)
             {
@@ -2756,14 +2767,14 @@ namespace Poke1Bot.Scripting
                 return false;
             }
 
-            HashSet<string> movesInvariantNames = new HashSet<string>();
+            var movesInvariantNames = new HashSet<string>();
             foreach (DynValue value in moveNames)
             {
                 movesInvariantNames.Add(value.CastToString().ToUpperInvariant());
             }
 
-            Pokemon pokemon = Bot.Game.Team.Find(pok => pok.PokemonData.Pokemon.UniqueID == Bot.MoveTeacher.PokemonUniqueId);
-            PokemonMove move = pokemon.Moves.FirstOrDefault(m => !movesInvariantNames.Contains(m.Data?.Name.ToUpperInvariant()));
+            var pokemon = Bot.Game.Team.Find(pok => pok.PokemonData.Pokemon.UniqueID == Bot.MoveTeacher.PokemonUniqueId);
+            var move = pokemon.Moves.FirstOrDefault(m => !movesInvariantNames.Contains(m.Data?.Name.ToUpperInvariant()));
 
             if (move != null)
             {
@@ -2778,11 +2789,11 @@ namespace Poke1Bot.Scripting
         // overwrite is an optional parameter, and will append the line(s) if absent
         private void LogToFile(string file, DynValue text, bool overwrite = false)
         {
-            DirectoryInfo directory = new DirectoryInfo("Logs/");
-            FileInfo info = new FileInfo("Logs/" + file);
+            var directory = new DirectoryInfo("Logs/");
+            var info = new FileInfo("Logs/" + file);
 
             // Restricting access to Logs folder
-            if (!info.FullName.StartsWith(directory.FullName))
+            if (!info.FullName.StartsWith(directory.FullName, StringComparison.CurrentCulture))
             {
                 Fatal("Error: Invalid file write access");
                 return;
@@ -2791,11 +2802,11 @@ namespace Poke1Bot.Scripting
             // Creating all necessary folders
             Directory.CreateDirectory(Path.GetDirectoryName(info.FullName));
 
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             if (text.Type == DataType.Table)
             {
-                DynValue[] lines = text.Table.Values.ToArray();
+                var lines = text.Table.Values.ToArray();
                 for (int i = 0; i < lines.Length; i++)
                 {
                     sb.AppendLine(lines[i].CastToString());
@@ -2815,10 +2826,10 @@ namespace Poke1Bot.Scripting
         // API: Returns a table of every line in file
         private string[] ReadLinesFromFile(string file)
         {
-            DirectoryInfo directory = new DirectoryInfo("Logs/");
-            FileInfo info = new FileInfo("Logs/" + file);
+            var directory = new DirectoryInfo("Logs/");
+            var info = new FileInfo("Logs/" + file);
 
-            if (!info.FullName.StartsWith(directory.FullName))
+            if (!info.FullName.StartsWith(directory.FullName, StringComparison.CurrentCulture))
             {
                 Fatal("Error: Invalid File read access");
                 return new string[] { };
@@ -3201,6 +3212,71 @@ namespace Poke1Bot.Scripting
                 return false;
             }
             return true;
+        }
+
+        // API: Returns npc data on current map, format : { { "x" = x , "y" = y, "los" = los, "isBattler" = isBattler }, {...}, ... }
+        private List<Dictionary<string, DynValue>> GetAllNpcData()
+        {
+            var lNpc = new List<Dictionary<string, DynValue>>();
+            foreach (var npc in Bot.Game.Map.Npcs)
+            {
+                var npcData = new Dictionary<string, DynValue>()
+                {
+                    ["x"] = DynValue.NewNumber(npc.PositionX),
+                    ["y"] = DynValue.NewNumber(npc.PositionY),
+                    ["name"] = DynValue.NewString(npc.NpcName),
+                    ["isBattler"] = DynValue.NewBoolean(npc.IsBattler),
+                    ["canBattle"] = DynValue.NewBoolean(npc.CanBattle),
+                    ["id"] = DynValue.NewString(npc.Id.ToString()),
+                    ["los"] = DynValue.NewNumber(npc.LosLength)
+                };
+                lNpc.Add(npcData);
+            }
+            return lNpc;
+        }
+
+        // API: Returns npc data with spcified name on current map, format : { { "x" = x , "y" = y, "los" = los, "isBattler" = isBattler }, {...}, ... }
+        private Dictionary<string, DynValue> GetNpcData(string name)
+        {
+            var npc = Bot.Game.Map.Npcs.Find(np => string.Equals(np.NpcName, name, StringComparison.InvariantCultureIgnoreCase));
+            if (npc is null)
+            {
+                Fatal("error: getNpcData: coudln't find any npc with name " + name + ".");
+                return null;
+            }
+
+            return new Dictionary<string, DynValue>()
+            {
+                ["x"] = DynValue.NewNumber(npc.PositionX),
+                ["y"] = DynValue.NewNumber(npc.PositionY),
+                ["name"] = DynValue.NewString(npc.NpcName),
+                ["isBattler"] = DynValue.NewBoolean(npc.IsBattler),
+                ["canBattle"] = DynValue.NewBoolean(npc.CanBattle),
+                ["id"] = DynValue.NewString(npc.Id.ToString()),
+                ["los"] = DynValue.NewNumber(npc.LosLength)
+            };
+        }
+
+        // API: Returns npc data with spcified string, format : { { "x" = x , "y" = y, "los" = los, "isBattler" = isBattler }, {...}, ... }
+        private Dictionary<string, DynValue> GetNpcDataWith(string containedString)
+        {
+            var npc = Bot.Game.Map.Npcs.Find(np => np.NpcName.IndexOf(containedString, StringComparison.InvariantCultureIgnoreCase) >= 0);
+            if (npc is null)
+            {
+                Fatal("error: getNpcDataWith: coudln't find any npc with string " + containedString + ".");
+                return null;
+            }
+
+            return new Dictionary<string, DynValue>()
+            {
+                ["x"] = DynValue.NewNumber(npc.PositionX),
+                ["y"] = DynValue.NewNumber(npc.PositionY),
+                ["name"] = DynValue.NewString(npc.NpcName),
+                ["isBattler"] = DynValue.NewBoolean(npc.IsBattler),
+                ["canBattle"] = DynValue.NewBoolean(npc.CanBattle),
+                ["id"] = DynValue.NewString(npc.Id.ToString()),
+                ["los"] = DynValue.NewNumber(npc.LosLength)
+            };
         }
     }
 }
