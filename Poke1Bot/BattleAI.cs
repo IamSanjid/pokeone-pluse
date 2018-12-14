@@ -319,7 +319,7 @@ namespace Poke1Bot
 
         public bool Run()
         {
-            if (ActivePokemons is null || ActivePokemons?.All(p => p.Health <= 0) == false) return false;
+            if (ActivePokemons is null || ActivePokemons?.All(p => p.Health <= 0) == true) return false;
             if (!_client.ActiveBattle.IsWild) return false;
             if (_client.ActiveBattle.IsTrapped) return false;
             _client.RunFromBattle();
