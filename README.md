@@ -1,6 +1,9 @@
-# pokeone-pluse
+# PokeOne+
 A free, open-source and advanced bot for PokeOne(http://poke.one/).
-Thier Discord: https://discord.gg/bNYRTFn
+
+[![Bot Team And Map](https://i.imgur.com/OomVRKX.jpg)](https://i.imgur.com/zQu2H5b.jpg)
+
+PokeOne's Discord: https://discord.gg/bNYRTFn
 
 # Binaries
 
