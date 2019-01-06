@@ -180,8 +180,12 @@ namespace pokeone_plus
                         if ((collider == 4 || collider == 22 || collider == 7) && !_bot.Game.Map.HasLink(x, y))
                         {
                             rectHeight = _cellWidth / 4;
-                            modifiedY = _cellWidth - rectHeight;
-                            rectY += modifiedY;
+                            if (collider == 7)
+                            {
+                                modifiedY = _cellWidth - rectHeight;
+                                rectY += modifiedY;
+                            }
+
                             //rect.VerticalAlignment = VerticalAlignment.Top;
                         }
 

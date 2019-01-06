@@ -701,6 +701,9 @@ namespace Poke1Protocol
                         case Direction.Down:
                             destinationY++;
                             break;
+                        case Direction.Up:
+                            destinationY--;
+                            break;
                         case Direction.Left:
                             destinationX--;
                             break;

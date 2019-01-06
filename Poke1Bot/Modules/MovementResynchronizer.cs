@@ -63,7 +63,7 @@
                 {
                     _bot.LogMessage("Bot stuck, sending resynchronization request.");
                     _requestedResync = true;
-                    _bot.Game.Resync();
+                    _bot.Game.Resync(false);
                 }
                 return false;
             }

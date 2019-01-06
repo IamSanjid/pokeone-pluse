@@ -192,6 +192,11 @@ namespace Poke1Bot
                         continue;
                     }
 
+                    if (req.side.pokemon.Count(p => Battle.GetSwitchedPokemon(p).Health > 0) > 0)
+                    {
+                        results.Add(SwitchingResult.NotPossible);
+                        continue;
+                    }
                     _client.UseAttack(0, j + 1, 0);
                     results.Add(SwitchingResult.Success);
                 }
@@ -419,19 +424,10 @@ namespace Poke1Bot
             var activePokemon = ActivePokemons[activePoke];
             if (!IsPokemonUsable(activePokemon))
             {
-                if (Pokemons.FindAll(x => !x.Sent && (IsPokemonUsable(x) || x.Health > 0)).Count <= 0)
-                {
-                    if (activePokemon.Health <= 0)
-                    {
-                        _client.UseAttack(0, activePoke + 1);
-                        return ResultUsingMove.Success;
-                    }
-                    else
-                    {
-                        return ResultUsingMove.NoLongerUsable;
-                    }
-                }
-                return ResultUsingMove.Fainted;
+                if (Pokemons.FindAll(x => !x.Sent && x.Health > 0).Count > 0) return ResultUsingMove.Fainted;
+                if (activePokemon.Health > 0) return ResultUsingMove.NoLongerUsable;
+                _client.UseAttack(0, activePoke + 1);
+                return ResultUsingMove.Success;
             }
 
             PSXAPI.Response.Payload.BattleMove bestMove = null;
