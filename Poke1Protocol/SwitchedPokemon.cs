@@ -28,8 +28,6 @@
 
         public bool Sent = false;
 
-        public bool WillSent = false;
-
-        public bool Selected = false;
+        public bool RepeatAttack = false;
     }
 }

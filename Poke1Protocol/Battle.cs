@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using PSXAPI.Response.Payload;
 
 namespace Poke1Protocol
 {
@@ -80,8 +81,10 @@ namespace Poke1Protocol
             if (string.IsNullOrEmpty(_playerName) || PlayerAcivePokemon is null)
                 return "normal";
             var targetMove = PlayerAcivePokemon[pokeUid - 1].Moves[uid - 1];
-            if (targetMove is null || string.IsNullOrEmpty(targetMove.target))
+            if (targetMove is null)
                 return "normal";
+            if (string.IsNullOrEmpty(targetMove.target))
+                return "";
             return targetMove.target;
         }
 
@@ -313,8 +316,6 @@ namespace Poke1Protocol
             if (isPlayerSide)
             {
                 var p1 = request;
-                var active = p1.RequestInfo.active;
-                var activePokemon = p1.RequestInfo.side.pokemon.ToList().Find(x => x.active);
 
                 CurrentBattlingPokemonIndex = p1.RequestInfo.side.pokemon.ToList().FindIndex(x => x.active) + 1;
 
@@ -332,18 +333,25 @@ namespace Poke1Protocol
                 if (p1.RequestInfo != null && p1.RequestInfo.active != null)
                 {
                     PlayerAcivePokemon = new List<SwitchedPokemon>();
-                    for (var i = 0; i < p1.RequestInfo.active.Length; i++)
+                    foreach (var pActive in p1.RequestInfo.active)
                     {
-                        if (p1.RequestInfo.active[i]?.trainer?.ToLowerInvariant() != _playerName?.ToLowerInvariant())
+                        if (pActive?.trainer?.ToLowerInvariant() != _playerName?.ToLowerInvariant())
                             continue;
-                        var newPoke = GetSwitchedPokemon(pokemons.FirstOrDefault(x => x.personality == p1.RequestInfo.active[i].personality));
-                        PlayerAcivePokemon.Add(newPoke);
+                        var mainPoke =
+                            pokemons.FirstOrDefault(x => x.personality == pActive?.personality);
+                        if (mainPoke != null)
+                        {
+                            mainPoke.moveData = pActive?.moves;
+                            PlayerAcivePokemon.Add(GetSwitchedPokemon(mainPoke));
+                        }
                     }
                 }
                 else
                 {
                     PlayerAcivePokemon = null;
                 }
+
+                RepeatAttack = PlayerAcivePokemon != null && PlayerAcivePokemon.Any(p => p.RepeatAttack);
             }
             else
             {
@@ -367,18 +375,23 @@ namespace Poke1Protocol
                 ResponseID = p2.RequestID;               
 
                 var pokemons = p2.RequestInfo.side.pokemon;
-                OpponenetAllPokemon = new List<SwitchedPokemon>();
-                foreach(var pkm in pokemons)
-                {
-                    OpponenetAllPokemon.Add(GetSwitchedPokemon(pkm));
-                }
+                //OpponenetAllPokemon = new List<SwitchedPokemon>();
+                //foreach(var pkm in pokemons)
+                //{
+                //    OpponenetAllPokemon.Add(GetSwitchedPokemon(pkm));
+                //}
                 if (p2.RequestInfo != null && p2.RequestInfo.active != null)
                 {
                     OpponentActivePokemon = new List<SwitchedPokemon>();
-                    for (var i = 0; i < p2.RequestInfo.active.Length; i++)
+                    foreach (var opActive in p2.RequestInfo.active)
                     {
-                        var newPoke = GetSwitchedPokemon(pokemons.FirstOrDefault(x => x.personality == p2.RequestInfo.active[i].personality));
-                        OpponentActivePokemon.Add(newPoke);
+                        var main = pokemons.FirstOrDefault(x => x.personality == opActive.personality);
+                        if (main != null)
+                        {
+                            main.moveData = opActive.moves;
+                            var newPoke = GetSwitchedPokemon(main);
+                            OpponentActivePokemon.Add(newPoke);
+                        }
                     }
                 }
                 else
@@ -389,16 +402,13 @@ namespace Poke1Protocol
             IsTrapped = GetActivePokemon?.maybeTrapped == true || GetActivePokemon?.maybeDisabled == true;
         }
 
-        public void ProcessLog(string[] logs, List<Pokemon> team, Action<string> BattleMessage)
+        public void ProcessLog(string[] logs, List<Pokemon> team, Action<string> battleMessage)
         {
             if (logs is null) return;
 
             foreach(var log in logs)
             {
-                string[] info = log.Split(new char[]
-                {
-                    '|'
-                });
+                string[] info = log.Split('|');
                 if (info.Length > 0)
                 {
                     var type = info[1];
@@ -418,7 +428,7 @@ namespace Poke1Protocol
                                 Turn = turn;
                             break;
                         case "-damage":
-                            var damageTaker = info[2].Split(new string[]
+                            var damageTaker = info[2].Split(new[]
                                 {
                                     ": "
                                 }, StringSplitOptions.None);
@@ -427,51 +437,51 @@ namespace Poke1Protocol
 
                             
                             //Attacker
-                            var attacker = info[2].Split(new string[]
+                            var attacker = info[2].Split(new[]
                                 {
                                     ": "
                                 }, StringSplitOptions.None);
                             //Move
                             var move = info[3];
                             // Attack Taker
-                            var attackTaker = info[4].Split(new string[]
+                            var attackTaker = info[4].Split(new[]
                             {
                                 ": "
                             }, StringSplitOptions.None);
                             
                             if (attacker[1] != attackTaker[1])
-                                BattleMessage?.Invoke((attacker[0].Contains("p1") && PlayerSide == 1) 
+                                battleMessage?.Invoke((attacker[0].Contains("p1") && PlayerSide == 1) 
                                     || (attacker[0].Contains("p2") && PlayerSide == 2) ? $"Your {attacker[1]} used {move} on {attackTaker[1]}" : IsWild ? $"Wild {attacker[1]} used {move} on {attackTaker[1]}" : $"Opponent's {attacker[1]} used {move} on {attackTaker[1]}" + "!");
                             else
-                                BattleMessage?.Invoke((attacker[0].Contains("p1") && PlayerSide == 1)
+                                battleMessage?.Invoke((attacker[0].Contains("p1") && PlayerSide == 1)
                                     || (attacker[0].Contains("p2") && PlayerSide == 2) ? $"Your {attacker[1]} used {move}" : IsWild ? $"Wild {attacker[1]} used {move}" : $"Opponent's {attacker[1]} used {move}" + "!");
 
                             if (info.Length > 5)
                             {
                                 var happened = info[5];
                                 if (happened == "[miss]")
-                                    BattleMessage?.Invoke($"{attacker[1]}'s attack missed!");
+                                    battleMessage?.Invoke($"{attacker[1]}'s attack missed!");
                             }
                             break;
                         case "faint":
                             if (caught) break;
-                            var died = info[2].Split(new string[]
+                            var died = info[2].Split(new[]
                             {
                                 ": "
                             }, StringSplitOptions.None);
                             if (died[1] == "MissingNo.")
                                 break;
-                            BattleMessage?.Invoke((died[0].Contains("p1") && PlayerSide == 2) 
+                            battleMessage?.Invoke((died[0].Contains("p1") && PlayerSide == 2) 
                                 || (died[0].Contains("p2") && PlayerSide == 1) ? IsWild ? $"Wild {died[1]} fainted!" : $"Opponent's {died[1]} fainted!" : $"Your {died[1]} fainted!");
                             break;
                         case "--run":
                             if (info[3] == "0")
                             {
-                                BattleMessage?.Invoke($"{info[4]} failed to run away!");
+                                battleMessage?.Invoke($"{info[4]} failed to run away!");
                             }
                             else
                             {
-                                BattleMessage?.Invoke("You got away safely!");
+                                battleMessage?.Invoke("You got away safely!");
                             }
                             break;
                         case "win":                           
@@ -479,23 +489,23 @@ namespace Poke1Protocol
                             if (caught) break;
                             var winner = info[2];
                             if (!ranAway)
-                                BattleMessage?.Invoke((winner == "p1" && PlayerSide == 1) || (winner == "p2" && PlayerSide == 2)
+                                battleMessage?.Invoke((winner == "p1" && PlayerSide == 1) || (winner == "p2" && PlayerSide == 2)
                                     ? "You have won the battle!" : "You have lost the battle!");                         
                             break;
                         case "nothing":
-                            BattleMessage?.Invoke("But nothing happened!");
+                            battleMessage?.Invoke("But nothing happened!");
                             break;
                         case "-notarget":
-                            BattleMessage?.Invoke("But it failed!");
+                            battleMessage?.Invoke("But it failed!");
                             break;
                         case "-ohko":
-                            BattleMessage?.Invoke("It's a one-hit KO!");
+                            battleMessage?.Invoke("It's a one-hit KO!");
                             break;
                         case "--catch":
                             var isMySide = Convert.ToInt32(info[2].Substring(0, 2).Replace("p", "")) == PlayerSide;
                             if (isMySide)
                             {
-                                BattleMessage?.Invoke($"{info[8]} threw a " +
+                                battleMessage?.Invoke($"{info[8]} threw a " +
                                     $"{ItemsManager.Instance.ItemClass.items.ToList().Find(itm => itm.BattleID == info[4] || itm.Name == info[4]).Name}!");
                             }
                             else
@@ -504,7 +514,7 @@ namespace Poke1Protocol
                                     Data.Mapping2[0] : Data.Mapping1 != null && 
                                     Data.Mapping2 != null ? Data.Mapping1[0] : "Enemy"; 
 
-                                BattleMessage?.Invoke($"{info[8]} threw a " +
+                                battleMessage?.Invoke($"{info[8]} threw a " +
                                     $"{ItemsManager.Instance.ItemClass.items.ToList().Find(itm => itm.BattleID == info[4] || itm.Name == info[4]).Name}!");                                
                             }
                             int pokeID = Convert.ToInt32(info[3]);
@@ -513,25 +523,25 @@ namespace Poke1Protocol
 
                             if (shakes < 0)
                             {
-                                BattleMessage?.Invoke("But it failed.");
+                                battleMessage?.Invoke("But it failed.");
                             }
                             else
                             {
                                 if (success == 0)
                                 {
-                                    BattleMessage?.Invoke($"Gotcha! {PokemonManager.Instance.Names[OpponentId]} was caught!");
+                                    battleMessage?.Invoke($"Gotcha! {PokemonManager.Instance.Names[OpponentId]} was caught!");
                                 }
                                 else if (shakes == 0)
                                 {
-                                    BattleMessage?.Invoke($"Oh no! The Pokémon broke free!");
+                                    battleMessage?.Invoke($"Oh no! The Pokémon broke free!");
                                 }
                                 else if (shakes < 2)
                                 {
-                                    BattleMessage?.Invoke("Aww! It appeared to be caught!");
+                                    battleMessage?.Invoke("Aww! It appeared to be caught!");
                                 }
                                 else
                                 {
-                                    BattleMessage?.Invoke("Aargh! Almost had it!");
+                                    battleMessage?.Invoke("Aargh! Almost had it!");
                                 }
                             }
                             break;
@@ -635,6 +645,8 @@ namespace Poke1Protocol
             switchedPoke.Personality = side.personality;
             switchedPoke.Trainer = side.trainer;
             switchedPoke.Sent = side.active;
+            switchedPoke.RepeatAttack = side.moveData?.Length == 1 && side.moveData?.FirstOrDefault()?.pp == 0 &&
+                                        side.moveData?.FirstOrDefault()?.maxpp == 0;
             return switchedPoke;
         }
     }
