@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Management;
@@ -51,11 +52,11 @@ namespace Poke1Protocol
             //    default:
             //        throw new Exception("Unexpected error occured.");
             //}
-            var os = Environment.OSVersion;
+            ////var os = Environment.OSVersion;
 
-            var osString = os.VersionString.Replace(os.Version.ToString(), "") + $"({os.Version}) " + (Environment.Is64BitOperatingSystem ? $"64bit" : "32bit");
+            ////var osString = os.VersionString.Replace(os.Version.ToString(), "") + $"({os.Version}) " + (Environment.Is64BitOperatingSystem ? $"64bit" : "32bit");
 
-            return osString.ToSHA1().Hexdigest().ToLowerInvariant();
+            return new Guid().ToString().ToSHA1().Hexdigest().ToLowerInvariant();
         }
 
         public static string HKLM_GetString(string path, string key)
@@ -104,6 +105,18 @@ namespace Poke1Protocol
                 hexaHash += String.Format("{0:x2}", b);
             }
             return hexaHash;
+        }
+
+        public static string ReverseString(this string text)
+        {
+            var reversedList = text.Reverse().ToList();
+            var builder = new StringBuilder();
+            foreach (var t in reversedList)
+            {
+                builder.Append(t);
+            }
+
+            return builder.ToString();
         }
     }
 }

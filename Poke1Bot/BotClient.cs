@@ -65,25 +65,18 @@ namespace Poke1Bot
             Settings = new UserSettings();
 
 #if DEBUG
-            byte[] bytes = new byte[] { 0x50, 0x6a, 0x03, 0xc2, 0xcf, 0x68, 0x90, 0xe6, 0xba, 0x32, 0x3c, 0x1a, 0x08, 0x00, 0x45, 0x00, 0x00, 0x28, 0x78, 0x91, 0x40, 0x00, 0x80, 0x06, 0x00, 0x00, 0xc0, 0xa8, 0x01, 0x0e, 0x5f, 0xb7, 0x30, 0x44, 0xed, 0x6f, 0x07, 0xdc, 0x54, 0x7f, 0x6b, 0x80, 0x7d, 0x82, 0x1a, 0x41, 0x50, 0x10, 0x01, 0x00, 0x51, 0xcc, 0x00, 0x00 };
-            var pc = Convert.ToBase64String(bytes);
+            var dc = StringCipher.Base64Decode("F0IHKAtNWA4u");
+            var s = "776463e6-59c7-4a42-b861-fccdf79def1c".ReverseString();
+            var enc = Poke1Protocol.StringCipher.EncryptOrDecrypt("Username:)".ReverseString(), "776463e6-59c7-4a42-b861-fccdf79def1c".ReverseString());
+            Console.WriteLine(enc);
+            Console.WriteLine(dc);
 
-            Console.WriteLine(pc);
-
-            var enc = Poke1Protocol.StringCipher.EncryptOrDecryptToBase64Byte("username;)", "db2a1b6e-34d9-46ae-b319-d58bfc71011d");
-
-            var s64 = new PSXAPI.Request.Ack
-            {
-                Data = enc
-            };
-
-            Console.WriteLine(Encoding.UTF8.GetString(s64.Data));
 
             //var packet = @"InventoryPokemon CtEBChIJ8TZvO060XkYRhk8er86fOWQSjgEIowEQCxjPCyAkKgYIXRAZGBkqBggtECgYKCoGCCEQIxgjKgYIXxAUGBQwAjhoQAtSDAgTEAQYHyAJKAEwDloAYAJqEgm/i6xDrmcMTxGCrF/kjgIhyXISCb+LrEOuZwxPEYKsX+SOAiHJgAEEkAHDruOwAaIBBhACIAEwBqoBCwi+8s/AlfvlNhAFsAEDGgwIJBAMGBAgCygRMBEiBXhjb2RlKgV4Y29kZTIIS2VlbiBFeWU4swpAwA0Q////////////ARj///////////8BIP///////////wE=";
             //var packet = @"Transfer CAESEgnxNm87TrReRhGGTx6vzp85ZA==";
             //var packet = @"Reorder ChIJ8TZvO060XkYRhk8er86fOWQKEgkmzfVu9CvLSRGQRb3nB/7fDAoSCfYOcUXnX0tPEaMc+TIXvZ2yChIJYRN0DkiWxU0RgB2UOdBYu10KEgnc3Xc6Zt6VQRG0ts8aa5F9XQ==";            
-            //var packet = @"Login CgpBY3R1YWxseXdoEgpBY3R1YWxseXdoGgQwLjYzIAEqKDQ1MzhhOTA3MGI0NTY0NDZjY2U0ZDQzZmJkZmU0MmVmZmY3NTIxM2U=";
-            var packet = @"Login CghNeU1hbklhbRIIMTIzNGdpdmUaBDAuNjMgASooNWZjZDJiMjdhOWM5ZGJkMGM0NTk3NGViZGNiN2YyNWIyYWNiMDc1OQ==";
+            var packet = @"Ack CgkXQgcoC01YDi4=";
+            //var packet = @"Login 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";
             var data = packet.Split(" ".ToCharArray());
 
             byte[] array = Convert.FromBase64String(data[1]);

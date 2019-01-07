@@ -885,7 +885,7 @@ namespace Poke1Protocol
             _needToSendAck = false;
             var s = new Ack
             {
-                Data = StringCipher.EncryptOrDecryptToBase64Byte(PlayerName, _logidId.ToString())
+                Data = StringCipher.EncryptOrDecryptToBase64Byte(PlayerName.ReverseString(), _logidId.ToString().ReverseString())
             };
             SendProto(s);
         }
