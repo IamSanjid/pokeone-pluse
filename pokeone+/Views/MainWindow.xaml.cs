@@ -283,6 +283,12 @@ namespace pokeone_plus
 
             LogMessage("Running " + App.Name + " by " + App.Author + ", version " + App.Version);
 
+            if (App.IsBeta)
+            {
+                LogMessage("This is a BETA version. Bugs, crashes and bans might occur.");
+                LogMessage("Report any problem on the forums and join the Discord chat for the latest information.");
+            }
+
             Task.Run(() => UpdateClients());
         }
 
@@ -343,6 +349,19 @@ namespace pokeone_plus
             Dispatcher.InvokeAsync(delegate
             {
                 LogMessage(msg);
+            });
+        }
+
+        private void Client_InvalidPacket(string packet, string error, byte[] bytes)
+        {
+            Dispatcher.InvokeAsync(delegate
+            {
+                LogMessage("Received Invalid Packet: " + error + ": " + packet);
+                if (bytes != null)
+                {
+                    File.WriteAllBytes($"{packet}_error.bin", bytes);
+                    LogMessage("Please provide the bin file if you're going to report about this error.");
+                }
             });
         }
 
@@ -460,6 +479,8 @@ namespace pokeone_plus
                     Bot.Game.PlayerRemoved += Map.Client_PlayerLeftMap;
                     Bot.Game.PlayerUpdated += Map.Client_PlayerMoved;
                     Bot.Game.NpcReceieved += Map.Client_NpcReceived;
+
+                    Bot.Game.InvalidPacket += Client_InvalidPacket;
                 }
             }
             Dispatcher.InvokeAsync(delegate
@@ -916,9 +937,9 @@ namespace pokeone_plus
             }
         }
 
-        private async void LoadScriptButton_Click(object sender, RoutedEventArgs e)
+        private void LoadScriptButton_Click(object sender, RoutedEventArgs e)
         {
-            await LoadScript();
+            LoadScript();
         }
 
         private void OpenLoginWindow()
@@ -959,7 +980,7 @@ namespace pokeone_plus
             }
         }
 
-        private async Task LoadScript(string filePath = null, bool startScriptInstant = false)
+        private async void LoadScript(string filePath = null, bool startScriptInstant = false)
         {
             if (filePath == null)
             {
@@ -982,8 +1003,12 @@ namespace pokeone_plus
                     Bot.Settings.LastScript = filePath;
                     ReloadScriptMenuItem.Header = "Reload " + Path.GetFileName(filePath) + "\tCtrl+R";
                     ReloadScriptMenuItem.IsEnabled = true;
+                    StartScriptMenuItem.IsEnabled = false;
+                    StartScriptButton.IsEnabled = false;
                 }
-                await Bot.LoadScript(filePath);
+
+                await Task.Run(() => Bot.LoadScript(filePath));
+
                 MenuPathScript.Header =
                     "Script: \"" + Bot.Script.Name + "\"" + Environment.NewLine + filePath;
                 LogMessage("Script \"{0}\" by \"{1}\" successfully loaded", Bot.Script.Name, Bot.Script.Author);
@@ -991,6 +1016,8 @@ namespace pokeone_plus
                 {
                     LogMessage(Bot.Script.Description);
                 }
+                StartScriptMenuItem.IsEnabled = true;
+                StartScriptButton.IsEnabled = true;
             }
             catch (Exception ex)
             {
@@ -1003,7 +1030,7 @@ namespace pokeone_plus
             }
         }
 
-        private async void ReloadScript_Click(object sender, RoutedEventArgs e)
+        private void ReloadScript_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(Bot.Settings.LastScript))
                 return;
@@ -1013,7 +1040,7 @@ namespace pokeone_plus
                 return;
             }
 
-            await LoadScript(Bot.Settings.LastScript);
+            LoadScript(Bot.Settings.LastScript);
         }
 
         // Technique for updating column widths of a ListView's GridView manually
@@ -1034,35 +1061,21 @@ namespace pokeone_plus
 
         public static void AppendLineToRichTextBox(RichTextBox richTextBox, string message, Brush color = null)
         {
-            Paragraph para;
-            var r = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
-            var t = Regex.Replace(r.Text, @"\s+", "");
-#if DEBUG
-            Console.WriteLine(t.Length.ToString());
-#endif
-            if (t.Length > 0)
-            {
-                para = new Paragraph { Margin = new Thickness(0) };
-            }
-            else
-            {
-                para = richTextBox.Document.Blocks.FirstBlock as Paragraph;
-                para.LineHeight = 10;
-            }
+            if (color is null)
+                color = Brushes.Aqua;
 
-            if (color != null)
+            Paragraph para;
+
+            para = richTextBox.Document.Blocks.LastBlock as Paragraph;
+
+            para.Inlines.Add(new Run(message)
             {
-                para.Inlines.Add(new Run(message)
-                {
-                    Foreground = color
-                });
-            }
-            else
-            {
-                para.Inlines.Add(new Run(message));
-            }
+                Foreground = color
+            });
 
             richTextBox.Document.Blocks.Add(para);
+            // adding extra line...
+            richTextBox.Document.Blocks.Add(new Paragraph() { Margin = new Thickness(0) });
 
             var range = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
             if (range.Text.Length > 12000)
@@ -1074,26 +1087,13 @@ namespace pokeone_plus
                 {
                     text = text.Substring(index + Environment.NewLine.Length);
                 }
-                var lines = text.Lines();
-                var ln = Convert.ToInt32(lines);
-                ln = richTextBox.Document.Blocks.Count - ln;
-                for (int i = 0; i <= richTextBox.Document.Blocks.Count - 1; i++)
+                var remove_lines = richTextBox.Document.Blocks.Count - (int)text.TotalLines();
+                for (var i = remove_lines; i >= 0; i--)
                 {
-                    if (i <= ln && ln > 0) //Value to remove blocks
-                    {
-                        //Removing blocks
-                        richTextBox.Document.Blocks.Remove(richTextBox.Document.Blocks.ToList()[i]);
-                    }
-                    else
-                    {
-                        if (i <= 48) //Default value
-                        {
-                            //Removing blocks
-                            richTextBox.Document.Blocks.Remove(richTextBox.Document.Blocks.ToList()[i]);
-                        }
-                    }
+                    richTextBox.Document.Blocks.Remove(richTextBox.Document.Blocks.ElementAt(i));
                 }
             }
+
             if (richTextBox.Selection.IsEmpty)
             {
                 richTextBox.CaretPosition = richTextBox.Document.ContentEnd;
@@ -1149,14 +1149,14 @@ namespace pokeone_plus
             }
         }
 
-        private async void Window_Drop(object sender, DragEventArgs e)
+        private void Window_Drop(object sender, DragEventArgs e)
         {
             if (e.Data.GetData(DataFormats.FileDrop) != null)
             {
                 var file = (string[])e.Data.GetData(DataFormats.FileDrop);
                 if (file != null)
                 {
-                    await LoadScript(file[0]);
+                    LoadScript(file[0]);
                 }
             }
         }

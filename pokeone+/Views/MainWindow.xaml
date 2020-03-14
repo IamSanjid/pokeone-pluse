@@ -461,7 +461,7 @@
                         </fa:FontAwesome>
                     </Button.Content>
                 </Button>
-                <Button Margin="2,1,2,1" Foreground="#F1F1F1" Click="StartScriptButton_Click">
+                <Button Margin="2,1,2,1" Foreground="#F1F1F1" Name="StartScriptButton" Click="StartScriptButton_Click">
                     <Button.Content>
                         <fa:FontAwesome Name="StartScriptButtonIcon"  Foreground="#F1F1F1" Icon="Play" Padding="2, 2, 2, 2" FontSize="16">
                         </fa:FontAwesome>

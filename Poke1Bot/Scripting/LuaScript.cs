@@ -37,9 +37,9 @@ namespace Poke1Bot.Scripting
             _libsContent = libsContent;
         }
 
-        public override async Task Initialize()
+        public override void Initialize()
         {
-            await CreateLuaInstance();
+            CreateLuaInstance();
             Name = _lua.Globals.Get("name").CastToString();
             Author = _lua.Globals.Get("author").CastToString();
             Description = _lua.Globals.Get("description").CastToString();
@@ -122,7 +122,7 @@ namespace Poke1Bot.Scripting
             return _actionExecuted;
         }
 
-        private async Task CreateLuaInstance()
+        private void CreateLuaInstance()
         {
             _hookedFunctions = new Dictionary<string, IList<DynValue>>();
 
@@ -135,7 +135,6 @@ namespace Poke1Bot.Scripting
                 }
             };
 
-            await Task.Run(() =>
             {
                 _lua.Globals["log"] = new Action<string>(Log);
                 _lua.Globals["fatal"] = new Action<string>(Fatal);
@@ -375,15 +374,15 @@ namespace Poke1Bot.Scripting
                 // File editing actions
                 _lua.Globals["logToFile"] = new Action<string, DynValue, bool>(LogToFile);
                 _lua.Globals["readLinesFromFile"] = new Func<string, string[]>(ReadLinesFromFile);
-            });
-
+            }
+            
             foreach (string content in _libsContent)
             {
                 CallContent(content);
             }
             CallContent(_content);
             IsLoaded = true;
-        }        
+        }
 
         private void CallFunctionSafe(string functionName, params object[] args)
         {

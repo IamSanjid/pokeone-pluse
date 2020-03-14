@@ -9,7 +9,6 @@ namespace Poke1Protocol
     public class GameConnection : SimpleTextClient
     {
         // game server port = 2012, map server port = 2015, map host = maps.poke.one, game host = game.poke.one
-        private const int _serverPort = 2012;
 
         private bool _useSocks;
         private int _socksVersion;
@@ -17,7 +16,8 @@ namespace Poke1Protocol
         private int _socksPort;
         private string _socksUser;
         private string _socksPass;
-        private string _host => new Random().Next(1, 2) == 1 ? "95.183.48.120" : "95.183.48.68";
+
+        private readonly IPEndPoint ServerHost = new IPEndPoint(IPAddress.Parse("95.183.48.68"), 2012);
 
         public GameConnection()
             : base(new BrightClient())
@@ -41,13 +41,13 @@ namespace Poke1Protocol
         {
             if (!_useSocks)
             {
-                Connect(IPAddress.Parse(_host), _serverPort);
+                Connect(ServerHost.Address, ServerHost.Port);
             }
             else
             {
                 try
                 {
-                    Socket socket = await SocksConnection.OpenConnection(_socksVersion, _host, _serverPort, _socksHost, _socksPort, _socksUser, _socksPass);
+                    Socket socket = await SocksConnection.OpenConnection(_socksVersion, ServerHost.Address.ToString(), ServerHost.Port, _socksHost, _socksPort, _socksUser, _socksPass);
                     Initialize(socket);
                 }
                 catch (Exception ex)

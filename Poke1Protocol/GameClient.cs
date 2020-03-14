@@ -55,7 +55,7 @@ namespace Poke1Protocol
     {
         //&& !_moveRelearnerTimeout.IsActive
 
-        public const string Version = "0.63";
+        public const string Version = "0.85";
         private readonly ProtocolTimeout _battleTimeout = new ProtocolTimeout();
         private readonly List<InventoryPokemon> _cachedPokemon = new List<InventoryPokemon>();
 
@@ -78,7 +78,7 @@ namespace Poke1Protocol
         private double _lastSentMovement;
         private int _lastTime;
         private readonly ProtocolTimeout _loadingTimeout = new ProtocolTimeout();
-        private Guid _logidId;
+        private Guid _loginId;
         private readonly ProtocolTimeout _lootBoxTimeout = new ProtocolTimeout();
 
         private readonly MapClient _mapClient;
@@ -105,7 +105,8 @@ namespace Poke1Protocol
 
         private string mapChatChannel = "";
 
-        private Queue<IProto> packets = new Queue<IProto>();
+        private RC4Stream encryptStream;
+        private RC4Stream decryptStream;
 
         public GameClient(GameConnection connection, MapConnection mapConnection)
         {
@@ -310,6 +311,7 @@ namespace Poke1Protocol
         public event Action<Npc> MoveToBattleWithNpc;
         public event Action<List<Pokemon>> PCBoxUpdated;
         public event Action MountUpdated;
+        public event Action<string, string, byte[]> InvalidPacket;
 
         private static double GetRunningTimeInSeconds()
         {
@@ -416,6 +418,7 @@ namespace Poke1Protocol
         private void UpdateTime()
         {
             if (LastTimePacket != null)
+            {
                 if (_lastCheckTime + 3 < RunningForSeconds)
                 {
                     _lastCheckTime = RunningForSeconds;
@@ -426,6 +429,7 @@ namespace Poke1Protocol
                     Weather = LastTimePacket.Weather.ToString();
                     GameTimeUpdated?.Invoke(GameTime, Weather);
                 }
+            }
         }
 
         // IDK POKEONE CHECK SOMETHING LIKE BELOW.
@@ -885,7 +889,7 @@ namespace Poke1Protocol
             _needToSendAck = false;
             var s = new Ack
             {
-                Data = StringCipher.EncryptOrDecryptToBase64Byte(PlayerName.ReverseString(), _logidId.ToString().ReverseString())
+                Data = StringCipher.EncryptOrDecryptToBase64Byte(PlayerName.ReverseString(), _loginId.ToString().ReverseString())
             };
             SendProto(s);
         }
@@ -968,8 +972,10 @@ namespace Poke1Protocol
 
         public void SendProto(IProto proto)
         {
-            var array = Proto.Serialize(proto);
+            var array = Proto.Serialize(proto);           
             if (array == null) return;
+            if (encryptStream != null)
+                array = encryptStream.Crypt(array);
             var packet = Convert.ToBase64String(array);
             packet = proto._Name + " " + packet;
             SendPacket(packet);
@@ -1048,7 +1054,7 @@ namespace Poke1Protocol
         {
             OpenedShop = null;
             CurrentPCBox = null;
-            TotalSteps = TotalSteps + actions.Count(m =>
+            TotalSteps += actions.Count(m =>
                              m != MoveAction.TurnDown && m != MoveAction.TurnLeft
                                                       && m != MoveAction.TurnRight && m != MoveAction.TurnUp);
 
@@ -1358,18 +1364,28 @@ namespace Poke1Protocol
             var data = packet.Split(" ".ToCharArray());
 
             var array = Convert.FromBase64String(data[1]);
+            if (decryptStream != null)
+                array = decryptStream.Crypt(array);
+
             var type = Type.GetType($"PSXAPI.Response.{data[0]}, PSXAPI");
 
             if (type is null)
             {
-                Console.WriteLine("Received Unknown Response: " + data[0]);
+                InvalidPacket?.Invoke(data[0], "Received Unknown Response", array);
             }
             else
             {
-                var proto = typeof(Proto).GetMethod("Deserialize").MakeGenericMethod(type).Invoke(null, new object[]
+                IProto proto = typeof(Proto).GetMethod("Deserialize").MakeGenericMethod(type).Invoke(null, new object[]
                 {
                     array
                 }) as IProto;
+
+                if (proto is null)
+                {
+                    InvalidPacket?.Invoke(type.Name, "Failed to Deserialize", array);
+                    //Console.WriteLine("Error: " + type.Name + " " + data[1]);
+                    return;
+                }
 
                 if (proto is PSXAPI.Response.Ping)
                 {
@@ -1555,7 +1571,7 @@ namespace Poke1Protocol
                     }
 #if DEBUG
 
-                    Console.WriteLine(proto._Name);
+                    Console.WriteLine(proto?._Name);
 #endif
                 }
             }
@@ -1868,7 +1884,7 @@ namespace Poke1Protocol
         {
             var data = mpusers.Users;
             var expiration = DateTime.UtcNow.AddSeconds(20);
-
+            if (data is null) return;
             var isNewPlayer = false;
             foreach (var user in data)
             {
@@ -2404,7 +2420,11 @@ namespace Poke1Protocol
             _isLoggedIn = true;
             PlayerName = login.Username;
             Console.WriteLine($"[Login] [ID={login.LoginID}] Authenticated successfully");
-            _logidId = login.LoginID;
+            _loginId = login.LoginID;
+
+            encryptStream = new RC4Stream(_loginId.ToByteArray());
+            decryptStream = new RC4Stream(_loginId.ToByteArray());
+
             LoggedIn?.Invoke();
             AddDefaultChannels();
 
@@ -2441,7 +2461,8 @@ namespace Poke1Protocol
             if (login.Effects != null)
                 OnEffects(login.Effects);
 
-            if (login.Time != null) OnUpdateTime(login.Time);
+            SendProto(new PSXAPI.Request.Time());
+            //SendPacket("Ack " + _loginId.ToByteArray().Hexdigest());
 
             if (login.DailyLootbox != null)
                 OnLootBoxRecieved(login.DailyLootbox, login.DailyReset);
@@ -2713,7 +2734,7 @@ namespace Poke1Protocol
                 Password = password,
                 Platform = ClientPlatform.PC,
                 Version = Version,
-                Test = StringCipher.GetRandomInfo()
+                Handle = "*@b4c80b5fa0dbe8f89ad87f9f71f59263fdbe25bf00AC7C081FD640167E266DC8"
             });
         }
 
@@ -3206,6 +3227,15 @@ namespace Poke1Protocol
         public bool HasEffectName(string effectName)
         {
             return GetEffectFromName(effectName) != null;
+        }
+
+        public static string CreateTestProto(IProto proto)
+        {
+            var array = Proto.Serialize(proto);
+            if (array == null) return null;
+            var packet = Convert.ToBase64String(array);
+            packet = proto._Name + " " + packet;
+            return packet;
         }
 
         public static string BadgeFromID(int id)

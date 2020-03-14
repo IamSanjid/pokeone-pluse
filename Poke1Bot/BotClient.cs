@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using System.Windows.Media;
 using ProtoBuf.Meta;
 using PSXAPI;
+using PSXAPI.Response;
+using Path = System.IO.Path;
 
 namespace Poke1Bot
 {
@@ -63,63 +65,8 @@ namespace Poke1Bot
             AutoLootBoxOpener = new AutoLootBoxOpener(this);
             QuestManager = new QuestManager(this);
             Settings = new UserSettings();
-
-#if DEBUG
-            var dc = StringCipher.Base64Decode("F0IHKAtNWA4u");
-            var s = "776463e6-59c7-4a42-b861-fccdf79def1c".ReverseString();
-            var enc = Poke1Protocol.StringCipher.EncryptOrDecrypt("Username:)".ReverseString(), "776463e6-59c7-4a42-b861-fccdf79def1c".ReverseString());
-            Console.WriteLine(enc);
-            Console.WriteLine(dc);
-
-
-            //var packet = @"InventoryPokemon CtEBChIJ8TZvO060XkYRhk8er86fOWQSjgEIowEQCxjPCyAkKgYIXRAZGBkqBggtECgYKCoGCCEQIxgjKgYIXxAUGBQwAjhoQAtSDAgTEAQYHyAJKAEwDloAYAJqEgm/i6xDrmcMTxGCrF/kjgIhyXISCb+LrEOuZwxPEYKsX+SOAiHJgAEEkAHDruOwAaIBBhACIAEwBqoBCwi+8s/AlfvlNhAFsAEDGgwIJBAMGBAgCygRMBEiBXhjb2RlKgV4Y29kZTIIS2VlbiBFeWU4swpAwA0Q////////////ARj///////////8BIP///////////wE=";
-            //var packet = @"Transfer CAESEgnxNm87TrReRhGGTx6vzp85ZA==";
-            //var packet = @"Reorder ChIJ8TZvO060XkYRhk8er86fOWQKEgkmzfVu9CvLSRGQRb3nB/7fDAoSCfYOcUXnX0tPEaMc+TIXvZ2yChIJYRN0DkiWxU0RgB2UOdBYu10KEgnc3Xc6Zt6VQRG0ts8aa5F9XQ==";            
-            var packet = @"BattleBroadcast CAISETF8TXlNYW5JYW18MHwxfDB8";
-            var data = packet.Split(" ".ToCharArray());
-
-            byte[] array = Convert.FromBase64String(data[1]);
-            var type = Type.GetType($"PSXAPI.Request.{data[0]}, PSXAPI");
-            //goto RESP;
-            if (type != null)
-            {
-                //var s = proto as PSXAPI.Request.Ack;
-
-                //string decodedString = Encoding.ASCII.GetString(array);
-                //Console.WriteLine(decodedString);
-                
-
-                if (!(typeof(PSXAPI.Proto).GetMethod("Deserialize").MakeGenericMethod(type).Invoke(null, new object[]
-                {
-                    array
-                }) is IProto proto))
-                    goto RESP;
-
-                Console.WriteLine(ToJsonString(proto));
-                return;
-                //Console.WriteLine($"MapLoad: {(proto as PSXAPI.Request.BattleBroadcast).RequestID}, ID: {(proto as PSXAPI.Request.BattleBroadcast)._Name.ToString()}");
-            }
-            RESP:
-            type = Type.GetType($"PSXAPI.Response.{data[0]}, PSXAPI");
-            if (type != null)
-            {
-                var proto = typeof(PSXAPI.Proto).GetMethod("Deserialize").MakeGenericMethod(new Type[]
-                {
-                        type
-                }).Invoke(null, new object[]
-                {
-                        array
-                }) as PSXAPI.IProto;
-                Console.WriteLine(ToJsonString(proto));
-                // Console.WriteLine($"MapLoad: {(proto as PSXAPI.Request.BattleBroadcast).RequestID}, ID: {(proto as PSXAPI.Request.BattleBroadcast)._Name.ToString()}");
-            }
-#endif
         }
-        private static string ToJsonString(PSXAPI.IProto p) => Newtonsoft.Json.JsonConvert.SerializeObject(p, new Newtonsoft.Json.JsonSerializerSettings
-        {
-            Converters = { new Newtonsoft.Json.Converters.StringEnumConverter() },
-            Formatting = Newtonsoft.Json.Formatting.Indented
-        });
+
 
         public void LogMessage(string message)
         {
@@ -255,11 +202,11 @@ namespace Poke1Bot
             }
         }
 
-        public async Task LoadScript(string filename)
+        public void LoadScript(string filename)
         {
             using (var reader = new StreamReader(filename))
             {
-                var input = await reader.ReadToEndAsync();
+                var input = reader.ReadToEnd();
 
                 List<string> libs = new List<string>();
                 if (Directory.Exists("Libs"))
@@ -271,7 +218,7 @@ namespace Poke1Bot
                         {
                             using (var streaReader = new StreamReader(file))
                             {
-                                libs.Add(await streaReader.ReadToEndAsync());
+                                libs.Add(streaReader.ReadToEnd());
                             }
                         }
                     }
@@ -286,7 +233,7 @@ namespace Poke1Bot
             try
             {
                 Script.ScriptMessage += Script_ScriptMessage;
-                await Script.Initialize();
+                Script.Initialize();
             }
             catch (Exception)
             {

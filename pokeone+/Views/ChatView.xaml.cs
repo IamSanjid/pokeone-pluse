@@ -336,7 +336,7 @@ namespace pokeone_plus
     //Special Class to find out text lines
     public static class StringExtentions
     {
-        public static long Lines(this string s)
+        public static long TotalLines(this string s)
         {
             long count = 1;
             int position = 0;
